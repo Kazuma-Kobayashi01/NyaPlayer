@@ -13,7 +13,7 @@
 ### 1.1 基础环境
 
 - Flutter：开工时的最新 **stable** 版本，Dart 3。
-- Android：`minSdk 24`，`targetSdk` / `compileSdk` 跟随 Flutter 模板默认值（不得低于 34）。
+- Android：**`minSdk 31`（Android 12 起，开发者 2026-10-17 决定）**，`targetSdk` / `compileSdk` 跟随 Flutter 模板默认值（不得低于 34）。Rust 输出库 cpal 直接使用 AAudio（需 API 26+），Android 12 基线同时保证壁纸取色（`UI-03`）全员可用。
 - macOS：部署目标跟随 Flutter 模板（≥ 10.15）。
 - 不支持的平台目录（ios / web / windows / linux）在创建工程时不生成：
   `flutter create --platforms=android,macos --org <your.org> lyra`
@@ -319,20 +319,20 @@ Rust 内核（cpal）不负责系统音频会话，必须自己用 `audio_sessio
 
 - `MainActivity` 继承 `AudioServiceActivity`（或直接用它作为 activity）。
 - `INTERNET` 权限：Rust 内核只读本地文件，**不声明** `INTERNET`（`NFR-06`）。
-- Rust 库由 Cargokit 在 Gradle 构建时编译为 `arm64-v8a`、`armeabi-v7a`、`x86_64` 三个 ABI 的 `.so`；`minSdk 24` 下 Oboe 在 Android 8.1 以下回退到 OpenSL ES。
+- Rust 库由 Cargokit 在 Gradle 构建时编译为 `arm64-v8a`、`armeabi-v7a`、`x86_64` 三个 ABI 的 `.so`；cpal 0.18 在 Android 上直接调用 AAudio（链接 `libaaudio`），不再需要 OpenSL ES 回退。
 - 构建：Release 使用 `--split-per-abi` 或 App Bundle，控制包体。
 - 边到边显示：`SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge)`，所有页面正确处理 `MediaQuery.padding`（`UI-15`）。
 
 **文件访问策略（重要）**
 
-> **2026-10-17 范围调整**：曲库只有 FLAC/MP3 且歌词、封面全部内嵌（见 REQUIREMENTS §4.1），不再需要读 `.lrc` / `cover.jpg`。因此**默认改为方案 C：只申请 `READ_MEDIA_AUDIO`**（Android 10 及以下用 `READ_EXTERNAL_STORAGE`）。M0-8 须验证：仅此权限下 `dart:io` 能递归列目录，Rust 能按路径打开并播放音频。验证失败再回退到下面的方案 A，届时再把 `MANAGE_EXTERNAL_STORAGE` 加回 Manifest。方案 A/B 的描述保留，供以后恢复外挂歌词（P2）时参考。
+> **2026-10-17 范围调整**：曲库只有 FLAC/MP3 且歌词、封面全部内嵌（见 REQUIREMENTS §4.1），不再需要读 `.lrc` / `cover.jpg`。因此**默认改为方案 C：只申请 `READ_MEDIA_AUDIO`**（Android 12 用 `READ_EXTERNAL_STORAGE`）。M0-8 须验证：仅此权限下 `dart:io` 能递归列目录，Rust 能按路径打开并播放音频。验证失败再回退到下面的方案 A，届时再把 `MANAGE_EXTERNAL_STORAGE` 加回 Manifest。方案 A/B 的描述保留，供以后恢复外挂歌词（P2）时参考。
 
 Android 11+ 的分区存储下，`READ_MEDIA_AUDIO` 只能读音频文件，**读不到 `.lrc`**（不是媒体文件），而外挂歌词是 P0 需求。
 
 - **方案 A（默认）**：Android 11+ 申请"所有文件访问权限"（`MANAGE_EXTERNAL_STORAGE`，跳转系统设置页让用户开启），之后直接用文件路径扫描、读取 `.lrc` 和 `cover.jpg`，路径可直接交给 Rust 内核。代价：Google Play 上架受限，本项目不上架，可接受。
 - **方案 B（备选）**：存储访问框架（SAF）让用户授权文件夹树，通过 `content://` URI 访问。代价：需要写 platform channel 遍历目录、需把 `content://` 打开为文件描述符再交给 Rust，工作量明显更大。
 - 用户拒绝"所有文件访问"时降级：只申请 `READ_MEDIA_AUDIO`，正常播放，但外挂歌词和文件夹封面不可用，设置页提示原因。
-- Android 10 及以下：`READ_EXTERNAL_STORAGE` 即可（Android 10 需在 application 上加 `android:requestLegacyExternalStorage="true"`）。
+- Android 12（API 31–32）：`READ_EXTERNAL_STORAGE`；Android 13+：`READ_MEDIA_AUDIO`。（minSdk 31，不再考虑 Android 10 及以下。）
 - 🔍 M0 验证方案 A 在一台 Android 13+ 真机上能读到 `.lrc`。
 
 **`androidStopForegroundOnPause`**：设为 `true` 时，暂停后服务退出前台，之后从后台（如蓝牙耳机按键）恢复播放可能触发 `ForegroundServiceStartNotAllowedException`。先设 `false` 保证稳定，代价是暂停时通知不能被划掉；M4 实测后再决定。

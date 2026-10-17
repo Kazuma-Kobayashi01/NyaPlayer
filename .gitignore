@@ -35,3 +35,6 @@ devtools_options.yaml
 key.properties
 *.keystore
 *.jks
+
+# Claude Code subagent worktrees
+.claude/worktrees/

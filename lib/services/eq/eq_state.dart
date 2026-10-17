@@ -71,6 +71,46 @@ class EqState {
   }
 }
 
+/// What the audio core needs from [EqState] (TECH_SPEC §5.1): the effective
+/// preamp already includes automatic clipping prevention.
+@immutable
+class EqParams {
+  const EqParams({
+    required this.enabled,
+    required this.gains,
+    required this.preamp,
+  });
+
+  factory EqParams.fromState(EqState state) {
+    final maxBoost = state.gains.fold<double>(0, (m, g) => g > m ? g : m);
+    return EqParams(
+      enabled: state.enabled,
+      gains: List.unmodifiable(state.gains),
+      preamp: state.autoPreventClipping ? -maxBoost : state.preamp,
+    );
+  }
+
+  static const flat = EqParams(
+    enabled: false,
+    gains: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+    preamp: 0,
+  );
+
+  final bool enabled;
+  final List<double> gains;
+  final double preamp;
+
+  @override
+  bool operator ==(Object other) =>
+      other is EqParams &&
+      other.enabled == enabled &&
+      other.preamp == preamp &&
+      listEquals(other.gains, gains);
+
+  @override
+  int get hashCode => Object.hash(enabled, preamp, Object.hashAll(gains));
+}
+
 final eqProvider = NotifierProvider<EqController, EqState>(EqController.new);
 
 /// UI-side EQ state. Not yet connected to the audio filter chain (M6).

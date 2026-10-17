@@ -6,7 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:nyaplayer/app/layout/adaptive_shell.dart';
 import 'package:nyaplayer/app/router.dart';
 import 'package:nyaplayer/app/theme/theme_settings.dart';
-import 'package:nyaplayer/data/sample_library.dart';
+import 'package:nyaplayer/data/library_providers.dart';
 import 'package:nyaplayer/features/lyrics/lyrics_settings.dart';
 import 'package:nyaplayer/features/now_playing/now_playing_page.dart';
 import 'package:nyaplayer/features/now_playing/player_artwork.dart';
@@ -19,6 +19,7 @@ import 'package:nyaplayer/services/player/queue_controller.dart';
 ///   NYA_SHAPE=disc       use the spinning disc cover
 ///   NYA_PAUSE=1          start paused
 ///   NYA_FONT=serif       use the serif font
+///   NYA_VOLUME=0..1      engine output volume (e.g. 0 for silent tests)
 ///   NYA_THEME=light|dark force the theme mode
 ///   NYA_QUEUE=1          open the queue sheet of the phone player
 ///   NYA_DRAWER=1         open the phone navigation drawer
@@ -30,6 +31,10 @@ void applyPreviewEnv(ProviderContainer container) {
   }
   if (env['NYA_FONT'] == 'serif') {
     container.read(themeSettingsProvider.notifier).setFont(AppFont.serif);
+  }
+  final volume = double.tryParse(env['NYA_VOLUME'] ?? '');
+  if (volume != null) {
+    unawaited(container.read(playerEngineProvider).setVolume(volume));
   }
   switch (env['NYA_THEME']) {
     case 'light':
@@ -50,7 +55,8 @@ void applyPreviewEnv(ProviderContainer container) {
   if (mode != 'player' && mode != 'panel') return;
   final index = int.tryParse(env['NYA_TRACK'] ?? '') ?? 0;
   Future<void>.delayed(const Duration(milliseconds: 800), () async {
-    final tracks = sampleLibrary.tracks;
+    // Sample data, or the real folder when NYA_MUSIC_DIR is set.
+    final tracks = (await container.read(libraryProvider.future)).tracks;
     await container
         .read(queueProvider.notifier)
         .playTracks(tracks, startIndex: index % tracks.length);

@@ -1,13 +1,18 @@
 [package]
 name = "nya_core"
-version = "0.1.0"
+version = "1.0.1"
 edition = "2021"
 
 [lib]
-crate-type = ["cdylib", "staticlib"]
+crate-type = ["cdylib", "staticlib", "rlib"]
 
 [dependencies]
 flutter_rust_bridge = "=2.13.0"
+rodio = { version = "0.23", default-features = false, features = ["playback", "flac", "mp3"] }
+anyhow = "1"
+log = "0.4"
+biquad = "0.6"
+lofty = "0.25"
 
 [lints.rust]
 unexpected_cfgs = { level = "warn", check-cfg = ['cfg(frb_expand)'] }

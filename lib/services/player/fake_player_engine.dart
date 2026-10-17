@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:nyaplayer/services/eq/eq_state.dart';
 import 'package:nyaplayer/services/player/player_engine.dart';
 
 /// In-memory engine that simulates playback with a timer. It makes no sound.
@@ -203,6 +204,15 @@ class FakePlayerEngine implements PlayerEngine {
 
   @override
   Future<void> setLoopMode(LoopMode mode) async => _loop = mode;
+
+  EqParams eqParams = EqParams.flat;
+  double volume = 1;
+
+  @override
+  Future<void> setEqualizer(EqParams params) async => eqParams = params;
+
+  @override
+  Future<void> setVolume(double value) async => volume = value;
 
   @override
   Future<void> dispose() async {

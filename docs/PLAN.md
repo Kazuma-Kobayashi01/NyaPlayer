@@ -44,7 +44,7 @@
 
 - [x] M0-1 新建 `spike/` Flutter 工程验证 media_kit 方案。（2026-10-17：`spike/` 已删除；同日决定改用 Rust 内核，M0 改在主工程 `1.0.0.universal` 分支上验证 Rust 方案，见 TECH_SPEC 附录 B 第 3 条。）
 - [x] M0-R1 安装 Rust 工具链（rustup stable 1.99.1，clippy、rustfmt；macOS 双架构与 Android 三个 ABI 的 target）。
-- [ ] M0-R2 **桥接**：在主工程集成 `flutter_rust_bridge` 2.13.0（`rust/` crate `nya_core` + `rust_builder/` Cargokit 插件），Dart 调用一个 Rust 函数成功；macOS debug 与 Android `flutter build apk` 都能编过。
+- [x] M0-R2 **桥接**：在主工程集成 `flutter_rust_bridge` 2.13.0（`rust/` crate `nya_core` + `rust_builder/` Cargokit 插件），Dart 调用一个 Rust 函数成功；macOS debug 与 Android `flutter build apk` 都能编过。
 - [ ] M0-2 **格式**：Rust 引擎在 macOS 和 Android 真机上播放 FLAC（16/24bit，44.1k～192k）、MP3（CBR/VBR），记录结果；确认 192k 被正确重采样到设备采样率。
 - [ ] M0-3 **EQ**：Rust 10 段 biquad EQ（TECH_SPEC §5.1）。`cargo test` 验证频响；实听确认各预设生效、拖动滑块时无爆音/静音。
 - [ ] M0-4 **无缝播放**：连续两轨（现场专辑或自制的切开的正弦波）首尾无缝；`cargo test` 用自制音频验证裁剪后样本连续。
@@ -69,7 +69,7 @@
 
 - [x] M1-1 `flutter create --platforms=android,macos --org <org> lyra`，删除示例代码，按 `TECH_SPEC.md` §3 建目录。
 - [ ] M1-2 加入 §1.2、§1.3 全部依赖；配置 `analysis_options.yaml`（§11）。（部分完成：已加 riverpod / go_router / dynamic_color / path / intl / mocktail 与额外 lint；drift、permission_handler、file_picker、window_manager、image 等待用到时再加）
-- [ ] M1-3 Android：Manifest 权限与 audio_service 组件（§6.1）、`minSdk 24`、边到边显示。
+- [ ] M1-3 Android：Manifest 权限与 audio_service 组件（§6.1）、`minSdk 31`（已改）、边到边显示。
 - [ ] M1-4 macOS：关闭 sandbox、`window_manager` 初始化、最小窗口尺寸（§6.2）。（部分完成：最小窗口 400×700 已用原生 `contentMinSize` 实现，无最大限制可全屏；已去掉系统标题栏、红绿灯融入界面；sandbox 与 window_manager 未做）
 - [ ] M1-5 drift 数据库：建好 §9 全部表（先不实现 FTS），生成代码，写一个迁移测试。
 - [ ] M1-6 主题系统：`LyraTheme`，支持明/暗/跟随系统、壁纸动态取色、固定种子色；设置项存 `settings` 表。（封面取色在 M3 接入）（部分完成：明/暗/系统、固定种子色、封面取色已做，设置暂存内存未入 `settings` 表；壁纸取色因 dynamic_color 2.1.0 使用 `material_ui` 的 `ColorScheme`，暂以壁纸主色作种子，见 TECH_SPEC 附录 A）

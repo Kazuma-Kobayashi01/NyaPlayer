@@ -4,6 +4,7 @@
 - docs/REQUIREMENTS.md — 需求与编号（FMT/LIB/META/LRC/PLAY/SYS/EQ/UI/SET）
 - docs/TECH_SPEC.md — 技术决定与约束（以此为准）
 - docs/PLAN.md — 里程碑与任务清单（当前进度看这里的复选框）
+- docs/PROGRESS.md — 施工记录：当前状态、已做/未做、决定、坑、下一步（接手先读这个）
 - docs/SPIKE_REPORT.md — M0 实测结论（存在时优先于 TECH_SPEC 中的 🔍 假设）
 
 ## 工作规则

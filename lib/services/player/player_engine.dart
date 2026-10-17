@@ -1,7 +1,9 @@
+import 'package:nyaplayer/services/eq/eq_state.dart';
+
 enum LoopMode { none, all, one }
 
 /// Abstraction over the playback core (TECH_SPEC §4.2). Only one implementation
-/// owns the real media_kit Player; the UI never talks to it directly.
+/// owns the real audio core (Rust); the UI never talks to it directly.
 abstract interface class PlayerEngine {
   Stream<bool> get playing;
   Stream<Duration> get position;
@@ -28,5 +30,11 @@ abstract interface class PlayerEngine {
   /// Moves an item so that it ends up at [to] in the resulting list.
   Future<void> move(int from, int to);
   Future<void> setLoopMode(LoopMode mode);
+
+  /// 10-band equalizer (TECH_SPEC §5); cheap enough to call while dragging.
+  Future<void> setEqualizer(EqParams params);
+
+  /// Linear output volume 0..1, used for ducking (§4.6).
+  Future<void> setVolume(double volume);
   Future<void> dispose();
 }
