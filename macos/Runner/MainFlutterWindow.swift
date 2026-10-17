@@ -8,6 +8,48 @@ class MainFlutterWindow: NSWindow {
     self.contentViewController = flutterViewController
     self.setFrame(windowFrame, display: true)
 
+    // No system title bar: the app draws under it and the traffic lights sit
+    // on top of the app's own surface. The (transparent) title bar strip is
+    // still draggable and double-click zooms as usual.
+    self.styleMask.insert(.fullSizeContentView)
+    self.titlebarAppearsTransparent = true
+    self.titleVisibility = .hidden
+
+    // Traffic lights sit a little inside the window corner (like VS Code).
+    // AppKit resets their layout on resize / full screen, so re-apply then.
+    DispatchQueue.main.async { self.positionTrafficLights() }
+    for name in [
+      NSWindow.didResizeNotification,
+      NSWindow.didEndLiveResizeNotification,
+      NSWindow.didExitFullScreenNotification,
+      NSWindow.didBecomeMainNotification,
+    ] {
+      NotificationCenter.default.addObserver(
+        forName: name, object: self, queue: .main
+      ) { [weak self] _ in self?.positionTrafficLights() }
+    }
+
+    // Tells Flutter when the traffic lights go away (full screen), so it can
+    // drop the inset it keeps for them.
+    let channel = FlutterMethodChannel(
+      name: "nyaplayer/window",
+      binaryMessenger: flutterViewController.engine.binaryMessenger)
+    channel.setMethodCallHandler { [weak self] call, result in
+      if call.method == "isFullScreen" {
+        result(self?.styleMask.contains(.fullScreen) ?? false)
+      } else {
+        result(FlutterMethodNotImplemented)
+      }
+    }
+    for (name, value) in [
+      (NSWindow.willEnterFullScreenNotification, true),
+      (NSWindow.willExitFullScreenNotification, false),
+    ] {
+      NotificationCenter.default.addObserver(
+        forName: name, object: self, queue: .main
+      ) { _ in channel.invokeMethod("fullScreen", arguments: value) }
+    }
+
     // Smallest allowed window: a normal phone-sized layout. There is no
     // maximum; the window can grow up to (and into) full screen.
     let minSize = NSSize(width: 400, height: 700)
@@ -39,5 +81,38 @@ class MainFlutterWindow: NSWindow {
     RegisterGeneratedPlugins(registry: flutterViewController)
 
     super.awakeFromNib()
+  }
+
+  /// Extra space between the window corner and the traffic lights, in points.
+  /// Flutter keeps `macTitlebarInset` (lib/app/window_chrome.dart) clear for
+  /// them, so change both together.
+  private static let trafficLightInsetX: CGFloat = 8
+  private static let trafficLightInsetY: CGFloat = 6
+
+  private func positionTrafficLights() {
+    guard !styleMask.contains(.fullScreen),
+      let close = standardWindowButton(.closeButton),
+      let mini = standardWindowButton(.miniaturizeButton),
+      let zoom = standardWindowButton(.zoomButton),
+      let bar = close.superview,
+      let container = bar.superview
+    else { return }
+
+    // Grow the title bar container downwards so the moved buttons stay
+    // inside it (and keep receiving clicks).
+    let extra = MainFlutterWindow.trafficLightInsetY * 2
+    let height = 28 + extra
+    container.frame = NSRect(
+      x: 0, y: frame.height - height, width: frame.width, height: height)
+    bar.frame = container.bounds
+
+    let spacing = mini.frame.minX - close.frame.minX
+    let startX = 7 + MainFlutterWindow.trafficLightInsetX
+    for (i, button) in [close, mini, zoom].enumerated() {
+      button.setFrameOrigin(
+        NSPoint(
+          x: startX + CGFloat(i) * spacing,
+          y: (height - button.frame.height) / 2))
+    }
   }
 }

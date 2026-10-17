@@ -20,9 +20,13 @@ import 'package:nyaplayer/features/shared/quality_badge.dart';
 import 'package:nyaplayer/l10n/app_localizations.dart';
 import 'package:nyaplayer/services/player/queue_controller.dart';
 
-/// From this width the player is the immersive layout: cover on the left,
-/// lyrics (or queue) on the right, controls along the bottom (UI-08).
+/// From this width, or in any landscape window, the player is the immersive
+/// layout: cover on the left, lyrics (or queue) on the right, controls along
+/// the bottom (UI-08).
 const immersivePlayerWidth = 720.0;
+
+bool useImmersivePlayer(Size size) =>
+    size.width >= immersivePlayerWidth || size.width > size.height;
 
 /// Full-window player. Phones get a compact layout; wide windows (and the
 /// "expand" button of the desktop panel) get the immersive layout.
@@ -40,7 +44,7 @@ class NowPlayingPage extends ConsumerWidget {
         },
         child: Focus(
           autofocus: true,
-          child: MediaQuery.sizeOf(context).width >= immersivePlayerWidth
+          child: useImmersivePlayer(MediaQuery.sizeOf(context))
               ? _ImmersivePlayer(track: track)
               : _CompactPlayer(track: track),
         ),
@@ -425,6 +429,8 @@ class _ImmersivePlayerState extends State<_ImmersivePlayer> {
     final l10n = AppLocalizations.of(context);
     final scheme = Theme.of(context).colorScheme;
     final track = widget.track;
+    // Landscape phones: less chrome around the cover.
+    final short = MediaQuery.sizeOf(context).height < 500;
 
     return Scaffold(
       backgroundColor: scheme.surface,
@@ -454,11 +460,16 @@ class _ImmersivePlayerState extends State<_ImmersivePlayer> {
                   children: [
                     Expanded(
                       child: Padding(
-                        padding: const EdgeInsets.fromLTRB(48, 64, 48, 8),
-                        child: _Stage(track: track, pane: _pane),
+                        padding: EdgeInsets.fromLTRB(
+                          48,
+                          short ? 56 : 64,
+                          48,
+                          8,
+                        ),
+                        child: _Stage(track: track, pane: _pane, short: short),
                       ),
                     ),
-                    _BottomControls(track: track),
+                    _BottomControls(track: track, short: short),
                   ],
                 ),
               Positioned(
@@ -499,30 +510,34 @@ class _ImmersivePlayerState extends State<_ImmersivePlayer> {
 /// Cover + title block on the left, lyrics (or queue) on the right. The right
 /// pane is exactly as tall as the cover and aligned with its top and bottom.
 class _Stage extends StatelessWidget {
-  const _Stage({required this.track, required this.pane});
+  const _Stage({required this.track, required this.pane, required this.short});
 
   final Track track;
   final _Pane pane;
 
+  /// Short windows (landscape phones): smaller caption (no quality badge) and
+  /// a smaller minimum cover.
+  final bool short;
+
   static const _gap = 48.0;
-  static const _titleGap = 24.0;
-  static const _titleHeight = 112.0;
 
   @override
   Widget build(BuildContext context) {
+    final titleGap = short ? 8.0 : 24.0;
+    final titleHeight = short ? 62.0 : 112.0;
     return LayoutBuilder(
       builder: (context, constraints) {
         final columnWidth = (constraints.maxWidth - _gap) / 2;
         final size = math.max(
-          160.0,
+          short ? 64.0 : 160.0,
           math.min(
             math.min(columnWidth, 520.0),
-            constraints.maxHeight - _titleGap - _titleHeight,
+            constraints.maxHeight - titleGap - titleHeight,
           ),
         );
         return Center(
           child: SizedBox(
-            height: size + _titleGap + _titleHeight,
+            height: size + titleGap + titleHeight,
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -533,10 +548,10 @@ class _Stage extends StatelessWidget {
                         dimension: size,
                         child: PlayerArtwork(track: track, maxSize: size),
                       ),
-                      const SizedBox(height: _titleGap),
+                      SizedBox(height: titleGap),
                       SizedBox(
-                        height: _titleHeight,
-                        child: _CoverCaption(track: track),
+                        height: titleHeight,
+                        child: _CoverCaption(track: track, compact: short),
                       ),
                     ],
                   ),
@@ -571,9 +586,12 @@ class _Stage extends StatelessWidget {
 }
 
 class _CoverCaption extends StatelessWidget {
-  const _CoverCaption({required this.track});
+  const _CoverCaption({required this.track, this.compact = false});
 
   final Track track;
+
+  /// Title and artist only.
+  final bool compact;
 
   @override
   Widget build(BuildContext context) {
@@ -600,17 +618,20 @@ class _CoverCaption extends StatelessWidget {
           overflow: TextOverflow.ellipsis,
           textAlign: TextAlign.center,
         ),
-        const SizedBox(height: 6),
-        QualityBadge(track: track),
+        if (!compact) ...[
+          const SizedBox(height: 6),
+          QualityBadge(track: track),
+        ],
       ],
     );
   }
 }
 
 class _BottomControls extends StatelessWidget {
-  const _BottomControls({required this.track});
+  const _BottomControls({required this.track, this.short = false});
 
   final Track track;
+  final bool short;
 
   @override
   Widget build(BuildContext context) {
@@ -618,7 +639,7 @@ class _BottomControls extends StatelessWidget {
       child: ConstrainedBox(
         constraints: const BoxConstraints(maxWidth: 820),
         child: Padding(
-          padding: const EdgeInsets.fromLTRB(24, 8, 24, 24),
+          padding: EdgeInsets.fromLTRB(24, short ? 0 : 8, 24, short ? 8 : 24),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [

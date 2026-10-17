@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:nyaplayer/app/router.dart';
 import 'package:nyaplayer/app/theme/app_theme.dart';
+import 'package:nyaplayer/app/window_chrome.dart';
 import 'package:nyaplayer/app/theme/theme_settings.dart';
 import 'package:nyaplayer/l10n/app_localizations.dart';
 
@@ -40,6 +41,8 @@ class NyaPlayerApp extends ConsumerWidget {
           localizationsDelegates: AppLocalizations.localizationsDelegates,
           supportedLocales: AppLocalizations.supportedLocales,
           routerConfig: router,
+          builder: (context, child) =>
+              TitlebarInset(child: child ?? const SizedBox.shrink()),
         );
       },
     );

@@ -1,8 +1,11 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:nyaplayer/app/app.dart';
+import 'package:nyaplayer/app/layout/adaptive_shell.dart';
 import 'package:nyaplayer/app/layout/phone_drawer.dart';
 import 'package:nyaplayer/app/router.dart';
 import 'package:nyaplayer/features/album/albums_page.dart';
@@ -13,6 +16,7 @@ import 'package:nyaplayer/features/lyrics/lyrics_settings.dart';
 import 'package:nyaplayer/features/lyrics/lyrics_view.dart';
 import 'package:nyaplayer/features/now_playing/now_playing_panel.dart';
 import 'package:nyaplayer/features/now_playing/player_artwork.dart';
+import 'package:nyaplayer/features/now_playing/now_playing_page.dart';
 import 'package:nyaplayer/features/queue/queue_list.dart';
 import 'package:nyaplayer/features/queue/queue_sheet.dart';
 import 'package:nyaplayer/domain/models.dart';
@@ -89,7 +93,7 @@ void main() {
   testWidgets('desktop: permanent sidebar and bottom player bar', (
     tester,
   ) async {
-    await _pumpApp(tester, const Size(1000, 800));
+    await _pumpApp(tester, const Size(900, 800));
     expect(find.byType(NavigationDrawer), findsOneWidget);
     expect(find.byTooltip('Open navigation menu'), findsNothing);
     expect(find.byType(PlayerBar), findsOneWidget);
@@ -488,5 +492,54 @@ void main() {
       expect(find.byType(AlbumCard), findsWidgets);
       expect(tester.takeException(), isNull);
     });
+  }
+
+  test('desktop layout follows orientation, panel needs room', () {
+    expect(useDesktopLayout(const Size(400, 800)), isFalse);
+    expect(useDesktopLayout(const Size(800, 360)), isTrue); // landscape phone
+    expect(useDesktopLayout(const Size(900, 1200)), isTrue); // wide portrait
+    expect(useSidePanel(const Size(800, 360)), isFalse);
+    expect(useSidePanel(const Size(1000, 600)), isTrue);
+    expect(useSidePanel(const Size(1170, 700)), isTrue);
+    expect(useSidePanel(const Size(1000, 440)), isFalse);
+    expect(useImmersivePlayer(const Size(640, 360)), isTrue);
+    expect(useImmersivePlayer(const Size(400, 800)), isFalse);
+  });
+
+  for (final size in const [
+    Size(640, 360),
+    Size(800, 360),
+    Size(900, 412),
+    Size(1000, 600),
+    Size(1170, 700),
+  ]) {
+    testWidgets(
+      'landscape ${size.width.toInt()}x${size.height.toInt()}: shell and '
+      'player fit without overflow',
+      (tester) async {
+        final engine = await _pumpApp(tester, size);
+        expect(tester.takeException(), isNull);
+        expect(find.byType(PhoneDrawer), findsNothing);
+        await tester.tap(find.text('Afterglow').first);
+        await tester.pump(const Duration(milliseconds: 400));
+        expect(tester.takeException(), isNull);
+        expect(
+          find.byType(NowPlayingPanel),
+          useSidePanel(size) ? findsOneWidget : findsNothing,
+        );
+
+        final container = ProviderScope.containerOf(
+          tester.element(find.byType(NyaPlayerApp)),
+        );
+        unawaited(container.read(routerProvider).push('/now-playing'));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 800));
+        await tester.pump(const Duration(milliseconds: 800));
+        expect(tester.takeException(), isNull);
+        expect(find.byTooltip('Collapse'), findsOneWidget);
+        await engine.pause();
+        await tester.pump(const Duration(milliseconds: 800));
+      },
+    );
   }
 }

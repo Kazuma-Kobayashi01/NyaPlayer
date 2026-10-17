@@ -71,7 +71,7 @@
 - [x] M1-1 `flutter create --platforms=android,macos --org <org> lyra`，删除示例代码，按 `TECH_SPEC.md` §3 建目录。
 - [ ] M1-2 加入 §1.2、§1.3 全部依赖；配置 `analysis_options.yaml`（§11）。（部分完成：已加 riverpod / go_router / dynamic_color / path / intl / mocktail 与额外 lint；drift、permission_handler、file_picker、window_manager、image 等待用到时再加）
 - [ ] M1-3 Android：Manifest 权限与 audio_service 组件（§6.1）、`minSdk 24`、边到边显示。
-- [ ] M1-4 macOS：关闭 sandbox、`window_manager` 初始化、最小窗口尺寸（§6.2）。（部分完成：最小窗口 400×700 已用原生 `contentMinSize` 实现，无最大限制可全屏；sandbox 与 window_manager 未做）
+- [ ] M1-4 macOS：关闭 sandbox、`window_manager` 初始化、最小窗口尺寸（§6.2）。（部分完成：最小窗口 400×700 已用原生 `contentMinSize` 实现，无最大限制可全屏；已去掉系统标题栏、红绿灯融入界面；sandbox 与 window_manager 未做）
 - [ ] M1-5 drift 数据库：建好 §9 全部表（先不实现 FTS），生成代码，写一个迁移测试。
 - [ ] M1-6 主题系统：`LyraTheme`，支持明/暗/跟随系统、壁纸动态取色、固定种子色；设置项存 `settings` 表。（封面取色在 M3 接入）（部分完成：明/暗/系统、固定种子色、封面取色已做，设置暂存内存未入 `settings` 表；壁纸取色因 dynamic_color 2.1.0 使用 `material_ui` 的 `ColorScheme`，暂以壁纸主色作种子，见 TECH_SPEC 附录 A）
 - [x] M1-7 自适应外壳 `AdaptiveScaffold`：三种宽度下切换 NavigationBar / Rail / Rail + 侧边面板占位（§10.2）；五个一级页面为空白占位。

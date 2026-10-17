@@ -30,7 +30,7 @@ CustomTransitionPage<void> _slideUp(GoRouterState state, Widget child) {
         curve: Easing.emphasizedDecelerate,
         reverseCurve: Easing.emphasizedAccelerate,
       );
-      if (MediaQuery.sizeOf(context).width >= 840) {
+      if (useDesktopLayout(MediaQuery.sizeOf(context))) {
         return FadeTransition(
           opacity: curved,
           child: ScaleTransition(

@@ -7,13 +7,27 @@ import 'package:nyaplayer/features/now_playing/now_playing_panel.dart';
 import 'package:nyaplayer/features/shared/player_bar.dart';
 import 'package:nyaplayer/l10n/app_localizations.dart';
 
-/// Below this width navigation lives in a modal drawer; at or above it in a
-/// permanent sidebar.
+/// At or above this width navigation lives in a permanent sidebar, whatever
+/// the orientation.
 const sidebarBreakpoint = 840.0;
 
-/// At or above this width the player moves from the bottom bar into a
-/// persistent right-hand panel (UI-05).
-const sidePanelBreakpoint = 1200.0;
+/// At or above this width (and tall enough) the player moves from the bottom
+/// bar into a persistent right-hand panel (UI-05).
+const sidePanelBreakpoint = 960.0;
+
+/// Panels need some height for cover, lyrics lines and controls.
+const sidePanelMinHeight = 480.0;
+
+/// Desktop layout (sidebar + docked player) for any landscape window and for
+/// any window wide enough; portrait phones keep the drawer layout.
+bool useDesktopLayout(Size size) =>
+    size.width >= sidebarBreakpoint || size.width > size.height;
+
+/// Right-hand now-playing panel next to the library.
+bool useSidePanel(Size size) =>
+    size.width > size.height &&
+    size.width >= sidePanelBreakpoint &&
+    size.height >= sidePanelMinHeight;
 
 class _Destination {
   const _Destination(this.icon, this.selectedIcon, this.label);
@@ -134,52 +148,63 @@ class _AdaptiveShellState extends State<AdaptiveShell> {
     final l10n = AppLocalizations.of(context);
     final theme = Theme.of(context);
     final settingsIndex = _destinations.length - 1;
+    // Landscape phones are short: tighter rows and no logo header so the
+    // whole list fits without scrolling.
+    final short = MediaQuery.sizeOf(context).height < 520;
     NavigationDrawerDestination dest(_Destination d) =>
         NavigationDrawerDestination(
           icon: Icon(d.icon),
           selectedIcon: Icon(d.selectedIcon),
           label: Text(d.label(l10n)),
         );
-    return NavigationDrawer(
+    final drawer = NavigationDrawer(
       selectedIndex: widget.navigationShell.currentIndex,
       onDestinationSelected: _select,
       backgroundColor: theme.colorScheme.surfaceContainer,
       elevation: 0,
       children: [
-        Padding(
-          padding: const EdgeInsets.fromLTRB(28, 20, 16, 16),
-          child: Row(
-            children: [
-              Icon(Icons.graphic_eq, color: theme.colorScheme.primary),
-              const SizedBox(width: 12),
-              Flexible(
-                child: Text(
-                  l10n.appName,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: theme.textTheme.titleLarge,
+        if (!short)
+          Padding(
+            padding: const EdgeInsets.fromLTRB(28, 20, 16, 16),
+            child: Row(
+              children: [
+                Icon(Icons.graphic_eq, color: theme.colorScheme.primary),
+                const SizedBox(width: 12),
+                Flexible(
+                  child: Text(
+                    l10n.appName,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: theme.textTheme.titleLarge,
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
-        ),
         for (final d in _destinations.take(settingsIndex)) dest(d),
-        const Padding(
-          padding: EdgeInsets.symmetric(horizontal: 28, vertical: 8),
-          child: Divider(),
+        Padding(
+          padding: EdgeInsets.symmetric(
+            horizontal: 28,
+            vertical: short ? 2 : 8,
+          ),
+          child: const Divider(),
         ),
         dest(_destinations[settingsIndex]),
       ],
+    );
+    if (!short) return drawer;
+    return NavigationDrawerTheme(
+      data: Theme.of(context).navigationDrawerTheme.copyWith(tileHeight: 44),
+      child: drawer,
     );
   }
 
   @override
   Widget build(BuildContext context) {
     final media = MediaQuery.of(context);
-    final width = media.size.width;
     final scheme = Theme.of(context).colorScheme;
 
-    if (width < sidebarBreakpoint) {
+    if (!useDesktopLayout(media.size)) {
       return Scaffold(
         key: _scaffoldKey,
         drawer: _phoneDrawer(),
@@ -208,7 +233,7 @@ class _AdaptiveShellState extends State<AdaptiveShell> {
       );
     }
 
-    final showPanel = width >= sidePanelBreakpoint;
+    final showPanel = useSidePanel(media.size);
     // Desktop layout: the sidebar sits on the container colour and the page
     // floats on top of it as a rounded surface, like Google's desktop apps.
     return Scaffold(
@@ -217,25 +242,64 @@ class _AdaptiveShellState extends State<AdaptiveShell> {
         openNavigation: null,
         child: Row(
           children: [
-            SizedBox(width: 220, child: _sidebar()),
+            // The sidebar starts below the traffic lights (macOS); the cards
+            // on the right sit beside them and need no top inset.
+            SizedBox(
+              width: 220,
+              child: Padding(
+                padding: EdgeInsets.only(top: media.padding.top),
+                child: _sidebar(),
+              ),
+            ),
             Expanded(
               flex: 5,
-              child: Column(
+              child: Stack(
                 children: [
-                  Expanded(
+                  Positioned.fill(
                     child: Padding(
-                      padding: EdgeInsets.fromLTRB(0, 8, showPanel ? 8 : 12, 8),
+                      padding: EdgeInsets.fromLTRB(
+                        0,
+                        8,
+                        showPanel ? 8 : 12,
+                        // With the panel the page ends above the window edge;
+                        // otherwise the floating player bar sits on top of it.
+                        8,
+                      ),
                       child: ClipRRect(
                         borderRadius: BorderRadius.circular(24),
-                        child: widget.navigationShell,
+                        // Pages pad their scrollables by the floating card.
+                        child: MediaQuery(
+                          data: media.copyWith(
+                            padding: media.padding.copyWith(
+                              top: 0,
+                              bottom: showPanel
+                                  ? media.padding.bottom
+                                  : PlayerBar.floatingInset - 8,
+                            ),
+                          ),
+                          child: widget.navigationShell,
+                        ),
                       ),
                     ),
                   ),
-                  if (!showPanel) const PlayerBar(),
+                  if (!showPanel)
+                    const Positioned(
+                      left: 0,
+                      right: 12,
+                      bottom: 0,
+                      child: PlayerBar(floating: true),
+                    ),
                 ],
               ),
             ),
-            if (showPanel) const Expanded(flex: 8, child: NowPlayingPanel()),
+            if (showPanel)
+              Expanded(
+                flex: 8,
+                child: MediaQuery(
+                  data: media.copyWith(padding: media.padding.copyWith(top: 0)),
+                  child: const NowPlayingPanel(),
+                ),
+              ),
           ],
         ),
       ),
