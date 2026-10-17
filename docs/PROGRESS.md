@@ -10,7 +10,7 @@
 - **阶段**：前端 UI 基本完成（假数据 + 假引擎）；**播放内核已决定改用 Rust**，Rust 内核代码已写好并通过单元测试，**但还没在真机上放出过声音**。
 - **紧急事项（接手后第一件事）**：
   1. **工作区有大量未提交改动**（见 §2），先 `git status` 确认，再提交。
-  2. `.claude/worktrees/` 下有两个已合并完的子代理临时工作区和两个同名分支 `worktree-agent-*`，确认无用后删除（`git worktree remove` + `git branch -D`），不要提交 `.claude/worktrees/`。
+  2. （已完成）子代理的临时工作区和 `worktree-agent-*` 分支已于 2026-10-18 清理；`.claude/worktrees/` 已在 `.gitignore` 中，今后再用子代理时同样不要提交它。
   3. **macOS 沙盒仍是开启的**，调试版读不了任意目录（`Operation not permitted`）。TECH_SPEC §6.2 本来就规定要关；**开发者尚未授权本次关闭**（见 §6）。
 - **用户**：回复一律用**中文**；代码注释中英文均可，标识符用英文。喜欢用截图迭代界面。
 
@@ -40,7 +40,7 @@
 - `lib/`：`services/player/rust_player_engine.dart`、`services/player/player_engine.dart`（接口新增 `setEqualizer`、`setVolume`）、`services/player/fake_player_engine.dart`、`services/eq/eq_state.dart`（新增 `EqParams`）、`dev/folder_library.dart`、`dev/preview_hook.dart`、`main.dart`、`src/rust/**`（FRB 生成代码）。
 - `rust_builder/macos/nya_core.podspec`（链接 CoreAudio 等系统框架）、`macos/Podfile.lock`、`android/app/build.gradle.kts`（`minSdk = 31`）。
 - `docs/`：`TECH_SPEC.md`、`PLAN.md`（Android 12 基线），以及本文件。
-- 不要提交：`.claude/worktrees/`、`rust/target/`、`build/`、`test_music/`（`.gitignore` 已处理前三者之外的音乐文件）。
+- 不要提交：`.claude/worktrees/`、`rust/target/`、`build/`、`test_music/`（均已在 `.gitignore` 中）。
 
 ## 3. 已完成
 
