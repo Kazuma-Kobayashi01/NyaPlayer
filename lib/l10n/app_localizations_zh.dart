@@ -332,7 +332,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get aboutVersion => '版本';
 
   @override
-  String get aboutLicenses => '开源许可';
+  String get aboutLicenses => '开放源代码许可';
 
   @override
   String get aboutRerunOnboarding => '重新查看引导页';

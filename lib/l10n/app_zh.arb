@@ -139,7 +139,7 @@
   "rescanStarted": "已开始扫描曲库",
   "settingsAbout": "关于",
   "aboutVersion": "版本",
-  "aboutLicenses": "开源许可",
+  "aboutLicenses": "开放源代码许可",
   "aboutRerunOnboarding": "重新查看引导页",
   "onboardingTitle": "欢迎使用 NyaPlayer",
   "onboardingBody": "一个纯本地、无广告、不联网的音乐播放器。选择你的音乐文件夹，开始聆听。",

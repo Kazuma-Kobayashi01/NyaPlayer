@@ -11,6 +11,7 @@ import 'package:nyaplayer/features/now_playing/player_artwork.dart';
 import 'package:nyaplayer/features/now_playing/player_menu.dart';
 import 'package:nyaplayer/features/queue/queue_list.dart';
 import 'package:nyaplayer/domain/models.dart';
+import 'package:nyaplayer/features/shared/faded_edges.dart';
 import 'package:nyaplayer/features/shared/library_builder.dart';
 import 'package:nyaplayer/features/shared/quality_badge.dart';
 import 'package:nyaplayer/l10n/app_localizations.dart';
@@ -103,11 +104,13 @@ class _NowPlayingPanelState extends ConsumerState<NowPlayingPanel> {
                               onLyrics: () =>
                                   setState(() => _tab = _PanelTab.lyrics),
                             ),
-                            _PanelTab.lyrics => const LyricsView(
+                            _PanelTab.lyrics => const FadedEdges(
                               key: ValueKey('lyrics'),
+                              child: LyricsView(),
                             ),
-                            _PanelTab.queue => const QueueList(
+                            _PanelTab.queue => const FadedEdges(
                               key: ValueKey('queue'),
+                              child: QueueList(padding: FadedEdges.fadePadding),
                             ),
                           },
                         ),

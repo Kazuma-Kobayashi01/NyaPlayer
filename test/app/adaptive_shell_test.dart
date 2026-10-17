@@ -4,6 +4,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:nyaplayer/app/app.dart';
 import 'package:nyaplayer/app/layout/phone_drawer.dart';
+import 'package:nyaplayer/app/router.dart';
+import 'package:nyaplayer/features/album/albums_page.dart';
 import 'package:nyaplayer/app/start_page.dart';
 import 'package:nyaplayer/app/theme/theme_settings.dart';
 import 'package:nyaplayer/data/sample_library.dart';
@@ -471,4 +473,20 @@ void main() {
     expect(trackQualityLabel(make('FLAC', 24, 96000)), startsWith('Hi-Res'));
     expect(trackQualityLabel(make('FLAC', 24, 48000)), startsWith('FLAC'));
   });
+
+  for (final size in const [Size(400, 800), Size(1000, 800), Size(1500, 900)]) {
+    testWidgets('albums grid does not overflow at ${size.width.toInt()}dp', (
+      tester,
+    ) async {
+      await _pumpApp(tester, size);
+      final container = ProviderScope.containerOf(
+        tester.element(find.byType(NyaPlayerApp)),
+      );
+      container.read(routerProvider).go('/albums');
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 600));
+      expect(find.byType(AlbumCard), findsWidgets);
+      expect(tester.takeException(), isNull);
+    });
+  }
 }

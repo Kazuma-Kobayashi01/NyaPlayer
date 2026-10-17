@@ -725,7 +725,7 @@ abstract class AppLocalizations {
   /// No description provided for @aboutLicenses.
   ///
   /// In zh, this message translates to:
-  /// **'开源许可'**
+  /// **'开放源代码许可'**
   String get aboutLicenses;
 
   /// No description provided for @aboutRerunOnboarding.

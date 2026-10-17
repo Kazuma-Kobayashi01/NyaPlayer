@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:nyaplayer/data/library_providers.dart';
 import 'package:nyaplayer/domain/models.dart';
 import 'package:nyaplayer/features/lyrics/lyrics_settings.dart';
+import 'package:nyaplayer/features/shared/faded_edges.dart';
 import 'package:nyaplayer/features/shared/library_builder.dart';
 import 'package:nyaplayer/l10n/app_localizations.dart';
 import 'package:nyaplayer/services/player/queue_controller.dart';
@@ -37,7 +38,13 @@ class _LyricsViewState extends ConsumerState<LyricsView> {
     _active = -1;
     _keys = List.generate(lyrics.lines.length, (_) => GlobalKey());
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (_scroll.hasClients) _scroll.jumpTo(0);
+      if (!_scroll.hasClients) return;
+      final position = _scroll.position;
+      // Before the first line is sung, show it in the upper third instead of
+      // leaving the top half of the pane empty with the text cut off below.
+      final viewport = position.viewportDimension;
+      final start = lyrics.synced ? viewport / 2.2 - viewport * 0.3 : 0.0;
+      _scroll.jumpTo(start.clamp(0.0, position.maxScrollExtent));
     });
   }
 
@@ -93,7 +100,9 @@ class _LyricsViewState extends ConsumerState<LyricsView> {
           },
           child: SingleChildScrollView(
             controller: _scroll,
-            padding: EdgeInsets.symmetric(vertical: lyrics.synced ? edge : 16),
+            padding: EdgeInsets.symmetric(
+              vertical: lyrics.synced ? edge : FadedEdges.fadeExtent + 8,
+            ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [

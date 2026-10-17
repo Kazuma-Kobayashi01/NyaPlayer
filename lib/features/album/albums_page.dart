@@ -25,21 +25,44 @@ class AlbumsPage extends StatelessWidget {
           }
           final albums = [...library.albums]
             ..sort((a, b) => compareNames(a.title, b.title));
-          return GridView.builder(
-            padding: EdgeInsets.fromLTRB(
-              16,
-              16,
-              16,
-              16 + MediaQuery.paddingOf(context).bottom,
-            ),
-            gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
-              maxCrossAxisExtent: 200,
-              mainAxisSpacing: 8,
-              crossAxisSpacing: 8,
-              childAspectRatio: 0.78,
-            ),
-            itemCount: albums.length,
-            itemBuilder: (context, i) => AlbumCard(album: albums[i]),
+          final bottom = MediaQuery.paddingOf(context).bottom;
+          final textScaler = MediaQuery.textScalerOf(context);
+          return LayoutBuilder(
+            builder: (context, constraints) {
+              // Square cover plus two text lines: the tile height follows the
+              // tile width, so a fixed aspect ratio would overflow (or leave
+              // gaps) as the window is resized.
+              const padding = 16.0;
+              const spacing = 8.0;
+              final columns =
+                  ((constraints.maxWidth - 2 * padding + spacing) /
+                          (200 + spacing))
+                      .ceil()
+                      .clamp(2, 12);
+              final tileWidth =
+                  (constraints.maxWidth -
+                      2 * padding -
+                      (columns - 1) * spacing) /
+                  columns;
+              // card padding 4+4, gap 8, title + artist lines.
+              final tileHeight = tileWidth - 8 + 16 + textScaler.scale(44);
+              return GridView.builder(
+                padding: EdgeInsets.fromLTRB(
+                  padding,
+                  padding,
+                  padding,
+                  padding + bottom,
+                ),
+                gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount: columns,
+                  mainAxisSpacing: spacing,
+                  crossAxisSpacing: spacing,
+                  mainAxisExtent: tileHeight,
+                ),
+                itemCount: albums.length,
+                itemBuilder: (context, i) => AlbumCard(album: albums[i]),
+              );
+            },
           );
         },
       ),

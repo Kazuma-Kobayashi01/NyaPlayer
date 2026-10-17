@@ -14,6 +14,7 @@ import 'package:nyaplayer/features/now_playing/player_artwork.dart';
 import 'package:nyaplayer/features/now_playing/player_menu.dart';
 import 'package:nyaplayer/features/queue/queue_list.dart';
 import 'package:nyaplayer/features/queue/queue_sheet.dart';
+import 'package:nyaplayer/features/shared/faded_edges.dart';
 import 'package:nyaplayer/features/shared/library_builder.dart';
 import 'package:nyaplayer/features/shared/quality_badge.dart';
 import 'package:nyaplayer/l10n/app_localizations.dart';
@@ -176,7 +177,7 @@ class _CompactPlayerState extends State<_CompactPlayer>
                                 track: track,
                                 onLyrics: () => _goTo(1),
                               ),
-                              const _FadedEdges(child: LyricsView()),
+                              const FadedEdges(child: LyricsView()),
                             ],
                           ),
                         ),
@@ -544,7 +545,7 @@ class _Stage extends StatelessWidget {
                 Expanded(
                   child: SizedBox(
                     height: size,
-                    child: _FadedEdges(
+                    child: FadedEdges(
                       child: AnimatedSwitcher(
                         duration: Durations.medium2,
                         child: switch (pane) {
@@ -553,6 +554,7 @@ class _Stage extends StatelessWidget {
                           ),
                           _Pane.queue => const QueueList(
                             key: ValueKey('queue'),
+                            padding: FadedEdges.fadePadding,
                           ),
                         },
                       ),
@@ -564,32 +566,6 @@ class _Stage extends StatelessWidget {
           ),
         );
       },
-    );
-  }
-}
-
-/// Fades the top and bottom edges of scrolling content.
-class _FadedEdges extends StatelessWidget {
-  const _FadedEdges({required this.child});
-
-  final Widget child;
-
-  @override
-  Widget build(BuildContext context) {
-    return ShaderMask(
-      blendMode: BlendMode.dstIn,
-      shaderCallback: (rect) => const LinearGradient(
-        begin: Alignment.topCenter,
-        end: Alignment.bottomCenter,
-        colors: [
-          Color(0x00000000),
-          Color(0xFF000000),
-          Color(0xFF000000),
-          Color(0x00000000),
-        ],
-        stops: [0, 0.08, 0.92, 1],
-      ).createShader(rect),
-      child: child,
     );
   }
 }
