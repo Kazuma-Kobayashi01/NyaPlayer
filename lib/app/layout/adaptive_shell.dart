@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:nyaplayer/app/layout/phone_drawer.dart';
+import 'package:nyaplayer/app/window_chrome.dart';
 import 'package:nyaplayer/data/library_providers.dart';
 import 'package:nyaplayer/features/now_playing/now_playing_panel.dart';
 import 'package:nyaplayer/features/shared/player_bar.dart';
@@ -11,9 +12,12 @@ import 'package:nyaplayer/l10n/app_localizations.dart';
 /// the orientation.
 const sidebarBreakpoint = 840.0;
 
+/// Width of the permanent sidebar.
+const sidebarWidth = 280.0;
+
 /// At or above this width (and tall enough) the player moves from the bottom
 /// bar into a persistent right-hand panel (UI-05).
-const sidePanelBreakpoint = 960.0;
+const sidePanelBreakpoint = 1100.0;
 
 /// Panels need some height for cover, lyrics lines and controls.
 const sidePanelMinHeight = 480.0;
@@ -28,6 +32,11 @@ bool useSidePanel(Size size) =>
     size.width > size.height &&
     size.width >= sidePanelBreakpoint &&
     size.height >= sidePanelMinHeight;
+
+/// Corner radius of the rounded content cards of the desktop layout. On macOS
+/// it follows the window's own (smaller) corner radius so the cards sit
+/// concentrically inside the window.
+BorderRadius get desktopCardRadius => BorderRadius.circular(isMacOS ? 12 : 24);
 
 class _Destination {
   const _Destination(this.icon, this.selectedIcon, this.label);
@@ -107,8 +116,9 @@ class _AdaptiveShellState extends State<AdaptiveShell> {
     );
   }
 
-  /// Phone drawer; counts come from the library snapshot.
-  Widget _phoneDrawer() {
+  /// Navigation content for the phone drawer ([modal]) or the desktop
+  /// sidebar; counts come from the library snapshot.
+  Widget _navigation({required bool modal}) {
     return Consumer(
       builder: (context, ref, _) {
         final l10n = AppLocalizations.of(context);
@@ -130,72 +140,27 @@ class _AdaptiveShellState extends State<AdaptiveShell> {
               count: count,
             );
         final settingsIndex = _destinations.length - 1;
-        return PhoneDrawer(
-          destinations: [
-            for (var i = 0; i < settingsIndex; i++)
-              dest(_destinations[i], counts[i]),
-          ],
-          settings: dest(_destinations[settingsIndex]),
-          selectedIndex: widget.navigationShell.currentIndex,
+        final destinations = [
+          for (var i = 0; i < settingsIndex; i++)
+            dest(_destinations[i], counts[i]),
+        ];
+        final settings = dest(_destinations[settingsIndex]);
+        final selected = widget.navigationShell.currentIndex;
+        if (modal) {
+          return PhoneDrawer(
+            destinations: destinations,
+            settings: settings,
+            selectedIndex: selected,
+            onSelect: _select,
+          );
+        }
+        return NavigationPanel(
+          destinations: destinations,
+          settings: settings,
+          selectedIndex: selected,
           onSelect: _select,
         );
       },
-    );
-  }
-
-  /// Permanent sidebar of the desktop layouts.
-  Widget _sidebar() {
-    final l10n = AppLocalizations.of(context);
-    final theme = Theme.of(context);
-    final settingsIndex = _destinations.length - 1;
-    // Landscape phones are short: tighter rows and no logo header so the
-    // whole list fits without scrolling.
-    final short = MediaQuery.sizeOf(context).height < 520;
-    NavigationDrawerDestination dest(_Destination d) =>
-        NavigationDrawerDestination(
-          icon: Icon(d.icon),
-          selectedIcon: Icon(d.selectedIcon),
-          label: Text(d.label(l10n)),
-        );
-    final drawer = NavigationDrawer(
-      selectedIndex: widget.navigationShell.currentIndex,
-      onDestinationSelected: _select,
-      backgroundColor: theme.colorScheme.surfaceContainer,
-      elevation: 0,
-      children: [
-        if (!short)
-          Padding(
-            padding: const EdgeInsets.fromLTRB(28, 20, 16, 16),
-            child: Row(
-              children: [
-                Icon(Icons.graphic_eq, color: theme.colorScheme.primary),
-                const SizedBox(width: 12),
-                Flexible(
-                  child: Text(
-                    l10n.appName,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: theme.textTheme.titleLarge,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        for (final d in _destinations.take(settingsIndex)) dest(d),
-        Padding(
-          padding: EdgeInsets.symmetric(
-            horizontal: 28,
-            vertical: short ? 2 : 8,
-          ),
-          child: const Divider(),
-        ),
-        dest(_destinations[settingsIndex]),
-      ],
-    );
-    if (!short) return drawer;
-    return NavigationDrawerTheme(
-      data: Theme.of(context).navigationDrawerTheme.copyWith(tileHeight: 44),
-      child: drawer,
     );
   }
 
@@ -207,7 +172,7 @@ class _AdaptiveShellState extends State<AdaptiveShell> {
     if (!useDesktopLayout(media.size)) {
       return Scaffold(
         key: _scaffoldKey,
-        drawer: _phoneDrawer(),
+        drawer: _navigation(modal: true),
         body: ShellScope(
           openNavigation: () => _scaffoldKey.currentState?.openDrawer(),
           child: Stack(
@@ -245,10 +210,10 @@ class _AdaptiveShellState extends State<AdaptiveShell> {
             // The sidebar starts below the traffic lights (macOS); the cards
             // on the right sit beside them and need no top inset.
             SizedBox(
-              width: 220,
+              width: sidebarWidth,
               child: Padding(
                 padding: EdgeInsets.only(top: media.padding.top),
-                child: _sidebar(),
+                child: _navigation(modal: false),
               ),
             ),
             Expanded(
@@ -266,7 +231,7 @@ class _AdaptiveShellState extends State<AdaptiveShell> {
                         8,
                       ),
                       child: ClipRRect(
-                        borderRadius: BorderRadius.circular(24),
+                        borderRadius: desktopCardRadius,
                         // Pages pad their scrollables by the floating card.
                         child: MediaQuery(
                           data: media.copyWith(

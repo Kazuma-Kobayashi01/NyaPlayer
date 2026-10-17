@@ -3,6 +3,7 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:nyaplayer/app/layout/adaptive_shell.dart';
 import 'package:nyaplayer/app/theme/player_theme.dart';
 import 'package:nyaplayer/features/lyrics/lyrics_lines.dart';
 import 'package:nyaplayer/features/lyrics/lyrics_view.dart';
@@ -44,9 +45,7 @@ class _NowPlayingPanelState extends ConsumerState<NowPlayingPanel> {
           return Card.filled(
             margin: const EdgeInsets.fromLTRB(0, 8, 8, 8),
             color: scheme.surface,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(24),
-            ),
+            shape: RoundedRectangleBorder(borderRadius: desktopCardRadius),
             clipBehavior: Clip.antiAlias,
             child: track == null
                 ? EmptyState(

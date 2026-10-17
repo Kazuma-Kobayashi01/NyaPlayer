@@ -204,6 +204,7 @@ class TransportControls extends ConsumerWidget {
     }
 
     return Row(
+      mainAxisSize: spacing == null ? MainAxisSize.max : MainAxisSize.min,
       mainAxisAlignment: spacing == null
           ? MainAxisAlignment.spaceEvenly
           : MainAxisAlignment.center,

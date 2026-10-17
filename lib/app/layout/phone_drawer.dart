@@ -26,15 +26,50 @@ class DrawerDestination {
 /// container roles so the drawer is colourful but always on-palette.
 typedef _Tone = (Color background, Color foreground);
 
-/// Modal navigation drawer of the phone layout: a header card with quick
-/// actions, the library pages in one rounded card and settings in another.
-class PhoneDrawer extends ConsumerWidget {
+/// Modal navigation drawer of the phone layout.
+class PhoneDrawer extends StatelessWidget {
   const PhoneDrawer({
     super.key,
     required this.destinations,
     required this.settings,
     required this.selectedIndex,
     required this.onSelect,
+  });
+
+  final List<DrawerDestination> destinations;
+  final DrawerDestination settings;
+  final int selectedIndex;
+  final ValueChanged<int> onSelect;
+
+  @override
+  Widget build(BuildContext context) {
+    return Drawer(
+      width: 304,
+      backgroundColor: Theme.of(context).colorScheme.surfaceContainer,
+      child: SafeArea(
+        child: NavigationPanel(
+          destinations: destinations,
+          settings: settings,
+          selectedIndex: selectedIndex,
+          onSelect: onSelect,
+          onClose: () => Navigator.of(context).pop(),
+        ),
+      ),
+    );
+  }
+}
+
+/// Navigation content shared by the phone drawer and the permanent desktop
+/// sidebar: a header card with quick actions, the library pages in one
+/// rounded card and settings in another. Colours come from the scheme.
+class NavigationPanel extends ConsumerWidget {
+  const NavigationPanel({
+    super.key,
+    required this.destinations,
+    required this.settings,
+    required this.selectedIndex,
+    required this.onSelect,
+    this.onClose,
   });
 
   /// Library pages, in shell branch order.
@@ -44,6 +79,10 @@ class PhoneDrawer extends ConsumerWidget {
   final DrawerDestination settings;
   final int selectedIndex;
   final ValueChanged<int> onSelect;
+
+  /// Called before a quick action navigates away; closes the drawer. Null for
+  /// the permanent sidebar.
+  final VoidCallback? onClose;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -58,42 +97,39 @@ class PhoneDrawer extends ConsumerWidget {
       (scheme.secondaryContainer, scheme.onSecondaryContainer),
     ];
 
-    return Drawer(
-      width: 304,
-      backgroundColor: scheme.surfaceContainer,
-      child: SafeArea(
-        child: ListView(
-          padding: const EdgeInsets.fromLTRB(12, 12, 12, 16),
-          children: [
-            _Card(color: card, child: const _Header()),
-            const SizedBox(height: 12),
-            _Card(
-              color: card,
-              child: Column(
-                children: [
-                  for (var i = 0; i < destinations.length; i++)
-                    _Tile(
-                      destination: destinations[i],
-                      tone: tones[i % tones.length],
-                      selected: i == selectedIndex,
-                      onTap: () => onSelect(i),
-                    ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 12),
-            _Card(
-              color: card,
-              child: _Tile(
-                destination: settings,
-                tone: (scheme.surfaceContainerHighest, scheme.onSurfaceVariant),
-                selected: selectedIndex == destinations.length,
-                onTap: () => onSelect(destinations.length),
-              ),
-            ),
-          ],
+    return ListView(
+      padding: const EdgeInsets.fromLTRB(12, 12, 12, 16),
+      children: [
+        _Card(
+          color: card,
+          child: _Header(onClose: onClose),
         ),
-      ),
+        const SizedBox(height: 12),
+        _Card(
+          color: card,
+          child: Column(
+            children: [
+              for (var i = 0; i < destinations.length; i++)
+                _Tile(
+                  destination: destinations[i],
+                  tone: tones[i % tones.length],
+                  selected: i == selectedIndex,
+                  onTap: () => onSelect(i),
+                ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 12),
+        _Card(
+          color: card,
+          child: _Tile(
+            destination: settings,
+            tone: (scheme.surfaceContainerHighest, scheme.onSurfaceVariant),
+            selected: selectedIndex == destinations.length,
+            onTap: () => onSelect(destinations.length),
+          ),
+        ),
+      ],
     );
   }
 }
@@ -117,7 +153,9 @@ class _Card extends StatelessWidget {
 
 /// App name, library size and three quick actions.
 class _Header extends ConsumerWidget {
-  const _Header();
+  const _Header({this.onClose});
+
+  final VoidCallback? onClose;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -181,7 +219,7 @@ class _Header extends ConsumerWidget {
                 label: l10n.nowPlaying,
                 tone: (scheme.primaryContainer, scheme.onPrimaryContainer),
                 onTap: () {
-                  Navigator.of(context).pop();
+                  onClose?.call();
                   context.push('/now-playing');
                 },
               ),
@@ -190,7 +228,7 @@ class _Header extends ConsumerWidget {
                 label: l10n.eqTitle,
                 tone: (scheme.secondaryContainer, scheme.onSecondaryContainer),
                 onTap: () {
-                  Navigator.of(context).pop();
+                  onClose?.call();
                   context.push('/equalizer');
                 },
               ),
@@ -236,12 +274,15 @@ class _QuickAction extends StatelessWidget {
                 child: Icon(icon, size: 22, color: tone.$2),
               ),
               const SizedBox(height: 6),
-              Text(
-                label,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: theme.textTheme.labelMedium?.copyWith(
-                  color: theme.colorScheme.onSurfaceVariant,
+              // Shrinks a little instead of truncating ("Now playing").
+              FittedBox(
+                fit: BoxFit.scaleDown,
+                child: Text(
+                  label,
+                  maxLines: 1,
+                  style: theme.textTheme.labelMedium?.copyWith(
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
                 ),
               ),
             ],

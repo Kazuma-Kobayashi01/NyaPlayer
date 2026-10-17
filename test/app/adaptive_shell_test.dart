@@ -94,7 +94,7 @@ void main() {
     tester,
   ) async {
     await _pumpApp(tester, const Size(900, 800));
-    expect(find.byType(NavigationDrawer), findsOneWidget);
+    expect(find.byType(NavigationPanel), findsOneWidget);
     expect(find.byTooltip('Open navigation menu'), findsNothing);
     expect(find.byType(PlayerBar), findsOneWidget);
     expect(find.byType(NowPlayingPanel), findsNothing);
@@ -102,7 +102,7 @@ void main() {
 
   testWidgets('wide desktop: sidebar and now-playing panel', (tester) async {
     await _pumpApp(tester, const Size(1400, 900));
-    expect(find.byType(NavigationDrawer), findsOneWidget);
+    expect(find.byType(NavigationPanel), findsOneWidget);
     expect(find.byType(NowPlayingPanel), findsOneWidget);
     expect(find.byType(PlayerBar), findsNothing);
 
@@ -322,10 +322,10 @@ void main() {
   ) async {
     await _pumpApp(tester, const Size(1000, 800));
     final container = ProviderScope.containerOf(
-      tester.element(find.byType(NavigationDrawer)),
+      tester.element(find.byType(NavigationPanel)),
     );
     String? family() =>
-        Theme.of(tester.element(find.byType(NavigationDrawer)))
+        Theme.of(tester.element(find.byType(NavigationPanel)))
             .textTheme
             .bodyMedium
             ?.fontFamily;
@@ -499,7 +499,8 @@ void main() {
     expect(useDesktopLayout(const Size(800, 360)), isTrue); // landscape phone
     expect(useDesktopLayout(const Size(900, 1200)), isTrue); // wide portrait
     expect(useSidePanel(const Size(800, 360)), isFalse);
-    expect(useSidePanel(const Size(1000, 600)), isTrue);
+    expect(useSidePanel(const Size(1100, 600)), isTrue);
+    expect(useSidePanel(const Size(1000, 600)), isFalse);
     expect(useSidePanel(const Size(1170, 700)), isTrue);
     expect(useSidePanel(const Size(1000, 440)), isFalse);
     expect(useImmersivePlayer(const Size(640, 360)), isTrue);

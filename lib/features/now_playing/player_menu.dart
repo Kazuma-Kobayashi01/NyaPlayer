@@ -323,7 +323,10 @@ class PlayerControlsRow extends StatelessWidget {
       children: [
         FavoriteButton(track: track),
         const SizedBox(width: 8),
-        Expanded(child: transport),
+        // Scales down in narrow panels instead of overflowing.
+        Expanded(
+          child: FittedBox(fit: BoxFit.scaleDown, child: transport),
+        ),
         const SizedBox(width: 8),
         if (toggle case final toggle?) ...[toggle, const SizedBox(width: 4)],
         PlayerMenuButton(items: menuItems),
