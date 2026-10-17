@@ -1,0 +1,16 @@
+include: package:flutter_lints/flutter.yaml
+
+analyzer:
+  exclude:
+    - build/**
+    - android/**
+    - macos/**
+
+linter:
+  rules:
+    prefer_final_locals: true
+    always_declare_return_types: true
+    avoid_print: true
+    unawaited_futures: true
+    require_trailing_commas: true
+    prefer_const_constructors: true

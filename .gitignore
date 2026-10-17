@@ -1,0 +1,37 @@
+# macOS
+.DS_Store
+
+# Local test music (copyrighted audio, never commit)
+test_music/
+*.flac
+*.mp3
+
+# Flutter / Dart
+.dart_tool/
+.flutter-plugins-dependencies
+.packages
+.pub-cache/
+.pub/
+build/
+coverage/
+*.g.dart.bak
+devtools_options.yaml
+
+# IDEs
+.idea/
+*.iml
+.vscode/
+
+# Claude Code local state (keep the shared CLAUDE.md)
+.claude/settings.local.json
+.claude/scratch/
+
+# Screenshots and other scratch output
+/*.png
+
+# Secrets
+.env
+.env.*
+key.properties
+*.keystore
+*.jks

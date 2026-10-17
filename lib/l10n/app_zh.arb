@@ -1,0 +1,192 @@
+{
+  "@@locale": "zh",
+  "appName": "NyaPlayer",
+  "navSongs": "歌曲",
+  "navAlbums": "专辑",
+  "navArtists": "艺术家",
+  "navFolders": "文件夹",
+  "navPlaylists": "播放列表",
+  "search": "搜索",
+  "searchHint": "搜索歌曲、专辑、艺术家",
+  "searchNoResults": "没有找到结果",
+  "sectionSongs": "歌曲",
+  "sectionAlbums": "专辑",
+  "sectionArtists": "艺术家",
+  "moreOptions": "更多选项",
+  "sortBy": "排序方式",
+  "sortTitle": "标题",
+  "sortArtist": "艺术家",
+  "sortAlbum": "专辑",
+  "sortAdded": "添加时间",
+  "sortDuration": "时长",
+  "sortAscending": "升序",
+  "sortDescending": "降序",
+  "songCount": "{count} 首歌曲",
+  "@songCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "albumCount": "{count} 张专辑",
+  "@albumCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "playAll": "播放全部",
+  "shufflePlay": "随机播放",
+  "playNext": "下一首播放",
+  "addToQueue": "加入队列",
+  "songInfo": "歌曲信息",
+  "addedToQueue": "已加入队列",
+  "willPlayNext": "将在下一首播放",
+  "nowPlaying": "正在播放",
+  "notPlaying": "未在播放",
+  "notPlayingHint": "从曲库中选择一首歌开始播放",
+  "queue": "播放队列",
+  "queueEmpty": "队列是空的",
+  "lyrics": "歌词",
+  "cover": "封面",
+  "noLyrics": "暂无歌词",
+  "close": "关闭",
+  "back": "返回",
+  "play": "播放",
+  "pause": "暂停",
+  "previous": "上一首",
+  "next": "下一首",
+  "repeatOff": "循环：关",
+  "repeatAll": "循环：列表",
+  "repeatOne": "循环：单曲",
+  "shuffleOn": "随机：开",
+  "shuffleOff": "随机：关",
+  "discLabel": "碟 {number}",
+  "@discLabel": {
+    "placeholders": {
+      "number": {
+        "type": "int"
+      }
+    }
+  },
+  "infoPath": "路径",
+  "infoFormat": "格式",
+  "infoSampleRate": "采样率",
+  "infoBitDepth": "位深",
+  "infoBitrate": "码率",
+  "infoChannels": "声道",
+  "infoDuration": "时长",
+  "infoYear": "年份",
+  "infoGenre": "流派",
+  "infoTrackNo": "音轨",
+  "infoAlbum": "专辑",
+  "infoArtist": "艺术家",
+  "bitDepthValue": "{bits} bit",
+  "@bitDepthValue": {
+    "placeholders": {
+      "bits": {
+        "type": "int"
+      }
+    }
+  },
+  "bitrateValue": "{kbps} kbps",
+  "@bitrateValue": {
+    "placeholders": {
+      "kbps": {
+        "type": "int"
+      }
+    }
+  },
+  "channelsStereo": "立体声",
+  "channelsMono": "单声道",
+  "eqTitle": "均衡器",
+  "eqEnabled": "启用均衡器",
+  "eqPresets": "预设",
+  "eqPreamp": "前级增益",
+  "eqAutoClip": "自动防削波",
+  "eqReset": "重置",
+  "eqPresetFlat": "平坦",
+  "eqPresetPop": "流行",
+  "eqPresetRock": "摇滚",
+  "eqPresetJazz": "爵士",
+  "eqPresetClassical": "古典",
+  "eqPresetVocal": "人声",
+  "eqPresetBassBoost": "低音增强",
+  "eqPresetTrebleBoost": "高音增强",
+  "eqPresetCustom": "自定义",
+  "eqNotWired": "当前为界面预览，音频效果将在接入播放引擎后生效。",
+  "settingsTitle": "设置",
+  "settingsAppearance": "外观",
+  "settingsThemeMode": "主题模式",
+  "themeLight": "浅色",
+  "themeDark": "深色",
+  "themeSystem": "跟随系统",
+  "settingsColorSource": "配色来源",
+  "colorSourceCover": "跟随封面",
+  "colorSourceWallpaper": "系统配色",
+  "colorSourceFixed": "固定主题色",
+  "settingsSeedColor": "主题色",
+  "settingsLanguage": "语言",
+  "langSystem": "跟随系统",
+  "langZh": "简体中文",
+  "langEn": "English",
+  "settingsLibrary": "曲库",
+  "settingsFolders": "音乐文件夹",
+  "settingsAddFolder": "添加文件夹",
+  "settingsRescan": "重新扫描全部",
+  "rescanStarted": "已开始扫描曲库",
+  "settingsAbout": "关于",
+  "aboutVersion": "版本",
+  "aboutLicenses": "开源许可",
+  "aboutRerunOnboarding": "重新查看引导页",
+  "onboardingTitle": "欢迎使用 NyaPlayer",
+  "onboardingBody": "一个纯本地、无广告、不联网的音乐播放器。选择你的音乐文件夹，开始聆听。",
+  "onboardingChoose": "选择音乐文件夹",
+  "onboardingSkip": "稍后再说",
+  "playlistsEmptyTitle": "还没有播放列表",
+  "playlistsEmptyBody": "播放列表功能即将推出。",
+  "loadFailed": "加载失败",
+  "emptyLibrary": "曲库是空的",
+  "unknownArtist": "未知艺术家",
+  "variousArtists": "群星",
+  "navFavorites": "收藏",
+  "navSettings": "设置",
+  "openNavigation": "打开导航菜单",
+  "favorite": "收藏",
+  "unfavorite": "取消收藏",
+  "favoritesEmptyTitle": "还没有收藏的歌曲",
+  "favoritesEmptyBody": "在歌曲菜单或播放页点按 ♡ 即可收藏。",
+  "settingsPlayback": "播放",
+  "colorSourceHint": "“跟随封面”只作用于播放器，其余界面使用系统配色。",
+  "settingsEqualizerSubtitle": "10 段均衡器与预设",
+  "coverShape": "封面样式",
+  "coverShapeSquare": "方形",
+  "coverShapeDisc": "圆形（旋转）",
+  "expandPlayer": "放大播放页",
+  "collapsePlayer": "收起",
+  "playerMenu": "播放菜单",
+  "fontStyle": "字体",
+  "fontSerif": "衬线体",
+  "fontSans": "非衬线体",
+  "lyricsSettings": "歌词设置",
+  "lyricsFontSize": "字体大小",
+  "lyricsCentered": "居中显示",
+  "lyricsTranslation": "显示翻译",
+  "lyricsFontSizeRange": "范围 {min}–{max}",
+  "lyricsFontSizeInvalid": "请输入有效字号",
+  "settingsGeneral": "通用",
+  "settingsStartPage": "默认启动页",
+  "settingsStartPageHint": "打开应用时显示的页面",
+  "@lyricsFontSizeRange": {
+    "placeholders": {
+      "min": {
+        "type": "int"
+      },
+      "max": {
+        "type": "int"
+      }
+    }
+  }
+}

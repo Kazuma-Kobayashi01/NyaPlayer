@@ -1,0 +1,68 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:nyaplayer/data/library.dart';
+import 'package:nyaplayer/data/library_providers.dart';
+import 'package:nyaplayer/l10n/app_localizations.dart';
+
+/// Resolves [libraryProvider] and handles the loading / error states.
+class LibraryBuilder extends ConsumerWidget {
+  const LibraryBuilder({super.key, required this.builder});
+
+  final Widget Function(BuildContext context, Library library) builder;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final library = ref.watch(libraryProvider);
+    return library.when(
+      data: (lib) => builder(context, lib),
+      loading: () => const Center(child: CircularProgressIndicator()),
+      error: (e, _) =>
+          Center(child: Text(AppLocalizations.of(context).loadFailed)),
+    );
+  }
+}
+
+class EmptyState extends StatelessWidget {
+  const EmptyState({
+    super.key,
+    required this.icon,
+    required this.title,
+    this.body,
+  });
+
+  final IconData icon;
+  final String title;
+  final String? body;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(32),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, size: 64, color: theme.colorScheme.outline),
+            const SizedBox(height: 16),
+            Text(
+              title,
+              style: theme.textTheme.titleMedium,
+              textAlign: TextAlign.center,
+            ),
+            if (body != null) ...[
+              const SizedBox(height: 8),
+              Text(
+                body!,
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  color: theme.colorScheme.onSurfaceVariant,
+                ),
+                textAlign: TextAlign.center,
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+}
