@@ -13,6 +13,12 @@ class AppLocalizationsZh extends AppLocalizations {
   String get appName => 'NyaPlayer';
 
   @override
+  String get showAppWindow => '显示 NyaPlayer 窗口';
+
+  @override
+  String get quitApp => '退出 NyaPlayer';
+
+  @override
   String get navSongs => '歌曲';
 
   @override
@@ -287,9 +293,6 @@ class AppLocalizationsZh extends AppLocalizations {
   String get settingsColorSource => '配色来源';
 
   @override
-  String get colorSourceCover => '跟随封面';
-
-  @override
   String get colorSourceWallpaper => '系统配色';
 
   @override
@@ -392,7 +395,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get settingsPlayback => '播放';
 
   @override
-  String get colorSourceHint => '“跟随封面”只作用于播放器，其余界面使用系统配色。';
+  String get colorSourceHint => '选择系统配色或固定主题色，播放器背景可单独设置。';
 
   @override
   String get settingsEqualizerSubtitle => '10 段均衡器与预设';
@@ -452,4 +455,55 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get settingsStartPageHint => '打开应用时显示的页面';
+
+  @override
+  String get playerBackground => '播放页背景';
+
+  @override
+  String get progressStyle => '播放进度条样式';
+
+  @override
+  String get progressMaterial => 'Material';
+
+  @override
+  String get progressClassic => '经典圆点';
+
+  @override
+  String get progressSlim => '细线';
+
+  @override
+  String get progressWave => '波浪';
+
+  @override
+  String get backgroundGradient => '主题渐变';
+
+  @override
+  String get backgroundBlurredCover => '封面模糊';
+
+  @override
+  String get playerBackgroundHint => '放大并高度模糊专辑封面，营造沉浸背景。';
+
+  @override
+  String get settingsShortcuts => '键盘快捷键';
+
+  @override
+  String get shortcutPlayback => '播放 / 暂停';
+
+  @override
+  String get shortcutSpace => '空格';
+
+  @override
+  String get shortcutTracks => '上一首 / 下一首';
+
+  @override
+  String get shortcutWindow => '进入 / 退出全屏';
+
+  @override
+  String get lyricsLineHeight => '行距';
+
+  @override
+  String get lyricsLineHeightInvalid => '请输入 1–2 之间的行距倍数';
+
+  @override
+  String get toggleSidebar => '显示或隐藏侧边栏';
 }

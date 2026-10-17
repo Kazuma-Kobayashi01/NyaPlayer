@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:collection';
 import 'dart:math';
 
 import 'package:flutter/foundation.dart';
@@ -71,6 +72,10 @@ class QueueController extends Notifier<QueueState> {
   late final PlayerEngine _engine;
   List<Track> _original = [];
   Duration _position = Duration.zero;
+  final _seekEvents = StreamController<Duration>.broadcast();
+
+  /// Explicit UI/system seeks, distinct from normal playback position ticks.
+  Stream<Duration> get seekEvents => _seekEvents.stream;
 
   static const previousRestartThreshold = Duration(seconds: 3);
 
@@ -85,6 +90,7 @@ class QueueController extends Notifier<QueueState> {
       ),
     ];
     ref.onDispose(() {
+      unawaited(_seekEvents.close());
       for (final s in subs) {
         unawaited(s.cancel());
       }
@@ -178,13 +184,26 @@ class QueueController extends Notifier<QueueState> {
   Future<void> togglePlay() async {
     if (state.queue.isEmpty) return;
     if (state.playing) {
-      await _engine.pause();
+      await pause();
     } else {
-      await _engine.play();
+      await play();
     }
   }
 
-  Future<void> seek(Duration position) => _engine.seek(position);
+  Future<void> play() async {
+    if (state.queue.isNotEmpty && !state.playing) await _engine.play();
+  }
+
+  Future<void> pause() => _engine.pause();
+
+  Future<void> seek(Duration position) async {
+    final duration = state.current?.duration ?? Duration.zero;
+    final bounded = Duration(
+      milliseconds: position.inMilliseconds.clamp(0, duration.inMilliseconds),
+    );
+    await _engine.seek(bounded);
+    _seekEvents.add(bounded);
+  }
 
   Future<void> skipNext() async {
     final i = state.currentIndex;
@@ -201,13 +220,13 @@ class QueueController extends Notifier<QueueState> {
     final i = state.currentIndex;
     if (i == null) return;
     if (_position > previousRestartThreshold) {
-      await _engine.seek(Duration.zero);
+      await seek(Duration.zero);
     } else if (i > 0) {
       await _engine.jumpTo(i - 1);
     } else if (state.loopMode == LoopMode.all) {
       await _engine.jumpTo(state.queue.length - 1);
     } else {
-      await _engine.seek(Duration.zero);
+      await seek(Duration.zero);
     }
   }
 
@@ -227,27 +246,30 @@ class QueueController extends Notifier<QueueState> {
       state = state.copyWith(shuffle: enabling);
       return;
     }
-    final List<Track> active;
-    final int index;
+    final previous = state.queue;
+    final currentIndex = state.currentIndex!;
+    final List<int> order;
     if (enabling) {
-      active = _shuffledWithFirst(_original, current);
-      index = 0;
+      order = [
+        for (var i = 0; i < previous.length; i++)
+          if (i != currentIndex) i,
+      ]..shuffle(ref.read(randomProvider));
+      order.insert(0, currentIndex);
     } else {
-      active = List.of(_original);
-      index = max(0, active.indexOf(current));
+      // Match occurrences rather than indexOf: the same song can occur more
+      // than once in a queue, and the playing instance must stay the same.
+      final positions = <Track, Queue<int>>{};
+      for (var i = 0; i < previous.length; i++) {
+        (positions[previous[i]] ??= Queue<int>()).add(i);
+      }
+      order = [for (final track in _original) positions[track]!.removeFirst()];
     }
-    final wasPlaying = state.playing;
-    final position = _position;
+    final active = [for (final i in order) previous[i]];
     state = state.copyWith(
       shuffle: enabling,
       queue: List.unmodifiable(active),
-      currentIndex: index,
+      currentIndex: order.indexOf(currentIndex),
     );
-    await _engine.openQueue(
-      _paths(active),
-      startIndex: index,
-      autoplay: wasPlaying,
-    );
-    await _engine.seek(position);
+    await _engine.reorder(order);
   }
 }

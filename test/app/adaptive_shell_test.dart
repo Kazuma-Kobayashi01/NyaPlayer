@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -12,6 +13,7 @@ import 'package:nyaplayer/features/album/albums_page.dart';
 import 'package:nyaplayer/app/start_page.dart';
 import 'package:nyaplayer/app/theme/theme_settings.dart';
 import 'package:nyaplayer/data/sample_library.dart';
+import 'package:nyaplayer/data/library_providers.dart';
 import 'package:nyaplayer/features/lyrics/lyrics_settings.dart';
 import 'package:nyaplayer/features/lyrics/lyrics_view.dart';
 import 'package:nyaplayer/features/now_playing/now_playing_panel.dart';
@@ -22,6 +24,7 @@ import 'package:nyaplayer/features/queue/queue_sheet.dart';
 import 'package:nyaplayer/domain/models.dart';
 import 'package:nyaplayer/features/shared/player_bar.dart';
 import 'package:nyaplayer/features/shared/quality_badge.dart';
+import 'package:nyaplayer/features/settings/settings_page.dart';
 import 'package:nyaplayer/services/player/fake_player_engine.dart';
 import 'package:nyaplayer/services/player/queue_controller.dart';
 
@@ -48,6 +51,88 @@ Future<FakePlayerEngine> _pumpApp(WidgetTester tester, Size size) async {
 }
 
 void main() {
+  testWidgets(
+    'native status menu follows playback while the window renders no frames',
+    (tester) async {
+      final calls = <MethodCall>[];
+      tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+        const MethodChannel('nyaplayer/commands'),
+        (call) async {
+          calls.add(call);
+          return null;
+        },
+      );
+      addTearDown(
+        () => tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+          const MethodChannel('nyaplayer/commands'),
+          null,
+        ),
+      );
+      final engine = await _pumpApp(tester, const Size(1400, 900));
+      final container = ProviderScope.containerOf(
+        tester.element(find.byType(NyaPlayerApp)),
+      );
+      final queue = container.read(queueProvider.notifier);
+      await queue.playTracks(sampleLibrary.tracks.take(2).toList());
+      await tester.pump();
+      await engine.pause();
+      await tester
+          .idle(); // Flush state callbacks, without drawing a window frame.
+      final paused =
+          calls.lastWhere((call) => call.method == 'statusMenu').arguments
+              as Map;
+      expect(paused['playPause'], 'Play');
+      expect(paused['hasTrack'], isTrue);
+      ServicesBinding.instance.channelBuffers.push(
+        'nyaplayer/commands',
+        const StandardMethodCodec().encodeMethodCall(
+          const MethodCall('togglePlayback'),
+        ),
+        (_) {},
+      );
+      await tester.idle();
+      expect(engine.isPlaying, isTrue);
+      final playing =
+          calls.lastWhere((call) => call.method == 'statusMenu').arguments
+              as Map;
+      expect(playing['playPause'], 'Pause');
+      await engine.pause();
+      await tester.pumpAndSettle();
+      expect(tester.takeException(), isNull);
+    },
+    variant: TargetPlatformVariant.only(TargetPlatform.macOS),
+  );
+
+  testWidgets(
+    'all progress styles seek through the same queue without changing playback on selection',
+    (tester) async {
+      final engine = await _pumpApp(tester, const Size(1400, 900));
+      final container = ProviderScope.containerOf(
+        tester.element(find.byType(NyaPlayerApp)),
+      );
+      final track = sampleLibrary.tracks.first;
+      final queue = container.read(queueProvider.notifier);
+      await queue.playTracks([track]);
+      await engine.pause();
+      await tester.pumpAndSettle();
+      for (final style in ProgressStyle.values) {
+        await queue.seek(const Duration(seconds: 30));
+        await tester.pump();
+        container.read(themeSettingsProvider.notifier).setProgressStyle(style);
+        await tester.pumpAndSettle();
+        expect(engine.currentPosition, const Duration(seconds: 30));
+        expect(engine.isPlaying, isFalse);
+        await tester.tapAt(tester.getCenter(find.byType(Slider)));
+        await tester.pumpAndSettle();
+        expect(
+          engine.currentPosition.inMilliseconds,
+          closeTo(track.duration.inMilliseconds / 2, 2000),
+        );
+        expect(tester.takeException(), isNull);
+      }
+    },
+  );
+
   testWidgets('phone: drawer behind a menu button, player docked at bottom', (
     tester,
   ) async {
@@ -105,10 +190,15 @@ void main() {
     expect(find.byType(NavigationPanel), findsOneWidget);
     expect(find.byType(NowPlayingPanel), findsOneWidget);
     expect(find.byType(PlayerBar), findsNothing);
-
     // The panel opens on the cover; lyrics and queue are behind the toggle.
     await tester.tap(find.text('Afterglow').first);
     await tester.pump(const Duration(milliseconds: 800));
+    final expandButton = find.ancestor(
+      of: find.byIcon(Icons.open_in_full),
+      matching: find.byType(IconButton),
+    );
+    expect(tester.getSize(expandButton).width, 34);
+    expect(tester.getSize(expandButton).height, 34);
     expect(find.byType(LyricsView), findsNothing);
     expect(find.byType(QueueList), findsNothing);
     final container = ProviderScope.containerOf(
@@ -117,6 +207,41 @@ void main() {
     await container.read(queueProvider.notifier).togglePlay();
     await tester.pump(const Duration(milliseconds: 800));
   });
+
+  testWidgets('desktop sidebar stays expanded and library stops widening', (
+    tester,
+  ) async {
+    final calls = <MethodCall>[];
+    tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+      const MethodChannel('nyaplayer/commands'),
+      (call) async {
+        calls.add(call);
+        return null;
+      },
+    );
+    addTearDown(
+      () => tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+        const MethodChannel('nyaplayer/commands'),
+        null,
+      ),
+    );
+    await _pumpApp(tester, const Size(1400, 900));
+    final bar = find.widgetWithText(AppBar, 'Songs');
+    final width = tester.getSize(bar).width;
+    final playerWidth = tester.getSize(find.byType(NowPlayingPanel)).width;
+    tester.view.physicalSize = const Size(1800, 900);
+    await tester.pumpAndSettle();
+    expect(find.byType(NavigationPanel), findsOneWidget);
+    expect(tester.getSize(bar).width, width);
+    expect(
+      tester.getSize(find.byType(NowPlayingPanel)).width,
+      greaterThan(playerWidth),
+    );
+    expect(tester.getSize(find.byType(NavigationPanel)).width, sidebarWidth);
+    expect(find.byTooltip('Open navigation menu'), findsNothing);
+    expect(calls.any((call) => call.method == 'sidebarControl'), isFalse);
+    expect(tester.takeException(), isNull);
+  }, variant: TargetPlatformVariant.only(TargetPlatform.macOS));
 
   testWidgets('tapping a song fills the player bar', (tester) async {
     final engine = await _pumpApp(tester, const Size(400, 800));
@@ -206,9 +331,11 @@ void main() {
     expect(find.byTooltip('Player menu'), findsOneWidget);
     await tester.tap(find.byTooltip('Player menu'));
     await tester.pumpAndSettle();
-    for (final label in ['Lyrics', 'Queue', 'Equalizer', 'Song info']) {
+    for (final label in ['Equalizer', 'Song info']) {
       expect(find.widgetWithText(MenuItemButton, label), findsOneWidget);
     }
+    expect(find.widgetWithText(MenuItemButton, 'Lyrics'), findsNothing);
+    expect(find.widgetWithText(MenuItemButton, 'Queue'), findsNothing);
     expect(find.text('Lyrics settings'), findsOneWidget);
     await tester.tapAt(Offset.zero);
     await tester.pumpAndSettle();
@@ -317,6 +444,57 @@ void main() {
     expect(spinner().isAnimating, isFalse);
   });
 
+  testWidgets(
+    'desktop lyrics keep breathing room inside artwork and quality bounds',
+    (tester) async {
+      final engine = await _pumpApp(tester, const Size(1400, 900));
+      addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
+      await tester.tap(find.text('Afterglow').first);
+      await tester.pump(const Duration(milliseconds: 300));
+      await engine.pause();
+      final container = ProviderScope.containerOf(
+        tester.element(find.byType(NyaPlayerApp)),
+      );
+      unawaited(container.read(routerProvider).push('/now-playing'));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 800));
+      await tester.pump(const Duration(milliseconds: 800));
+
+      for (final size in [const Size(1400, 900), const Size(1000, 600)]) {
+        tester.view.physicalSize = size;
+        for (final scale in [1.0, 1.5]) {
+          tester.platformDispatcher.textScaleFactorTestValue = scale;
+          await tester.pump();
+          await tester.pump(const Duration(milliseconds: 800));
+          final page = find.byType(NowPlayingPage);
+          final lyrics = find.descendant(
+            of: page,
+            matching: find.byType(LyricsView),
+          );
+          final art = find.descendant(
+            of: page,
+            matching: find.byType(PlayerArtwork),
+          );
+          final badge = find.descendant(
+            of: page,
+            matching: find.byType(QualityBadge),
+          );
+          expect(
+            tester.getRect(lyrics).top,
+            greaterThan(tester.getRect(art).top + 7.9),
+          );
+          expect(
+            tester.getRect(lyrics).bottom,
+            lessThan(tester.getRect(badge).bottom - 7.9),
+          );
+          expect(tester.getSize(lyrics).width, lessThanOrEqualTo(560));
+          expect(tester.takeException(), isNull);
+        }
+      }
+    },
+    variant: TargetPlatformVariant.only(TargetPlatform.macOS),
+  );
+
   testWidgets('font setting switches the theme between sans and serif', (
     tester,
   ) async {
@@ -384,7 +562,9 @@ void main() {
     expect(find.widgetWithText(AppBar, 'Songs'), findsNothing);
   });
 
-  testWidgets('lyrics font size is typed into a dialog', (tester) async {
+  testWidgets('lyrics font size and line spacing are typed into dialogs', (
+    tester,
+  ) async {
     final engine = await _pumpApp(tester, const Size(1400, 900));
     await tester.tap(find.text('Afterglow').first);
     await tester.pump(const Duration(milliseconds: 300));
@@ -393,19 +573,161 @@ void main() {
     final container = ProviderScope.containerOf(
       tester.element(find.byType(NowPlayingPanel)),
     );
-    expect(container.read(lyricsSettingsProvider).fontSize, 22);
+    expect(container.read(lyricsSettingsProvider).fontSize, 20);
 
     await tester.tap(find.byTooltip('Player menu'));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Lyrics settings'));
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Font size · 22 pt'));
+    await tester.tap(find.text('Font size · 20 pt'));
     await tester.pumpAndSettle();
     await tester.enterText(find.byType(TextField), '18');
     await tester.pump();
     await tester.tap(find.text('OK'));
     await tester.pumpAndSettle();
     expect(container.read(lyricsSettingsProvider).fontSize, 18);
+    expect(container.read(lyricsSettingsProvider).lineHeight, 1.2);
+    await tester.tap(find.byTooltip('Player menu'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Lyrics settings'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Line spacing · 1.2 ×'));
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byType(TextField), '0.5');
+    await tester.pump();
+    expect(
+      tester
+          .widget<FilledButton>(find.widgetWithText(FilledButton, 'OK'))
+          .onPressed,
+      isNull,
+    );
+    await tester.enterText(find.byType(TextField), '1.9');
+    await tester.pump();
+    await tester.tap(find.byTooltip('+0.1'));
+    await tester.pump();
+    await tester.tap(find.text('OK'));
+    await tester.pumpAndSettle();
+    expect(container.read(lyricsSettingsProvider).lineHeight, 2);
+    expect(container.read(lyricsSettingsProvider).fontSize, 18);
+    expect(tester.takeException(), isNull);
+    // Larger line spacing still reserves enough room in a short phone layout.
+    tester.view.physicalSize = const Size(360, 640);
+    unawaited(container.read(routerProvider).push('/now-playing'));
+    await tester.pumpAndSettle();
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets(
+    'opening paused lyrics reveals a larger current line and live spacing keeps it centred',
+    (tester) async {
+      final engine = await _pumpApp(tester, const Size(1400, 900));
+      final container = ProviderScope.containerOf(
+        tester.element(find.byType(NyaPlayerApp)),
+      );
+      final track = sampleLibrary.tracks.firstWhere(
+        (t) => t.title == 'Harbor Lights',
+      );
+      final queue = container.read(queueProvider.notifier);
+      await queue.playTracks([track]);
+      await tester.pump(); // mount the seek bar and its position subscription
+      await engine.pause();
+      await queue.seek(const Duration(seconds: 60));
+      await tester.pumpAndSettle();
+      final lyrics = container.read(lyricsProvider(track));
+      final text =
+          lyrics.lines[lyrics.indexAt(const Duration(seconds: 60))].text;
+      unawaited(container.read(routerProvider).push('/now-playing'));
+      await tester.pumpAndSettle();
+      final active = find.descendant(
+        of: find.byType(LyricsView),
+        matching: find.text(text),
+      );
+      expect(active, findsOneWidget);
+      TextStyle style() => DefaultTextStyle.of(tester.element(active)).style;
+      expect(style().fontSize, closeTo(24, 0.001));
+      expect(style().height, 1.2);
+      expect(
+        tester.getCenter(active).dy,
+        closeTo(tester.getCenter(find.byType(LyricsView)).dy, 1),
+      );
+      container.read(lyricsSettingsProvider.notifier).setLineHeight(2);
+      await tester.pumpAndSettle();
+      expect(style().height, 2);
+      expect(
+        tester.getCenter(active).dy,
+        closeTo(tester.getCenter(find.byType(LyricsView)).dy, 1),
+      );
+      expect(tester.takeException(), isNull);
+    },
+    variant: TargetPlatformVariant.only(TargetPlatform.macOS),
+  );
+
+  testWidgets('inline translation renders separately and its toggle hides it', (
+    tester,
+  ) async {
+    final engine = await _pumpApp(tester, const Size(1400, 900));
+    final container = ProviderScope.containerOf(
+      tester.element(find.byType(NyaPlayerApp)),
+    );
+    final track = Track(
+      id: 999,
+      title: 'Bilingual fixture',
+      artist: 'A',
+      albumId: 999,
+      album: 'B',
+      trackNo: 1,
+      duration: const Duration(minutes: 3),
+      path: '/fixture.flac',
+      codec: 'FLAC',
+      sampleRate: 48000,
+      bitDepth: 24,
+      bitrateKbps: 1000,
+      addedAt: DateTime(2026),
+      coverSeed: 0,
+      lyrics: '[00:00]A lantern\u2009一盏灯\n[00:10]Next line',
+    );
+    await container.read(queueProvider.notifier).playTracks([track]);
+    await engine.pause();
+    await tester.pumpAndSettle();
+    expect(find.text('一盏灯'), findsOneWidget); // compact preview
+    addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
+    tester.platformDispatcher.textScaleFactorTestValue = 1.5;
+    await tester.pumpAndSettle();
+    await engine.seek(const Duration(seconds: 10));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 20));
+    tester.platformDispatcher.clearTextScaleFactorTestValue();
+    await tester.pump();
+    expect(tester.takeException(), isNull);
+    await engine.seek(Duration.zero);
+    await tester.pumpAndSettle();
+    unawaited(container.read(routerProvider).push('/now-playing'));
+    await tester.pumpAndSettle();
+    final view = find.byType(LyricsView);
+    final original = find.descendant(
+      of: view,
+      matching: find.text('A lantern'),
+    );
+    final translated = find.descendant(of: view, matching: find.text('一盏灯'));
+    expect(original, findsOneWidget);
+    expect(translated, findsOneWidget);
+    expect(
+      tester.getRect(translated).top,
+      greaterThan(tester.getRect(original).bottom),
+    );
+    expect(
+      tester.widget<Text>(translated).style!.fontSize,
+      lessThan(DefaultTextStyle.of(tester.element(original)).style.fontSize!),
+    );
+    container.read(lyricsSettingsProvider.notifier).setShowTranslation(false);
+    await tester.pumpAndSettle();
+    expect(translated, findsNothing);
+    expect(original, findsOneWidget);
+    container.read(routerProvider).pop();
+    await tester.pumpAndSettle();
+    expect(find.text('一盏灯'), findsNothing);
+    expect(find.text('Next line'), findsOneWidget);
+    expect(tester.takeException(), isNull);
   });
 
   testWidgets('phone player: swipe up opens the queue, pull down closes it', (
@@ -451,6 +773,177 @@ void main() {
     expect(find.byType(QueueSheet), findsNothing);
     expect(find.byType(PageView), findsOneWidget);
   });
+
+  Future<void> command(WidgetTester tester, LogicalKeyboardKey key) async {
+    await tester.sendKeyDownEvent(LogicalKeyboardKey.metaLeft);
+    await tester.sendKeyEvent(key);
+    await tester.sendKeyUpEvent(LogicalKeyboardKey.metaLeft);
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 800));
+  }
+
+  testWidgets(
+    'macOS settings shortcut preserves player and native menu uses same entry',
+    (tester) async {
+      final engine = await _pumpApp(tester, const Size(1400, 900));
+      await tester.tap(find.text('Afterglow').first);
+      await tester.pump(const Duration(milliseconds: 300));
+      await engine.pause();
+      await tester.tap(find.byTooltip('Expand player'));
+      await tester.pumpAndSettle();
+      final container = ProviderScope.containerOf(
+        tester.element(find.byType(NyaPlayerApp)),
+      );
+      final router = container.read(routerProvider);
+
+      await command(tester, LogicalKeyboardKey.comma);
+      expect(find.byType(SettingsPage), findsOneWidget);
+      expect(
+        router.routerDelegate.currentConfiguration.last.route.path,
+        '/preferences',
+      );
+      await command(tester, LogicalKeyboardKey.comma);
+      await tester.sendKeyEvent(LogicalKeyboardKey.escape);
+      await tester.pumpAndSettle();
+      expect(find.byType(SettingsPage), findsNothing);
+      expect(find.byType(NowPlayingPage), findsOneWidget);
+
+      ServicesBinding.instance.channelBuffers.push(
+        'nyaplayer/commands',
+        const StandardMethodCodec().encodeMethodCall(
+          const MethodCall('openSettings'),
+        ),
+        (_) {},
+      );
+      await tester.pumpAndSettle();
+      expect(find.byType(SettingsPage), findsOneWidget);
+      await tester.scrollUntilVisible(
+        find.text('Keyboard shortcuts'),
+        400,
+        scrollable: find
+            .descendant(
+              of: find.byType(SettingsPage),
+              matching: find.byType(Scrollable),
+            )
+            .first,
+      );
+      expect(find.text('Keyboard shortcuts'), findsOneWidget);
+      await tester.sendKeyEvent(LogicalKeyboardKey.escape);
+      await tester.pumpAndSettle();
+      expect(tester.takeException(), isNull);
+    },
+    variant: TargetPlatformVariant.only(TargetPlatform.macOS),
+  );
+
+  testWidgets('macOS playback and search shortcuts respect text editing', (
+    tester,
+  ) async {
+    final engine = await _pumpApp(tester, const Size(1000, 800));
+    await tester.tap(find.text('Afterglow').first);
+    await tester.pump(const Duration(milliseconds: 300));
+    final initial = engine.index!;
+    await tester.sendKeyEvent(LogicalKeyboardKey.space);
+    await tester.pump();
+    expect(engine.isPlaying, isFalse);
+    await command(tester, LogicalKeyboardKey.arrowRight);
+    expect(engine.index, initial + 1);
+    await command(tester, LogicalKeyboardKey.arrowLeft);
+    expect(engine.index, initial);
+
+    await command(tester, LogicalKeyboardKey.keyF);
+    expect(find.byType(TextField), findsOneWidget);
+    await tester.enterText(find.byType(TextField), 'Afterglow');
+    await tester.pumpAndSettle();
+    expect(find.widgetWithText(ListTile, 'Afterglow'), findsWidgets);
+    await tester.sendKeyEvent(LogicalKeyboardKey.space);
+    await command(tester, LogicalKeyboardKey.arrowRight);
+    expect(engine.isPlaying, isFalse);
+    expect(engine.index, initial);
+    // Back returns to the library without changing playback.
+    await tester.tap(find.byType(BackButton));
+    await tester.pumpAndSettle();
+    expect(find.byType(TextField), findsNothing);
+    await tester.sendKeyEvent(LogicalKeyboardKey.space);
+    await tester.pump();
+    expect(engine.isPlaying, isTrue);
+    await engine.pause();
+    await tester.pumpAndSettle();
+    expect(tester.takeException(), isNull);
+  }, variant: TargetPlatformVariant.only(TargetPlatform.macOS));
+
+  testWidgets(
+    'background choice is available in settings and survives theme changes',
+    (tester) async {
+      await _pumpApp(tester, const Size(400, 800));
+      final container = ProviderScope.containerOf(
+        tester.element(find.byType(NyaPlayerApp)),
+      );
+      container.read(routerProvider).go('/settings');
+      await tester.pumpAndSettle();
+      expect(
+        container.read(themeSettingsProvider).playerBackground,
+        PlayerBackgroundStyle.blurredCover,
+      );
+      await tester.scrollUntilVisible(
+        find.text('Theme gradient'),
+        400,
+        scrollable: find
+            .descendant(
+              of: find.byType(SettingsPage),
+              matching: find.byType(Scrollable),
+            )
+            .first,
+      );
+      await tester.tap(find.text('Theme gradient'));
+      await tester.pumpAndSettle();
+      container.read(themeSettingsProvider.notifier).setMode(ThemeMode.dark);
+      await tester.pumpAndSettle();
+      expect(
+        container.read(themeSettingsProvider).playerBackground,
+        PlayerBackgroundStyle.gradient,
+      );
+      await tester.tap(find.text('Blurred cover'));
+      await tester.pumpAndSettle();
+      expect(
+        container.read(themeSettingsProvider).playerBackground,
+        PlayerBackgroundStyle.blurredCover,
+      );
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+  testWidgets(
+    'shortcut help is shown only for the supported platform',
+    (tester) async {
+      await _pumpApp(tester, const Size(400, 800));
+      final container = ProviderScope.containerOf(
+        tester.element(find.byType(NyaPlayerApp)),
+      );
+      container.read(routerProvider).go('/settings');
+      await tester.pumpAndSettle();
+      final list = find
+          .descendant(
+            of: find.byType(SettingsPage),
+            matching: find.byType(Scrollable),
+          )
+          .first;
+      var sawHelp = false;
+      for (var i = 0; i < 20; i++) {
+        sawHelp |= find.text('Keyboard shortcuts').evaluate().isNotEmpty;
+        final state = tester.state<ScrollableState>(list);
+        if (state.position.extentAfter == 0) break;
+        await tester.drag(list, const Offset(0, -400));
+        await tester.pumpAndSettle();
+      }
+      expect(sawHelp, defaultTargetPlatform == TargetPlatform.macOS);
+      expect(tester.takeException(), isNull);
+    },
+    variant: const TargetPlatformVariant({
+      TargetPlatform.android,
+      TargetPlatform.macOS,
+      TargetPlatform.windows,
+    }),
+  );
 
   test('Hi-Res needs lossless, 24-bit and 96 kHz', () {
     Track make(String codec, int bits, int rate) => Track(
@@ -500,7 +993,10 @@ void main() {
     expect(useDesktopLayout(const Size(900, 1200)), isTrue); // wide portrait
     expect(useSidePanel(const Size(800, 360)), isFalse);
     expect(useSidePanel(const Size(1100, 600)), isTrue);
-    expect(useSidePanel(const Size(1000, 600)), isFalse);
+    expect(useSidePanel(const Size(1000, 600)), isTrue);
+    expect(useDesktopLayout(const Size(720, 960)), isTrue);
+    expect(useSidePanel(const Size(960, 1100)), isTrue);
+    expect(useSidePanel(const Size(800, 900)), isFalse);
     expect(useSidePanel(const Size(1170, 700)), isTrue);
     expect(useSidePanel(const Size(1000, 440)), isFalse);
     expect(useImmersivePlayer(const Size(640, 360)), isTrue);
@@ -513,9 +1009,11 @@ void main() {
     Size(900, 412),
     Size(1000, 600),
     Size(1170, 700),
+    Size(720, 960),
+    Size(960, 1100),
   ]) {
     testWidgets(
-      'landscape ${size.width.toInt()}x${size.height.toInt()}: shell and '
+      'layout ${size.width.toInt()}x${size.height.toInt()}: shell and '
       'player fit without overflow',
       (tester) async {
         final engine = await _pumpApp(tester, size);

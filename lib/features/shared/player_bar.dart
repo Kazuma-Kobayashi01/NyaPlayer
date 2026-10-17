@@ -3,7 +3,6 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:nyaplayer/app/theme/player_theme.dart';
 import 'package:nyaplayer/domain/models.dart';
 import 'package:nyaplayer/features/shared/cover_art.dart';
 import 'package:nyaplayer/l10n/app_localizations.dart';
@@ -25,54 +24,47 @@ class PlayerBar extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final track = ref.watch(queueProvider.select((s) => s.current));
-    return PlayerThemeScope(
-      seed: track?.coverSeed,
-      child: Builder(
-        builder: (context) {
-          final scheme = Theme.of(context).colorScheme;
-          final content = track == null
-              ? const _IdleBar()
-              : _ActiveBar(track: track);
-          if (!floating) {
-            return Material(
-              color: scheme.surfaceContainer,
-              child: Stack(
-                children: [
-                  if (track != null)
-                    Positioned.fill(
-                      child: _BlurredCover(seed: track.coverSeed),
-                    ),
-                  SafeArea(top: false, child: content),
-                ],
-              ),
-            );
-          }
-          return SafeArea(
-            top: false,
-            minimum: const EdgeInsets.only(bottom: 12),
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(12, 0, 12, 0),
-              child: Material(
-                color: scheme.surfaceContainerHigh,
-                elevation: 4,
-                shadowColor: scheme.shadow,
-                borderRadius: BorderRadius.circular(28),
-                clipBehavior: Clip.antiAlias,
-                child: track == null
-                    ? content
-                    : Stack(
-                        children: [
-                          Positioned.fill(
-                            child: _BlurredCover(seed: track.coverSeed),
-                          ),
-                          content,
-                        ],
-                      ),
-              ),
+    return Builder(
+      builder: (context) {
+        final scheme = Theme.of(context).colorScheme;
+        final content = track == null
+            ? const _IdleBar()
+            : _ActiveBar(track: track);
+        if (!floating) {
+          return Material(
+            color: scheme.surfaceContainer,
+            child: Stack(
+              children: [
+                if (track != null)
+                  Positioned.fill(child: _BlurredCover(track: track)),
+                SafeArea(top: false, child: content),
+              ],
             ),
           );
-        },
-      ),
+        }
+        return SafeArea(
+          top: false,
+          minimum: const EdgeInsets.only(bottom: 12),
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(12, 0, 12, 0),
+            child: Material(
+              color: scheme.surfaceContainerHigh,
+              elevation: 4,
+              shadowColor: scheme.shadow,
+              borderRadius: BorderRadius.circular(28),
+              clipBehavior: Clip.antiAlias,
+              child: track == null
+                  ? content
+                  : Stack(
+                      children: [
+                        Positioned.fill(child: _BlurredCover(track: track)),
+                        content,
+                      ],
+                    ),
+            ),
+          ),
+        );
+      },
     );
   }
 }
@@ -142,7 +134,12 @@ class _ActiveBar extends ConsumerWidget {
         child: Row(
           children: [
             const SizedBox(width: 12),
-            CoverArt(seed: track.coverSeed, size: 48, radius: 8),
+            CoverArt(
+              seed: track.coverSeed,
+              source: track.cover,
+              size: 48,
+              radius: 8,
+            ),
             const SizedBox(width: 12),
             Expanded(
               child: Column(
@@ -175,7 +172,7 @@ class _ActiveBar extends ConsumerWidget {
                 icon: const Icon(Icons.skip_previous),
                 onPressed: queue.skipPrevious,
               ),
-            IconButton.filledTonal(
+            IconButton(
               tooltip: playing ? l10n.pause : l10n.play,
               icon: Icon(playing ? Icons.pause : Icons.play_arrow),
               onPressed: queue.togglePlay,
@@ -196,13 +193,14 @@ class _ActiveBar extends ConsumerWidget {
 /// The cover stretched over the whole bar and blurred until only its colours
 /// remain, under a translucent surface scrim that keeps the text readable.
 class _BlurredCover extends StatelessWidget {
-  const _BlurredCover({required this.seed});
+  const _BlurredCover({required this.track});
 
-  final int seed;
+  final Track track;
 
   @override
   Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
+    final theme = Theme.of(context);
+    final scheme = theme.colorScheme;
     return RepaintBoundary(
       child: Stack(
         fit: StackFit.expand,
@@ -216,13 +214,21 @@ class _BlurredCover extends StatelessWidget {
               ),
               child: Transform.scale(
                 scale: 1.6,
-                child: CoverArt(seed: seed, radius: 0),
+                child: CoverArt(
+                  seed: track.coverSeed,
+                  source: track.cover,
+                  radius: 0,
+                ),
               ),
             ),
           ),
           ColoredBox(
-            color: scheme.surfaceContainerHigh.withValues(alpha: 0.45),
+            color: scheme.surfaceContainerHigh.withValues(
+              alpha: theme.brightness == Brightness.dark ? 0.45 : 0.35,
+            ),
           ),
+          if (theme.brightness == Brightness.dark)
+            ColoredBox(color: scheme.scrim.withValues(alpha: 0.10)),
         ],
       ),
     );

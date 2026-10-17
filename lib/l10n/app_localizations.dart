@@ -104,6 +104,18 @@ abstract class AppLocalizations {
   /// **'NyaPlayer'**
   String get appName;
 
+  /// No description provided for @showAppWindow.
+  ///
+  /// In zh, this message translates to:
+  /// **'显示 NyaPlayer 窗口'**
+  String get showAppWindow;
+
+  /// No description provided for @quitApp.
+  ///
+  /// In zh, this message translates to:
+  /// **'退出 NyaPlayer'**
+  String get quitApp;
+
   /// No description provided for @navSongs.
   ///
   /// In zh, this message translates to:
@@ -632,12 +644,6 @@ abstract class AppLocalizations {
   /// **'配色来源'**
   String get settingsColorSource;
 
-  /// No description provided for @colorSourceCover.
-  ///
-  /// In zh, this message translates to:
-  /// **'跟随封面'**
-  String get colorSourceCover;
-
   /// No description provided for @colorSourceWallpaper.
   ///
   /// In zh, this message translates to:
@@ -845,7 +851,7 @@ abstract class AppLocalizations {
   /// No description provided for @colorSourceHint.
   ///
   /// In zh, this message translates to:
-  /// **'“跟随封面”只作用于播放器，其余界面使用系统配色。'**
+  /// **'选择系统配色或固定主题色，播放器背景可单独设置。'**
   String get colorSourceHint;
 
   /// No description provided for @settingsEqualizerSubtitle.
@@ -961,6 +967,108 @@ abstract class AppLocalizations {
   /// In zh, this message translates to:
   /// **'打开应用时显示的页面'**
   String get settingsStartPageHint;
+
+  /// No description provided for @playerBackground.
+  ///
+  /// In zh, this message translates to:
+  /// **'播放页背景'**
+  String get playerBackground;
+
+  /// No description provided for @progressStyle.
+  ///
+  /// In zh, this message translates to:
+  /// **'播放进度条样式'**
+  String get progressStyle;
+
+  /// No description provided for @progressMaterial.
+  ///
+  /// In zh, this message translates to:
+  /// **'Material'**
+  String get progressMaterial;
+
+  /// No description provided for @progressClassic.
+  ///
+  /// In zh, this message translates to:
+  /// **'经典圆点'**
+  String get progressClassic;
+
+  /// No description provided for @progressSlim.
+  ///
+  /// In zh, this message translates to:
+  /// **'细线'**
+  String get progressSlim;
+
+  /// No description provided for @progressWave.
+  ///
+  /// In zh, this message translates to:
+  /// **'波浪'**
+  String get progressWave;
+
+  /// No description provided for @backgroundGradient.
+  ///
+  /// In zh, this message translates to:
+  /// **'主题渐变'**
+  String get backgroundGradient;
+
+  /// No description provided for @backgroundBlurredCover.
+  ///
+  /// In zh, this message translates to:
+  /// **'封面模糊'**
+  String get backgroundBlurredCover;
+
+  /// No description provided for @playerBackgroundHint.
+  ///
+  /// In zh, this message translates to:
+  /// **'放大并高度模糊专辑封面，营造沉浸背景。'**
+  String get playerBackgroundHint;
+
+  /// No description provided for @settingsShortcuts.
+  ///
+  /// In zh, this message translates to:
+  /// **'键盘快捷键'**
+  String get settingsShortcuts;
+
+  /// No description provided for @shortcutPlayback.
+  ///
+  /// In zh, this message translates to:
+  /// **'播放 / 暂停'**
+  String get shortcutPlayback;
+
+  /// No description provided for @shortcutSpace.
+  ///
+  /// In zh, this message translates to:
+  /// **'空格'**
+  String get shortcutSpace;
+
+  /// No description provided for @shortcutTracks.
+  ///
+  /// In zh, this message translates to:
+  /// **'上一首 / 下一首'**
+  String get shortcutTracks;
+
+  /// No description provided for @shortcutWindow.
+  ///
+  /// In zh, this message translates to:
+  /// **'进入 / 退出全屏'**
+  String get shortcutWindow;
+
+  /// No description provided for @lyricsLineHeight.
+  ///
+  /// In zh, this message translates to:
+  /// **'行距'**
+  String get lyricsLineHeight;
+
+  /// No description provided for @lyricsLineHeightInvalid.
+  ///
+  /// In zh, this message translates to:
+  /// **'请输入 1–2 之间的行距倍数'**
+  String get lyricsLineHeightInvalid;
+
+  /// No description provided for @toggleSidebar.
+  ///
+  /// In zh, this message translates to:
+  /// **'显示或隐藏侧边栏'**
+  String get toggleSidebar;
 }
 
 class _AppLocalizationsDelegate

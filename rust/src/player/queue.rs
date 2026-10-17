@@ -168,6 +168,38 @@ impl PlayQueue {
         }
     }
 
+    /// Applies a complete permutation atomically, retaining item ids and the
+    /// current occurrence even when several entries have the same path.
+    pub fn reorder(&mut self, order: Vec<usize>) -> Result<bool, &'static str> {
+        if order.len() != self.items.len() {
+            return Err("queue permutation has the wrong length");
+        }
+        let mut seen = vec![false; self.items.len()];
+        for &index in &order {
+            let Some(slot) = seen.get_mut(index) else {
+                return Err("queue permutation index is out of range");
+            };
+            if *slot {
+                return Err("queue permutation contains a repeated index");
+            }
+            *slot = true;
+        }
+        let current = self
+            .current
+            .and_then(|c| order.iter().position(|&i| i == c));
+        let changed = current != self.current;
+        let mut old: Vec<_> = std::mem::take(&mut self.items)
+            .into_iter()
+            .map(Some)
+            .collect();
+        self.items = order
+            .into_iter()
+            .map(|i| old[i].take().expect("validated permutation"))
+            .collect();
+        self.current = current;
+        Ok(changed)
+    }
+
     /// Moves an item so that it ends up at `to` in the resulting list.
     /// Returns true when the current index changed.
     pub fn move_item(&mut self, from: usize, to: usize) -> bool {
@@ -287,5 +319,33 @@ mod tests {
         assert_eq!(q.index_of(id_b), Some(2));
         q.remove(2);
         assert_eq!(q.index_of(id_b), None);
+    }
+
+    #[test]
+    fn reorder_keeps_exact_current_occurrence_and_ids() {
+        let mut q = PlayQueue::new();
+        q.set(paths(&["a", "b", "a"]), 2);
+        let current_id = q.item(2).unwrap().id;
+        assert!(q.reorder(vec![2, 0, 1]).unwrap());
+        assert_eq!(names(&q), paths(&["a", "a", "b"]));
+        assert_eq!(q.current(), Some(0));
+        assert_eq!(q.item(0).unwrap().id, current_id);
+        assert!(q.reorder(vec![1, 2, 0]).unwrap());
+        assert_eq!(q.current(), Some(2));
+        assert_eq!(q.item(2).unwrap().id, current_id);
+    }
+
+    #[test]
+    fn invalid_permutations_leave_queue_unchanged() {
+        let mut q = PlayQueue::new();
+        q.set(paths(&["a", "b", "c"]), 1);
+        let before = q.items.clone();
+        for order in [vec![0, 1], vec![0, 1, 3], vec![0, 0, 2]] {
+            assert!(q.reorder(order).is_err());
+            assert_eq!(q.items, before);
+            assert_eq!(q.current(), Some(1));
+        }
+        assert!(!q.reorder(vec![0, 1, 2]).unwrap());
+        assert!(PlayQueue::new().reorder(vec![]).is_ok());
     }
 }

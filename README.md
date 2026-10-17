@@ -1,97 +1,108 @@
-# NyaPlayer
+<div align="center">
 
-一个**纯本地、无广告、无联网、完全遵循 Material Design 3** 的音乐播放器。使用 Flutter 开发，主平台 Android，次平台 macOS。
+<img src="https://capsule-render.vercel.app/api?type=waving&color=gradient&customColorList=12,20,24&height=180&section=header&text=NyaPlayer&fontSize=64&fontAlignY=38&desc=A%20local%2C%20offline%20Material%203%20music%20player&descAlignY=60&fontColor=ffffff" alt="NyaPlayer" width="100%"/>
 
-> 📌 **当前状态：规划阶段**，尚未开始写代码，下一步是 M0 技术验证。
-> 文档中的项目代号为 **Lyra**（暂定），与 NyaPlayer 指同一个项目；正式定名后会统一替换。
+**No ads. No accounts. No network. Just your music.**
 
-## 特性（目标）
+[![Flutter](https://img.shields.io/badge/Flutter-02569B?style=for-the-badge&logo=flutter&logoColor=white)](https://flutter.dev)
+[![Rust](https://img.shields.io/badge/Rust-000000?style=for-the-badge&logo=rust&logoColor=white)](https://www.rust-lang.org)
+[![Material 3](https://img.shields.io/badge/Material%20Design-3-6750A4?style=for-the-badge&logo=materialdesign&logoColor=white)](https://m3.material.io)
+[![Offline](https://img.shields.io/badge/100%25-Offline-2ea44f?style=for-the-badge)](#-privacy)
 
-- 🎵 **常见格式稳定播放**：FLAC（含 24bit / 高采样率）、MP3、AAC/M4A、OGG、Opus、WAV；P1 支持 ALAC、AIFF、APE、WavPack
-- 🖼️ **封面与歌词**：读取内嵌封面；内嵌歌词与同名外挂 `.lrc` 均可显示，支持滚动高亮、点击跳转、双语、GBK/Shift-JIS 自动识别
-- 🎨 **Material 3 界面**：浅色/深色、壁纸动态取色、跟随封面配色；窄屏底部导航栏、中屏 Rail、宽屏 Rail + 右侧正在播放面板
-- 📱 **后台与系统集成**：Android 前台服务、媒体通知、蓝牙/耳机按键、音频焦点；macOS 媒体键、控制中心、关窗继续播放
-- 🎚️ **10 段均衡器**：31 Hz – 16 kHz，±12 dB，内置预设与自定义预设，两个平台效果一致
-- 🔒 **隐私优先**：不发起任何网络请求，不收集任何数据
+**English** · [简体中文](README.zh-CN.md)
 
-**非目标**：在线音乐/流媒体、在线刮削、标签编辑、视频、发烧级输出、账号与云同步。
+</div>
 
-## 平台
+---
 
-| 平台 | 状态 |
+## ✨ Features
+
+| | |
 |---|---|
-| Android（minSdk 24） | 主平台 |
-| macOS（≥ 10.15） | 次平台 |
-| iOS / Windows / Linux / Web | 不做 |
+| 🎵 **Reliable playback** | FLAC (incl. 24‑bit / hi‑res) and MP3 with gapless playback, powered by a Rust audio core |
+| 🖼️ **Cover art & lyrics** | Reads embedded artwork and lyrics, with scrolling highlight, tap‑to‑seek and bilingual (original + translation) lines |
+| 🎨 **Material 3 design** | Light / dark themes, wallpaper‑based dynamic color, cover‑derived palettes, adaptive layouts for phone, tablet and desktop |
+| 📱 **System integration** | Background playback, media notifications, lock‑screen / headset / media‑key controls, audio focus handling |
+| 🎚️ **10‑band equalizer** | 31 Hz – 16 kHz, ±12 dB, built‑in and custom presets — identical sound on every platform |
+| 🔒 **Privacy first** | Zero network requests, zero telemetry. Your library never leaves your device |
 
-## 技术栈
+<sub>**Not planned:** streaming, online metadata scraping, tag editing, video, audiophile bit‑perfect output, accounts and cloud sync.</sub>
 
-| 用途 | 方案 |
+## 🖥️ Supported platforms
+
+| Platform | Minimum version | Architectures | Status |
+|:--|:--|:--|:--|
+| 🤖 **Android** | Android 12 (API 31) | ARMv8‑A (`arm64-v8a`) | ✅ Primary |
+| 🍎 **macOS** | macOS 15 Sequoia | Intel · Apple Silicon | ✅ Supported |
+| 🍏 **iOS** | iOS 18 | arm64 | 🎯 Priority (next) |
+| 🪟 **Windows** | Windows 10 | x64 · arm64 | 🛠️ Secondary (planned) |
+| 🐧 **Linux** | Ubuntu 22.04 | x64 · aarch64 | 🛠️ Secondary (planned) |
+
+> HarmonyOS is not planned.
+> Developer-side difficulty and priorities live in [`docs/PLATFORM_SUPPORT.md`](docs/PLATFORM_SUPPORT.md) (Chinese).
+
+## 🧱 Tech stack
+
+| Layer | Choice |
 |---|---|
-| 框架 | Flutter（stable）/ Dart 3 |
-| 播放内核 | `media_kit` + `media_kit_libs_audio`（libmpv + FFmpeg） |
-| 后台/系统控制 | `audio_service`、`audio_session` |
-| 标签读取 | `audio_metadata_reader` |
-| 均衡器 | mpv `af` 属性 → FFmpeg `equalizer` 滤镜（双平台同一实现） |
-| 状态管理 / 路由 | `flutter_riverpod` / `go_router` |
-| 数据库 | `drift`（SQLite，FTS5 trigram 搜索） |
-| 主题 | `dynamic_color` + `ColorScheme.fromImageProvider` |
+| UI | Flutter (stable) · Dart 3 · Material 3 |
+| Audio core | Rust crate `nya_core` — `symphonia` decode, `rodio`/`cpal` output, `biquad` EQ, `lofty` tags |
+| Bridge | [`flutter_rust_bridge`](https://github.com/fzyzcjy/flutter_rust_bridge) 2.13 (built via Cargokit) |
+| System controls | `audio_service` · `audio_session` |
+| State / routing | `flutter_riverpod` · `go_router` |
+| Theming | `dynamic_color` |
 
-架构分三层：UI（`features/*`）→ 应用服务（`services/*`）→ 数据（`data/*`）。UI 只通过 `AudioHandler` 控制播放，全应用仅一个 `media_kit` `Player` 实例，由 `PlayerEngine` 接口隔离。详见 [TECH_SPEC](docs/TECH_SPEC.md)。
+Architecture: **UI** (`features/*`) → **services** (`services/*`) → **data** (`data/*`). The UI controls playback only through `AudioHandler`; the Rust engine sits behind the `PlayerEngine` interface. See [`TECH_SPEC`](docs/TECH_SPEC.md).
 
-## 文档
+## 🚀 Getting started
 
-| 文档 | 内容 |
-|---|---|
-| [docs/REQUIREMENTS.md](docs/REQUIREMENTS.md) | 需求声明：功能需求（带编号与优先级）、非功能需求、MVP 与验收标准 |
-| [docs/TECH_SPEC.md](docs/TECH_SPEC.md) | 技术要求：依赖、架构、播放引擎、EQ、平台配置、曲库/封面/歌词/数据库设计 |
-| [docs/PLAN.md](docs/PLAN.md) | 施工方案：M0–M8 里程碑任务清单、`CLAUDE.md` 模板、测试素材清单 |
-
-三份文档互相引用，需求编号（如 `EQ-06`）贯穿其中。**实现与 TECH_SPEC 冲突时，先改文档再改代码。**
-
-## 路线图
-
-| 里程碑 | 内容 | 状态 |
-|---|---|---|
-| M0 | 技术验证（格式、EQ 滤镜、后台、Android 文件访问、FTS5 等） | ⬜ 未开始 |
-| M1 | 工程骨架（主题、路由、自适应布局、数据库） | ⬜ |
-| M2 | 曲库（授权、扫描、封面缓存、浏览与搜索） | ⬜ |
-| M3 | 播放核心（引擎、队列、播放页、状态恢复） | ⬜ |
-| M4 | 后台与系统集成 | ⬜ |
-| M5 | 歌词 | ⬜ |
-| M6 | 均衡器 | ⬜ |
-| **MVP** | 全部 P0 需求，按验收标准通过 | |
-| M7 / M8 | P1 功能 / 打磨与 P2（Material 3 Expressive 等） | ⬜ |
-
-详细任务与复选框见 [PLAN.md](docs/PLAN.md)。
-
-## 开发
-
-> 工程尚未创建，以下为 M1 完成后的常用命令。
+**Prerequisites:** Flutter stable (Dart ≥ 3.13), Rust stable via [`rustup`](https://rustup.rs), and the toolchain for your target platform (Xcode, Android SDK + NDK, …).
 
 ```bash
-# 创建工程（M1-1，仅 android 与 macos）
-flutter create --platforms=android,macos --org <your.org> nyaplayer
+git clone <this-repo> && cd NyaPlayer
+flutter pub get
 
-# 运行
+# Run
 flutter run -d macos
 flutter run --release -d <android-device-id>
 
-# drift 代码生成
-dart run build_runner build --delete-conflicting-outputs
-
-# 提交前检查
+# Checks
 dart format . && flutter analyze && flutter test
+cargo test --manifest-path rust/Cargo.toml
 
-# 发布构建
-flutter build apk --release --split-per-abi
+# Release builds
+flutter build apk --release --target-platform android-arm64
 flutter build macos --release
 ```
 
-## 与 Claude Code 协作
+> Flutter desktop builds can't be cross‑compiled across operating systems: build Windows on Windows and Linux on Linux (or use CI).
 
-开工时把 [PLAN.md 附录 A](docs/PLAN.md) 的模板放到项目根目录作为 `CLAUDE.md`，Claude Code 每次启动会自动读取三份文档并遵守其中的工作规则。
+## 📚 Documentation
 
-## License
+> Project docs are written in Chinese.
 
-待定。
+| Document | Contents |
+|---|---|
+| [`REQUIREMENTS`](docs/REQUIREMENTS.md) | Requirements with IDs and priorities, MVP and acceptance criteria |
+| [`TECH_SPEC`](docs/TECH_SPEC.md) | Dependencies, architecture, playback engine, EQ, platform config, data design |
+| [`PLATFORM_SUPPORT`](docs/PLATFORM_SUPPORT.md) | Platform baselines, porting difficulty and priority |
+| [`PLAN`](docs/PLAN.md) | Milestones and task list |
+| [`PROGRESS`](docs/PROGRESS.md) | Current progress log |
+
+## 🔒 Privacy
+
+NyaPlayer never makes network requests and collects nothing. Library data and cover caches are stored locally only.
+
+## Contributors
+
+1. **Kazuma-Kobayashi01** — primary author and maintainer.
+2. **Claude** — AI development assistance.
+3. **Codex** — AI development assistance.
+
+## 📄 License
+
+To be decided.
+
+<div align="center">
+<img src="https://capsule-render.vercel.app/api?type=waving&color=gradient&customColorList=12,20,24&height=100&section=footer" width="100%" alt=""/>
+</div>

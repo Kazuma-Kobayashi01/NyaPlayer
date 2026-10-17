@@ -17,7 +17,10 @@ use std::time::Duration;
 
 use rodio::cpal::traits::{DeviceTrait, HostTrait};
 use rodio::cpal::{BufferSize, SupportedBufferSize};
-use rodio::{Decoder, DeviceSinkBuilder, MixerDeviceSink, Player};
+use rodio::source::UniformSourceIterator;
+use rodio::{
+    ChannelCount, Decoder, DeviceSinkBuilder, MixerDeviceSink, Player, SampleRate, Source,
+};
 
 use crate::dsp::eq::{EqSettings, EqShared, EqSource};
 use crate::player::queue::{LoopMode, PlayQueue, RemoveEffect};
@@ -44,6 +47,7 @@ pub enum Command {
     Insert(usize, String),
     Remove(usize),
     Move(usize, usize),
+    Reorder(Vec<usize>),
     SetLoopMode(LoopMode),
     SetEqualizer(EqSettings),
     SetVolume(f32),
@@ -194,6 +198,15 @@ impl Engine {
                 self.queue.loop_mode = mode;
                 self.refresh_next();
             }
+            Command::Reorder(order) => match self.queue.reorder(order) {
+                Ok(changed) => {
+                    if changed {
+                        self.emit(Event::Index(self.queue.current()));
+                    }
+                    self.refresh_next();
+                }
+                Err(message) => self.emit(Event::Error(message.into())),
+            },
             Command::SetEqualizer(settings) => self.eq.set(settings),
             Command::SetVolume(volume) => {
                 self.volume = volume.clamp(0.0, 1.0);
@@ -334,7 +347,7 @@ impl Engine {
         let Some(item) = self.queue.item(index).cloned() else {
             return false;
         };
-        let Some(player) = &self.player else {
+        let (Some(player), Some(sink)) = (&self.player, &self.sink) else {
             return false;
         };
         match open_decoder(&item.path) {
@@ -343,7 +356,12 @@ impl Engine {
                 self.next_token += 1;
                 let cancel = Arc::new(AtomicBool::new(false));
                 let source = Tracked::new(
-                    EqSource::new(decoder, self.eq.clone()),
+                    output_source(
+                        decoder,
+                        sink.config().channel_count(),
+                        sink.config().sample_rate(),
+                        self.eq.clone(),
+                    ),
                     token,
                     self.started.clone(),
                     cancel.clone(),
@@ -467,6 +485,21 @@ impl Engine {
     }
 }
 
+/// Convert each track to the opened device format before building EQ
+/// coefficients (TECH_SPEC §4.3/§5.1). The mixer's final conversion is then
+/// a passthrough, including when adjacent tracks have different formats.
+fn output_source<S: Source>(
+    source: S,
+    channels: ChannelCount,
+    sample_rate: SampleRate,
+    eq: Arc<EqShared>,
+) -> EqSource<UniformSourceIterator<S>> {
+    EqSource::new(
+        UniformSourceIterator::new(source, channels, sample_rate),
+        eq,
+    )
+}
+
 /// Preferred output buffer in frames (~40 ms at 48 kHz): large enough to be
 /// power-friendly, small enough for responsive pause/seek/EQ.
 const PREFERRED_BUFFER_FRAMES: u32 = 2048;
@@ -499,4 +532,188 @@ fn open_decoder(path: &str) -> anyhow::Result<Decoder<BufReader<File>>> {
         builder = builder.with_hint(&ext.to_ascii_lowercase());
     }
     Ok(builder.build()?)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use rodio::buffer::SamplesBuffer;
+    use std::num::NonZero;
+
+    #[test]
+    fn reorder_keeps_playing_samples_position_and_prefetch_alive() {
+        // Render entirely in memory: no audio device and no audible test process.
+        let (mixer, mut output) =
+            rodio::mixer::mixer(NonZero::new(1).unwrap(), NonZero::new(48_000).unwrap());
+        let player = Player::connect_new(&mixer);
+        player.append(SamplesBuffer::new(
+            NonZero::new(1).unwrap(),
+            NonZero::new(48_000).unwrap(),
+            (0..4096).map(|i| i as f32 / 4096.0).collect::<Vec<_>>(),
+        ));
+        for i in 0..16 {
+            assert_eq!(output.next(), Some(i as f32 / 4096.0));
+        }
+        let (tx, rx) = std::sync::mpsc::channel();
+        let shared = Arc::new(Shared::default());
+        shared.position_ms.store(42_000, Ordering::Relaxed);
+        let mut engine = Engine::new(
+            Box::new(move |e| {
+                tx.send(e).unwrap();
+            }),
+            shared.clone(),
+        );
+        engine
+            .queue
+            .set(vec!["a".into(), "b".into(), "c".into()], 1);
+        engine.player = Some(player);
+        engine.playing = true;
+        let current = Arc::new(AtomicBool::new(false));
+        let next = Arc::new(AtomicBool::new(false));
+        for (index, cancel) in [(1, current.clone()), (2, next.clone())] {
+            engine.queued.push_back(Queued {
+                item_id: engine.queue.item(index).unwrap().id,
+                token: index as u64,
+                cancel,
+            });
+        }
+        engine.handle(Command::Reorder(vec![1, 2, 0]));
+        assert!(engine.playing);
+        assert_eq!(shared.position_ms.load(Ordering::Relaxed), 42_000);
+        assert!(!current.load(Ordering::Relaxed));
+        assert!(!next.load(Ordering::Relaxed));
+        assert_eq!(
+            rx.try_iter().collect::<Vec<_>>(),
+            vec![Event::Index(Some(0))]
+        );
+        for i in 16..32 {
+            assert_eq!(output.next(), Some(i as f32 / 4096.0));
+        }
+    }
+
+    fn sine(sample_rate: u32, frequency: f32) -> SamplesBuffer {
+        let data: Vec<f32> = (0..sample_rate)
+            .map(|i| {
+                0.1 * (std::f32::consts::TAU * frequency * i as f32 / sample_rate as f32).sin()
+            })
+            .collect();
+        SamplesBuffer::new(
+            NonZero::new(1).unwrap(),
+            NonZero::new(sample_rate).unwrap(),
+            data,
+        )
+    }
+
+    #[test]
+    fn hires_resampling_keeps_duration_and_eq_center_frequency() {
+        let input = sine(192_000, 1000.0);
+        let eq = EqShared::new();
+        let mut settings = EqSettings::default();
+        settings.gains_db[5] = 6.0;
+        eq.set(settings);
+        let source = output_source(
+            input,
+            NonZero::new(2).unwrap(),
+            NonZero::new(48_000).unwrap(),
+            eq,
+        );
+        assert_eq!(source.sample_rate().get(), 48_000);
+        assert_eq!(source.channels().get(), 2);
+        assert_eq!(source.total_duration(), Some(Duration::from_secs(1)));
+        let output: Vec<f32> = source.collect();
+        assert!(
+            output.len().abs_diff(96_000) <= 2,
+            "{} samples",
+            output.len()
+        );
+        assert!(output
+            .as_chunks::<2>()
+            .0
+            .iter()
+            .all(|frame| frame[0] == frame[1]));
+        let steady: Vec<f32> = output.iter().skip(19_200).step_by(2).copied().collect();
+        let rms = (steady.iter().map(|v| f64::from(*v).powi(2)).sum::<f64>() / steady.len() as f64)
+            .sqrt();
+        let gain_db = 20.0 * (rms / (0.1 / 2.0f64.sqrt())).log10();
+        assert!((gain_db - 6.0).abs() < 0.2, "1 kHz gain: {gain_db} dB");
+    }
+
+    #[test]
+    fn eq_skips_bands_above_output_nyquist_even_for_hires_input() {
+        let input = sine(192_000, 8000.0);
+        let channels = NonZero::new(1).unwrap();
+        let sample_rate = NonZero::new(22_050).unwrap();
+        let baseline: Vec<f32> =
+            output_source(input.clone(), channels, sample_rate, EqShared::new()).collect();
+        let eq = EqShared::new();
+        let mut settings = EqSettings::default();
+        settings.gains_db[9] = 12.0; // 16 kHz is valid at 192k, not at 22.05k.
+        eq.set(settings);
+        let output: Vec<f32> = output_source(input, channels, sample_rate, eq).collect();
+        assert_eq!(output, baseline);
+    }
+
+    #[test]
+    fn upsampling_keeps_high_band_active_at_the_output_rate() {
+        let input = sine(44_100, 8000.0);
+        let channels = NonZero::new(2).unwrap();
+        let sample_rate = NonZero::new(48_000).unwrap();
+        let baseline: Vec<f32> =
+            output_source(input.clone(), channels, sample_rate, EqShared::new()).collect();
+        let eq = EqShared::new();
+        let mut settings = EqSettings::default();
+        settings.gains_db[9] = 12.0;
+        eq.set(settings);
+        let output: Vec<f32> = output_source(input, channels, sample_rate, eq).collect();
+        assert_eq!(output.len(), baseline.len());
+        assert!(output.iter().all(|v| v.is_finite()));
+        assert!(output
+            .iter()
+            .zip(&baseline)
+            .any(|(a, b)| (a - b).abs() > 0.001));
+    }
+
+    #[test]
+    fn decoded_flac_tracks_join_without_padding_or_lost_samples() {
+        // The existing fixture is 250 ms of 440 Hz (110 complete cycles),
+        // so two copies form a continuous sine across the track boundary.
+        let path = concat!(
+            env!("CARGO_MANIFEST_DIR"),
+            "/tests/fixtures/sine_44k_16bit_mono.flac.bin"
+        );
+        for rate in [44_100, 48_000] {
+            let channels = NonZero::new(2).unwrap();
+            let sample_rate = NonZero::new(rate).unwrap();
+            let eq = EqShared::new();
+            let first: Vec<f32> = output_source(
+                open_decoder(path).unwrap(),
+                channels,
+                sample_rate,
+                eq.clone(),
+            )
+            .collect();
+            assert!(first.len().abs_diff((rate / 4 * 2) as usize) <= 2);
+            let (input, output) = rodio::queue::queue(false);
+            let started = Arc::new(AtomicU64::new(0));
+            for token in [1, 2] {
+                input.append(Tracked::new(
+                    output_source(
+                        open_decoder(path).unwrap(),
+                        channels,
+                        sample_rate,
+                        eq.clone(),
+                    ),
+                    token,
+                    started.clone(),
+                    Arc::new(AtomicBool::new(false)),
+                ));
+            }
+            let joined: Vec<f32> = output.collect();
+            let expected: Vec<f32> = first.iter().chain(&first).copied().collect();
+            assert_eq!(joined, expected, "track boundary at {rate} Hz");
+            let boundary_step = (joined[first.len()] - joined[first.len() - 2]).abs();
+            assert!(boundary_step < 0.02, "sine discontinuity: {boundary_step}");
+            assert_eq!(started.load(Ordering::Acquire), 2);
+        }
+    }
 }

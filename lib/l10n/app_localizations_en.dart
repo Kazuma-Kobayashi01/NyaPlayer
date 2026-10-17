@@ -13,6 +13,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get appName => 'NyaPlayer';
 
   @override
+  String get showAppWindow => 'Show NyaPlayer';
+
+  @override
+  String get quitApp => 'Quit NyaPlayer';
+
+  @override
   String get navSongs => 'Songs';
 
   @override
@@ -300,9 +306,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get settingsColorSource => 'Colour source';
 
   @override
-  String get colorSourceCover => 'Album cover';
-
-  @override
   String get colorSourceWallpaper => 'System';
 
   @override
@@ -408,7 +411,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get colorSourceHint =>
-      '“Album cover” only tints the player; the rest of the app uses system colours.';
+      'Use system colours or a fixed theme colour. Player backgrounds are configured separately.';
 
   @override
   String get settingsEqualizerSubtitle => '10-band equalizer and presets';
@@ -468,4 +471,56 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get settingsStartPageHint => 'The page shown when the app opens';
+
+  @override
+  String get playerBackground => 'Player background';
+
+  @override
+  String get progressStyle => 'Progress bar style';
+
+  @override
+  String get progressMaterial => 'Material';
+
+  @override
+  String get progressClassic => 'Classic dot';
+
+  @override
+  String get progressSlim => 'Slim line';
+
+  @override
+  String get progressWave => 'Wave';
+
+  @override
+  String get backgroundGradient => 'Theme gradient';
+
+  @override
+  String get backgroundBlurredCover => 'Blurred cover';
+
+  @override
+  String get playerBackgroundHint =>
+      'Enlarge and blur the album cover for an immersive backdrop.';
+
+  @override
+  String get settingsShortcuts => 'Keyboard shortcuts';
+
+  @override
+  String get shortcutPlayback => 'Play / pause';
+
+  @override
+  String get shortcutSpace => 'Space';
+
+  @override
+  String get shortcutTracks => 'Previous / next track';
+
+  @override
+  String get shortcutWindow => 'Enter / exit full screen';
+
+  @override
+  String get lyricsLineHeight => 'Line spacing';
+
+  @override
+  String get lyricsLineHeightInvalid => 'Enter a value between 1 and 2';
+
+  @override
+  String get toggleSidebar => 'Show or hide sidebar';
 }

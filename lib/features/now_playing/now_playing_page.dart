@@ -5,12 +5,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:nyaplayer/app/theme/player_theme.dart';
 import 'package:nyaplayer/domain/models.dart';
 import 'package:nyaplayer/features/lyrics/lyrics_lines.dart';
+import 'package:nyaplayer/features/lyrics/lyrics_settings.dart';
 import 'package:nyaplayer/features/lyrics/lyrics_view.dart';
 import 'package:nyaplayer/features/now_playing/playback_controls.dart';
 import 'package:nyaplayer/features/now_playing/player_artwork.dart';
+import 'package:nyaplayer/features/now_playing/player_background.dart';
 import 'package:nyaplayer/features/now_playing/player_menu.dart';
 import 'package:nyaplayer/features/queue/queue_list.dart';
 import 'package:nyaplayer/features/queue/queue_sheet.dart';
@@ -36,18 +37,15 @@ class NowPlayingPage extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final track = ref.watch(queueProvider.select((s) => s.current));
-    return PlayerThemeScope(
-      seed: track?.coverSeed,
-      child: CallbackShortcuts(
-        bindings: {
-          const SingleActivator(LogicalKeyboardKey.escape): () => context.pop(),
-        },
-        child: Focus(
-          autofocus: true,
-          child: useImmersivePlayer(MediaQuery.sizeOf(context))
-              ? _ImmersivePlayer(track: track)
-              : _CompactPlayer(track: track),
-        ),
+    return CallbackShortcuts(
+      bindings: {
+        const SingleActivator(LogicalKeyboardKey.escape): () => context.pop(),
+      },
+      child: Focus(
+        autofocus: true,
+        child: useImmersivePlayer(MediaQuery.sizeOf(context))
+            ? _ImmersivePlayer(track: track)
+            : _CompactPlayer(track: track),
       ),
     );
   }
@@ -111,90 +109,64 @@ class _CompactPlayerState extends State<_CompactPlayer>
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    final scheme = Theme.of(context).colorScheme;
     final track = widget.track;
-    return ColoredBox(
-      color: scheme.surface,
-      child: DecoratedBox(
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [
-              scheme.primaryContainer.withValues(alpha: 0.45),
-              scheme.surface,
-            ],
-            stops: const [0, 0.85],
-          ),
-        ),
-        child: Scaffold(
-          backgroundColor: Colors.transparent,
-          body: SafeArea(
-            child: track == null
-                ? Column(
-                    children: [
-                      if (_needsCloseButton)
-                        const Align(
-                          alignment: Alignment.centerRight,
-                          child: Padding(
-                            padding: EdgeInsets.fromLTRB(0, 12, 12, 0),
-                            child: _CloseButton(),
-                          ),
-                        ),
-                      Expanded(
-                        child: EmptyState(
-                          icon: Icons.music_off_outlined,
-                          title: l10n.notPlaying,
-                          body: l10n.notPlayingHint,
+    return PlayerBackground(
+      track: track,
+      child: Scaffold(
+        backgroundColor: Colors.transparent,
+        body: SafeArea(
+          child: track == null
+              ? Column(
+                  children: [
+                    if (_needsCloseButton)
+                      const Align(
+                        alignment: Alignment.centerRight,
+                        child: Padding(
+                          padding: EdgeInsets.fromLTRB(0, 12, 12, 0),
+                          child: _CloseButton(),
                         ),
                       ),
-                    ],
-                  )
-                : _withQueueSheet(
-                    Column(
-                      children: [
-                        _TitleRow(
-                          track: track,
-                          items: [
-                            PlayerMenuItem(
-                              icon: Icons.lyrics_outlined,
-                              label: l10n.lyrics,
-                              selected: _page == 1,
-                              onPressed: () => _goTo(_page == 1 ? 0 : 1),
+                    Expanded(
+                      child: EmptyState(
+                        icon: Icons.music_off_outlined,
+                        title: l10n.notPlaying,
+                        body: l10n.notPlayingHint,
+                      ),
+                    ),
+                  ],
+                )
+              : _withQueueSheet(
+                  Column(
+                    children: [
+                      _TitleRow(
+                        track: track,
+                        items: [
+                          PlayerMenuButton.equalizer(context),
+                          PlayerMenuButton.songInfo(context, track),
+                        ],
+                      ),
+                      Expanded(
+                        child: PageView(
+                          controller: _pages,
+                          onPageChanged: (page) => setState(() => _page = page),
+                          children: [
+                            _CoverAndLyrics(
+                              track: track,
+                              onLyrics: () => _goTo(1),
                             ),
-                            PlayerMenuItem(
-                              icon: Icons.queue_music,
-                              label: l10n.queue,
-                              onPressed: _queue.open,
-                            ),
-                            PlayerMenuButton.equalizer(context),
-                            PlayerMenuButton.songInfo(context, track),
+                            const FadedEdges(child: LyricsView()),
                           ],
                         ),
-                        Expanded(
-                          child: PageView(
-                            controller: _pages,
-                            onPageChanged: (page) =>
-                                setState(() => _page = page),
-                            children: [
-                              _CoverAndLyrics(
-                                track: track,
-                                onLyrics: () => _goTo(1),
-                              ),
-                              const FadedEdges(child: LyricsView()),
-                            ],
-                          ),
-                        ),
-                        _PageDots(count: 2, index: _page, onSelect: _goTo),
-                        SeekBar(duration: track.duration),
-                        const Padding(
-                          padding: EdgeInsets.fromLTRB(16, 4, 16, 16),
-                          child: TransportControls(tonalSkip: false),
-                        ),
-                      ],
-                    ),
+                      ),
+                      _PageDots(count: 2, index: _page, onSelect: _goTo),
+                      SeekBar(duration: track.duration),
+                      const Padding(
+                        padding: EdgeInsets.fromLTRB(16, 4, 16, 16),
+                        child: TransportControls(),
+                      ),
+                    ],
                   ),
-          ),
+                ),
         ),
       ),
     );
@@ -368,24 +340,29 @@ class _PageDots extends StatelessWidget {
 
 /// Large cover, the audio-format pill right below it, then the three-line
 /// lyrics at the lower left.
-class _CoverAndLyrics extends StatelessWidget {
+class _CoverAndLyrics extends ConsumerWidget {
   const _CoverAndLyrics({required this.track, required this.onLyrics});
 
   final Track track;
   final VoidCallback onLyrics;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final lineHeight = ref.watch(
+      lyricsSettingsProvider.select((s) => s.lineHeight),
+    );
     return LayoutBuilder(
       builder: (context, constraints) {
         const pillBlock = 12.0 + 28;
         const gap = 12.0;
         final room =
-            constraints.maxHeight - LyricsLines.height - pillBlock - gap;
-        final size = (constraints.maxWidth * 0.88).clamp(
-          0.0,
-          room.clamp(0.0, 460.0),
-        );
+            constraints.maxHeight -
+            LyricsLines.heightOf(context, lineHeight) -
+            pillBlock -
+            gap;
+        final size =
+            (constraints.maxWidth * 0.88).clamp(0.0, room.clamp(0.0, 460.0)) *
+            0.94;
         return Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
@@ -434,18 +411,8 @@ class _ImmersivePlayerState extends State<_ImmersivePlayer> {
 
     return Scaffold(
       backgroundColor: scheme.surface,
-      body: DecoratedBox(
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [
-              scheme.primaryContainer.withValues(alpha: 0.55),
-              scheme.surface,
-              scheme.tertiaryContainer.withValues(alpha: 0.35),
-            ],
-          ),
-        ),
+      body: PlayerBackground(
+        track: track,
         child: SafeArea(
           child: Stack(
             children: [
@@ -493,6 +460,15 @@ class _ImmersivePlayerState extends State<_ImmersivePlayer> {
                     ],
                     IconButton(
                       tooltip: l10n.collapsePlayer,
+                      style: const ButtonStyle(
+                        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                      ),
+                      iconSize: 18,
+                      padding: const EdgeInsets.all(4),
+                      constraints: const BoxConstraints.tightFor(
+                        width: 34,
+                        height: 34,
+                      ),
                       icon: const Icon(Icons.close_fullscreen),
                       onPressed: () => context.pop(),
                     ),
@@ -507,16 +483,15 @@ class _ImmersivePlayerState extends State<_ImmersivePlayer> {
   }
 }
 
-/// Cover + title block on the left, lyrics (or queue) on the right. The right
-/// pane is exactly as tall as the cover and aligned with its top and bottom.
+/// Cover + caption on the left. Desktop lyrics extend to the caption's bottom;
+/// queues and mobile lyrics keep the cover's height.
 class _Stage extends StatelessWidget {
   const _Stage({required this.track, required this.pane, required this.short});
 
   final Track track;
   final _Pane pane;
 
-  /// Short windows (landscape phones): smaller caption (no quality badge) and
-  /// a smaller minimum cover.
+  /// Short windows (landscape phones): smaller caption with no quality badge.
   final bool short;
 
   static const _gap = 48.0;
@@ -524,65 +499,135 @@ class _Stage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final titleGap = short ? 8.0 : 24.0;
-    final titleHeight = short ? 62.0 : 112.0;
+    final desktop = switch (defaultTargetPlatform) {
+      TargetPlatform.macOS ||
+      TargetPlatform.windows ||
+      TargetPlatform.linux => true,
+      _ => false,
+    };
+    return CustomMultiChildLayout(
+      delegate: _StageLayout(
+        gap: _gap,
+        titleGap: titleGap,
+        extendLyrics: desktop && pane == _Pane.lyrics,
+      ),
+      children: [
+        LayoutId(
+          id: _StagePart.cover,
+          child: PlayerArtwork(track: track, maxSize: 520),
+        ),
+        LayoutId(
+          id: _StagePart.caption,
+          child: _CoverCaption(track: track, compact: short),
+        ),
+        LayoutId(
+          id: _StagePart.pane,
+          child: AnimatedSwitcher(
+            duration: Durations.medium2,
+            child: switch (pane) {
+              _Pane.lyrics => const _ImmersiveLyrics(key: ValueKey('lyrics')),
+              _Pane.queue => const FadedEdges(
+                key: ValueKey('queue'),
+                child: QueueList(padding: FadedEdges.fadePadding),
+              ),
+            },
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+enum _StagePart { cover, caption, pane }
+
+class _ImmersiveLyrics extends StatelessWidget {
+  const _ImmersiveLyrics({super.key});
+
+  @override
+  Widget build(BuildContext context) {
     return LayoutBuilder(
       builder: (context, constraints) {
-        final columnWidth = (constraints.maxWidth - _gap) / 2;
-        final size = math.max(
-          short ? 64.0 : 160.0,
-          math.min(
-            math.min(columnWidth, 520.0),
-            constraints.maxHeight - titleGap - titleHeight,
+        final vertical = (constraints.maxHeight * 0.07).clamp(8.0, 48.0);
+        final horizontal = (constraints.maxWidth * 0.05).clamp(12.0, 32.0);
+        return Padding(
+          padding: EdgeInsets.fromLTRB(
+            math.max(0.0, horizontal - 16),
+            vertical,
+            horizontal + 16,
+            vertical,
           ),
-        );
-        return Center(
-          child: SizedBox(
-            height: size + titleGap + titleHeight,
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Expanded(
-                  child: Column(
-                    children: [
-                      SizedBox.square(
-                        dimension: size,
-                        child: PlayerArtwork(track: track, maxSize: size),
-                      ),
-                      SizedBox(height: titleGap),
-                      SizedBox(
-                        height: titleHeight,
-                        child: _CoverCaption(track: track, compact: short),
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(width: _gap),
-                Expanded(
-                  child: SizedBox(
-                    height: size,
-                    child: FadedEdges(
-                      child: AnimatedSwitcher(
-                        duration: Durations.medium2,
-                        child: switch (pane) {
-                          _Pane.lyrics => const LyricsView(
-                            key: ValueKey('lyrics'),
-                          ),
-                          _Pane.queue => const QueueList(
-                            key: ValueKey('queue'),
-                            padding: FadedEdges.fadePadding,
-                          ),
-                        },
-                      ),
-                    ),
-                  ),
-                ),
-              ],
+          child: Align(
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 560),
+              child: const FadedEdges(child: LyricsView()),
             ),
           ),
         );
       },
     );
   }
+}
+
+/// Measure the caption first so text scaling, fonts and chip metrics determine
+/// the lower edge in the same layout pass, without a fixed caption height.
+class _StageLayout extends MultiChildLayoutDelegate {
+  _StageLayout({
+    required this.gap,
+    required this.titleGap,
+    required this.extendLyrics,
+  });
+
+  final double gap;
+  final double titleGap;
+  final bool extendLyrics;
+
+  @override
+  void performLayout(Size size) {
+    final columnWidth = math.max(0.0, (size.width - gap) / 2);
+    final caption = layoutChild(
+      _StagePart.caption,
+      BoxConstraints(
+        minWidth: columnWidth,
+        maxWidth: columnWidth,
+        maxHeight: size.height,
+      ),
+    );
+    final spacing = math.min(
+      titleGap,
+      math.max(0.0, size.height - caption.height),
+    );
+    final coverSize = math.max(
+      0.0,
+      math.min(
+        math.min(columnWidth, 520.0),
+        size.height - spacing - caption.height,
+      ),
+    );
+    final height = coverSize + spacing + caption.height;
+    final top = (size.height - height) / 2;
+    layoutChild(_StagePart.cover, BoxConstraints.tight(Size.square(coverSize)));
+    positionChild(_StagePart.cover, Offset((columnWidth - coverSize) / 2, top));
+    positionChild(_StagePart.caption, Offset(0, top + coverSize + spacing));
+    layoutChild(
+      _StagePart.pane,
+      BoxConstraints.tight(
+        Size(
+          columnWidth + (extendLyrics ? 48 : 0),
+          extendLyrics ? height : coverSize,
+        ),
+      ),
+    );
+    positionChild(
+      _StagePart.pane,
+      Offset(columnWidth + gap - (extendLyrics ? 48 : 0), top),
+    );
+  }
+
+  @override
+  bool shouldRelayout(_StageLayout oldDelegate) =>
+      gap != oldDelegate.gap ||
+      titleGap != oldDelegate.titleGap ||
+      extendLyrics != oldDelegate.extendLyrics;
 }
 
 class _CoverCaption extends StatelessWidget {
@@ -597,6 +642,7 @@ class _CoverCaption extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     return Column(
+      mainAxisSize: MainAxisSize.min,
       mainAxisAlignment: MainAxisAlignment.start,
       children: [
         Text(

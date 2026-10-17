@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -10,14 +12,16 @@ import 'package:nyaplayer/l10n/app_localizations.dart';
 
 /// At or above this width navigation lives in a permanent sidebar, whatever
 /// the orientation.
-const sidebarBreakpoint = 840.0;
+const sidebarBreakpoint = 720.0;
 
 /// Width of the permanent sidebar.
 const sidebarWidth = 244.0;
 
 /// At or above this width (and tall enough) the player moves from the bottom
 /// bar into a persistent right-hand panel (UI-05).
-const sidePanelBreakpoint = 1100.0;
+const sidePanelBreakpoint = 960.0;
+
+const libraryMaxWidth = 420.0;
 
 /// Panels need some height for cover, lyrics lines and controls.
 const sidePanelMinHeight = 480.0;
@@ -29,9 +33,7 @@ bool useDesktopLayout(Size size) =>
 
 /// Right-hand now-playing panel next to the library.
 bool useSidePanel(Size size) =>
-    size.width > size.height &&
-    size.width >= sidePanelBreakpoint &&
-    size.height >= sidePanelMinHeight;
+    size.width >= sidePanelBreakpoint && size.height >= sidePanelMinHeight;
 
 /// Corner radius of the rounded content cards of the desktop layout. On macOS
 /// it follows the window's own (smaller) corner radius so the cards sit
@@ -84,16 +86,16 @@ class ShellScope extends InheritedWidget {
 /// shell is first shown, for screenshots.
 bool debugOpenDrawerOnLaunch = false;
 
-class AdaptiveShell extends StatefulWidget {
+class AdaptiveShell extends ConsumerStatefulWidget {
   const AdaptiveShell({super.key, required this.navigationShell});
 
   final StatefulNavigationShell navigationShell;
 
   @override
-  State<AdaptiveShell> createState() => _AdaptiveShellState();
+  ConsumerState<AdaptiveShell> createState() => _AdaptiveShellState();
 }
 
-class _AdaptiveShellState extends State<AdaptiveShell> {
+class _AdaptiveShellState extends ConsumerState<AdaptiveShell> {
   final _scaffoldKey = GlobalKey<ScaffoldState>();
 
   @override
@@ -199,10 +201,16 @@ class _AdaptiveShellState extends State<AdaptiveShell> {
     }
 
     final showPanel = useSidePanel(media.size);
+    final available = media.size.width - sidebarWidth;
+    final libraryWidth = math.min(
+      libraryMaxWidth,
+      math.max(300.0, available * 0.42),
+    );
     // Desktop layout: the sidebar sits on the container colour and the page
     // floats on top of it as a rounded surface, like Google's desktop apps.
     return Scaffold(
       backgroundColor: scheme.surfaceContainer,
+      key: _scaffoldKey,
       body: ShellScope(
         openNavigation: null,
         child: Row(
@@ -216,50 +224,53 @@ class _AdaptiveShellState extends State<AdaptiveShell> {
                 child: _navigation(modal: false),
               ),
             ),
-            Expanded(
-              flex: 5,
-              child: Stack(
-                children: [
-                  Positioned.fill(
-                    child: Padding(
-                      padding: EdgeInsets.fromLTRB(
-                        0,
-                        8,
-                        showPanel ? 8 : 12,
-                        // With the panel the page ends above the window edge;
-                        // otherwise the floating player bar sits on top of it.
-                        8,
-                      ),
-                      child: ClipRRect(
-                        borderRadius: desktopCardRadius,
-                        // Pages pad their scrollables by the floating card.
-                        child: MediaQuery(
-                          data: media.copyWith(
-                            padding: media.padding.copyWith(
-                              top: 0,
-                              bottom: showPanel
-                                  ? media.padding.bottom
-                                  : PlayerBar.floatingInset - 8,
+            Flexible(
+              flex: showPanel ? 0 : 1,
+              fit: showPanel ? FlexFit.loose : FlexFit.tight,
+              child: SizedBox(
+                width: showPanel ? libraryWidth : null,
+                child: Stack(
+                  children: [
+                    Positioned.fill(
+                      child: Padding(
+                        padding: EdgeInsets.fromLTRB(
+                          0,
+                          8,
+                          showPanel ? 8 : 12,
+                          // With the panel the page ends above the window edge;
+                          // otherwise the floating player bar sits on top of it.
+                          8,
+                        ),
+                        child: ClipRRect(
+                          borderRadius: desktopCardRadius,
+                          // Pages pad their scrollables by the floating card.
+                          child: MediaQuery(
+                            data: media.copyWith(
+                              padding: media.padding.copyWith(
+                                top: 0,
+                                bottom: showPanel
+                                    ? media.padding.bottom
+                                    : PlayerBar.floatingInset - 8,
+                              ),
                             ),
+                            child: widget.navigationShell,
                           ),
-                          child: widget.navigationShell,
                         ),
                       ),
                     ),
-                  ),
-                  if (!showPanel)
-                    const Positioned(
-                      left: 0,
-                      right: 12,
-                      bottom: 0,
-                      child: PlayerBar(floating: true),
-                    ),
-                ],
+                    if (!showPanel)
+                      const Positioned(
+                        left: 0,
+                        right: 12,
+                        bottom: 0,
+                        child: PlayerBar(floating: true),
+                      ),
+                  ],
+                ),
               ),
             ),
             if (showPanel)
               Expanded(
-                flex: 8,
                 child: MediaQuery(
                   data: media.copyWith(padding: media.padding.copyWith(top: 0)),
                   child: const NowPlayingPanel(),

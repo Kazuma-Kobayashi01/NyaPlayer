@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:path/path.dart' as p;
+import 'package:nyaplayer/domain/cover_source.dart';
 
 @immutable
 class Track {
@@ -23,6 +24,7 @@ class Track {
     this.year,
     this.genre,
     this.lyrics,
+    this.cover,
   });
 
   final int id;
@@ -48,6 +50,7 @@ class Track {
 
   /// ARGB seed used for the generated placeholder cover / cover theme.
   final int coverSeed;
+  final CoverSource? cover;
 
   String get folder => p.posix.dirname(path);
 
@@ -66,6 +69,7 @@ class Album {
     required this.artist,
     required this.coverSeed,
     this.year,
+    this.cover,
   });
 
   final int id;
@@ -73,6 +77,7 @@ class Album {
   final String artist;
   final int? year;
   final int coverSeed;
+  final CoverSource? cover;
 }
 
 @immutable
@@ -82,12 +87,14 @@ class ArtistSummary {
     required this.trackCount,
     required this.albumCount,
     required this.coverSeed,
+    this.cover,
   });
 
   final String name;
   final int trackCount;
   final int albumCount;
   final int coverSeed;
+  final CoverSource? cover;
 }
 
 @immutable

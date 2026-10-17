@@ -53,7 +53,11 @@ class QueueList extends ConsumerWidget {
           child: ListTile(
             selected: isCurrent,
             onTap: () => queue.jumpTo(index),
-            leading: CoverArt(seed: track.coverSeed, size: 48),
+            leading: CoverArt(
+              seed: track.coverSeed,
+              source: track.cover,
+              size: 48,
+            ),
             title: Text(
               track.title,
               maxLines: 1,

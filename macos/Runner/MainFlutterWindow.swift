@@ -2,6 +2,21 @@ import Cocoa
 import FlutterMacOS
 
 class MainFlutterWindow: NSWindow {
+  private var commandsChannel: FlutterMethodChannel?
+  private var lifecycleChannel: FlutterMethodChannel?
+
+  func sendPlaybackCommand(_ command: String) {
+    commandsChannel?.invokeMethod(command, arguments: nil)
+  }
+
+  func prepareToExit(completion: @escaping () -> Void) {
+    lifecycleChannel?.invokeMethod("prepareToExit", arguments: nil) { _ in completion() }
+  }
+  @IBAction func openSettings(_ sender: Any?) {
+    (NSApp.delegate as? AppDelegate)?.showMainWindow(nil)
+    commandsChannel?.invokeMethod("openSettings", arguments: nil)
+  }
+
   override func awakeFromNib() {
     let flutterViewController = FlutterViewController()
     let windowFrame = self.frame
@@ -28,6 +43,22 @@ class MainFlutterWindow: NSWindow {
         forName: name, object: self, queue: .main
       ) { [weak self] _ in self?.positionTrafficLights() }
     }
+
+    commandsChannel = FlutterMethodChannel(
+      name: "nyaplayer/commands",
+      binaryMessenger: flutterViewController.engine.binaryMessenger)
+    commandsChannel?.setMethodCallHandler { call, result in
+      if call.method == "statusMenu", let args = call.arguments as? [String: Any] {
+        (NSApp.delegate as? AppDelegate)?.updateStatusMenu(args)
+        result(nil)
+        return
+      }
+      result(FlutterMethodNotImplemented)
+    }
+
+    lifecycleChannel = FlutterMethodChannel(
+      name: "nyaplayer/lifecycle",
+      binaryMessenger: flutterViewController.engine.binaryMessenger)
 
     // Tells Flutter when the traffic lights go away (full screen), so it can
     // drop the inset it keeps for them.

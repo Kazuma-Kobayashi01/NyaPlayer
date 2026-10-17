@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:nyaplayer/app/theme/player_theme.dart';
 import 'package:nyaplayer/core/format.dart';
 import 'package:nyaplayer/domain/models.dart';
 import 'package:nyaplayer/features/shared/cover_art.dart';
@@ -28,12 +27,9 @@ class AlbumDetailPage extends StatelessWidget {
             ),
           );
         }
-        return PlayerThemeScope(
-          seed: album.coverSeed,
-          child: _AlbumBody(
-            album: album,
-            tracks: library.tracksOfAlbum(album.id),
-          ),
+        return _AlbumBody(
+          album: album,
+          tracks: library.tracksOfAlbum(album.id),
         );
       },
     );
@@ -60,6 +56,8 @@ class _AlbumBody extends ConsumerWidget {
         child: CoverArt(
           seed: album.coverSeed,
           radius: 28,
+          source: album.cover,
+          highResolution: true,
           heroTag: 'album-grid-${album.id}',
         ),
       ),

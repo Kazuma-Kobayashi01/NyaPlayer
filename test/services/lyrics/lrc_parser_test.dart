@@ -113,4 +113,104 @@ void main() {
       expect(l.indexAt(const Duration(minutes: 5)), 2);
     });
   });
+
+  group('inline and continuation translations', () {
+    final separators = [
+      '\u2009',
+      '\u2003',
+      '\u3000',
+      '\u00a0',
+      '\t',
+      '  ',
+      '//',
+      ' | ',
+      '｜',
+      ' / ',
+      r'\n',
+      '<br>',
+      '<BR />',
+    ];
+    for (var i = 0; i < separators.length; i++) {
+      test('inline delimiter $i separates English and Chinese', () {
+        final l = LrcParser.parse(
+          '[00:01.25]A lantern in the snow${separators[i]}雪中的灯',
+        );
+        expect(l.lines.single.text, 'A lantern in the snow');
+        expect(l.lines.single.translation, '雪中的灯');
+        expect(l.lines.single.start, const Duration(milliseconds: 1250));
+      });
+    }
+
+    test(
+      'thin-space Japanese and Chinese format preserves Japanese spaces',
+      () {
+        final l = LrcParser.parse('[00:01]そらのうた きみのこえ\u2009天空的歌 你的声音');
+        expect(l.lines.single.text, 'そらのうた きみのこえ');
+        expect(l.lines.single.translation, '天空的歌 你的声音');
+      },
+    );
+
+    test(
+      'does not split ordinary spaces, same-language fragments or credits',
+      () {
+        final originals = [
+          'A lantern in the snow',
+          'A lantern  in the snow',
+          'そらのうた\u3000きみのこえ',
+          '海风 | 星光',
+          '制作 Producer：someone\u2009某某',
+          '歌手/person',
+          'A voice (live)',
+          'http://example.test/path',
+        ];
+        final l = LrcParser.parse(
+          [
+            for (var i = 0; i < originals.length; i++)
+              '[00:${i + 1}]${originals[i]}',
+          ].join('\n'),
+        );
+        expect(l.lines.map((l) => l.text), originals);
+        expect(l.lines.every((l) => l.translation == null), isTrue);
+      },
+    );
+
+    test(
+      'translation can follow a multi-tag line without its own timestamp',
+      () {
+        final l = LrcParser.parse('[00:10][00:30]A lantern\n一盏灯\n[00:50]Next');
+        expect(l.lines.map((l) => l.start.inSeconds), [10, 30, 50]);
+        expect(l.lines.take(2).map((l) => l.translation), ['一盏灯', '一盏灯']);
+      },
+    );
+
+    test('same-language untimed text is not guessed to be a translation', () {
+      final l = LrcParser.parse('[00:10]A lantern\nA note\n[00:20]Next');
+      expect(l.lines.first.translation, isNull);
+    });
+
+    test(
+      'mixed inline and repeated timestamp translations are deduplicated',
+      () {
+        final l = LrcParser.parse(
+          '[00:01]A lantern\u2009一盏灯\n[00:01]一盏灯\n[00:01]A lantern\u2009一盏灯',
+        );
+        expect(l.lines.single.text, 'A lantern');
+        expect(l.lines.single.translation, '一盏灯');
+      },
+    );
+
+    test('plain text supports inline translation and Chinese to English', () {
+      final l = LrcParser.parse('一盏灯 | A lantern\n下一段');
+      expect(l.synced, isFalse);
+      expect(l.lines.first.text, '一盏灯');
+      expect(l.lines.first.translation, 'A lantern');
+      expect(l.lines.last.translation, isNull);
+    });
+
+    test('English word gaps before the actual thin space are retained', () {
+      final l = LrcParser.parse('[00:01]A lantern  in the snow\u2009雪中的灯');
+      expect(l.lines.single.text, 'A lantern  in the snow');
+      expect(l.lines.single.translation, '雪中的灯');
+    });
+  });
 }

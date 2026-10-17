@@ -249,6 +249,67 @@ void main() {
       expect(st().playing, isFalse);
     });
 
+    for (final paused in [false, true]) {
+      test(
+        'shuffle never emits a reset or changes play state (paused=$paused)',
+        () async {
+          await ctl().playTracks(tracks, startIndex: 2);
+          await engine.seek(const Duration(seconds: 42));
+          if (paused) await engine.pause();
+          await pump();
+          final positions = <Duration>[];
+          final playing = <bool>[];
+          final posSub = engine.position.listen(positions.add);
+          final playSub = engine.playing.listen(playing.add);
+          addTearDown(posSub.cancel);
+          addTearDown(playSub.cancel);
+          for (var i = 0; i < 8; i++) {
+            await ctl().toggleShuffle();
+            await pump();
+            expect(st().current!.id, 3);
+            expect(engine.paths[engine.index!], tracks[2].path);
+            expect(
+              engine.currentPosition,
+              greaterThanOrEqualTo(const Duration(seconds: 42)),
+            );
+            expect(engine.isPlaying, !paused);
+          }
+          expect(
+            positions,
+            everyElement(greaterThanOrEqualTo(const Duration(seconds: 42))),
+          );
+          expect(playing, isEmpty);
+        },
+      );
+    }
+
+    test(
+      'shuffle preserves the playing occurrence of repeated songs',
+      () async {
+        await ctl().playTracks([
+          tracks[0],
+          tracks[1],
+          tracks[0],
+          tracks[2],
+        ], startIndex: 2);
+        await pump();
+        await ctl().toggleShuffle();
+        await pump();
+        expect(engine.index, 0);
+        expect(st().currentIndex, engine.index);
+        await ctl().toggleShuffle();
+        await pump();
+        expect(engine.paths, [
+          tracks[0].path,
+          tracks[1].path,
+          tracks[0].path,
+          tracks[2].path,
+        ]);
+        expect(st().currentIndex, engine.index);
+        expect(st().current, tracks[0]);
+      },
+    );
+
     test('shufflePlay turns shuffle on and starts the queue', () async {
       await ctl().shufflePlay(tracks);
       await pump();

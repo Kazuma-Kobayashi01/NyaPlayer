@@ -22,6 +22,7 @@ class LibraryAppBar extends StatelessWidget implements PreferredSizeWidget {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     final openNavigation = ShellScope.openNavigationOf(context);
+    final titleStyle = Theme.of(context).textTheme.titleLarge;
     return AppBar(
       automaticallyImplyLeading: false,
       leading: openNavigation == null
@@ -31,7 +32,10 @@ class LibraryAppBar extends StatelessWidget implements PreferredSizeWidget {
               icon: const Icon(Icons.menu),
               onPressed: openNavigation,
             ),
-      title: Text(title),
+      title: Text(
+        title,
+        style: titleStyle?.copyWith(fontSize: (titleStyle.fontSize ?? 22) - 1),
+      ),
       actions: [
         if (showSearch) const LibrarySearchAnchor(),
         const SizedBox(width: 4),
@@ -47,9 +51,6 @@ class LibrarySearchAnchor extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context);
-    final router = GoRouter.of(context);
-    final queue = ref.read(queueProvider.notifier);
-
     return SearchAnchor(
       viewHintText: l10n.searchHint,
       builder: (context, controller) => IconButton(
@@ -57,78 +58,98 @@ class LibrarySearchAnchor extends ConsumerWidget {
         icon: const Icon(Icons.search),
         onPressed: controller.openView,
       ),
-      suggestionsBuilder: (context, controller) {
-        final library = ref.read(libraryProvider).value;
-        final query = controller.text;
-        if (library == null || query.trim().isEmpty) return const <Widget>[];
-
-        final tracks = library.searchTracks(query);
-        final albums = library.searchAlbums(query);
-        final artists = library.searchArtists(query);
-        if (tracks.isEmpty && albums.isEmpty && artists.isEmpty) {
-          return [
-            Padding(
-              padding: const EdgeInsets.all(32),
-              child: Center(child: Text(l10n.searchNoResults)),
-            ),
-          ];
-        }
-
-        Widget header(String text) => Padding(
-          padding: const EdgeInsets.fromLTRB(16, 16, 16, 4),
-          child: Text(
-            text,
-            style: Theme.of(context).textTheme.titleSmall
-                ?.copyWith(color: Theme.of(context).colorScheme.primary),
-          ),
-        );
-
-        return [
-          if (artists.isNotEmpty) ...[
-            header(l10n.sectionArtists),
-            for (final a in artists)
-              ListTile(
-                leading: CoverArt(
-                  seed: a.coverSeed,
-                  size: 40,
-                  radius: 20,
-                  icon: Icons.person,
-                ),
-                title: Text(a.name),
-                onTap: () {
-                  controller.closeView(null);
-                  router.go('/artists/${Uri.encodeComponent(a.name)}');
-                },
-              ),
-          ],
-          if (albums.isNotEmpty) ...[
-            header(l10n.sectionAlbums),
-            for (final a in albums)
-              ListTile(
-                leading: CoverArt(seed: a.coverSeed, size: 40),
-                title: Text(a.title),
-                subtitle: Text(a.artist),
-                onTap: () {
-                  controller.closeView(null);
-                  router.go('/albums/${a.id}');
-                },
-              ),
-          ],
-          if (tracks.isNotEmpty) ...[
-            header(l10n.sectionSongs),
-            for (var i = 0; i < tracks.length; i++)
-              ListTile(
-                leading: CoverArt(seed: tracks[i].coverSeed, size: 40),
-                title: Text(tracks[i].title),
-                subtitle: Text('${tracks[i].artist} · ${tracks[i].album}'),
-                onTap: () {
-                  controller.closeView(null);
-                  queue.playTracks(tracks, startIndex: i);
-                },
-              ),
-          ],
-        ];
-      },
+      suggestionsBuilder: (context, controller) => librarySearchSuggestions(
+        context,
+        ref,
+        controller.text,
+        () => controller.closeView(null),
+      ),
     );
   }
+}
+
+/// Shared results for the in-page search anchor and the macOS global shortcut.
+List<Widget> librarySearchSuggestions(
+  BuildContext context,
+  WidgetRef ref,
+  String query,
+  VoidCallback close,
+) {
+  final l10n = AppLocalizations.of(context);
+  final router = GoRouter.of(context);
+  final queue = ref.read(queueProvider.notifier);
+  final library = ref.read(libraryProvider).value;
+  if (library == null || query.trim().isEmpty) return const <Widget>[];
+
+  final tracks = library.searchTracks(query);
+  final albums = library.searchAlbums(query);
+  final artists = library.searchArtists(query);
+  if (tracks.isEmpty && albums.isEmpty && artists.isEmpty) {
+    return [
+      Padding(
+        padding: const EdgeInsets.all(32),
+        child: Center(child: Text(l10n.searchNoResults)),
+      ),
+    ];
+  }
+
+  Widget header(String text) => Padding(
+    padding: const EdgeInsets.fromLTRB(16, 16, 16, 4),
+    child: Text(
+      text,
+      style: Theme.of(context).textTheme.titleSmall
+          ?.copyWith(color: Theme.of(context).colorScheme.primary),
+    ),
+  );
+
+  return [
+    if (artists.isNotEmpty) ...[
+      header(l10n.sectionArtists),
+      for (final a in artists)
+        ListTile(
+          leading: CoverArt(
+            seed: a.coverSeed,
+            source: a.cover,
+            size: 40,
+            radius: 20,
+            icon: Icons.person,
+          ),
+          title: Text(a.name),
+          onTap: () {
+            close();
+            router.go('/artists/${Uri.encodeComponent(a.name)}');
+          },
+        ),
+    ],
+    if (albums.isNotEmpty) ...[
+      header(l10n.sectionAlbums),
+      for (final a in albums)
+        ListTile(
+          leading: CoverArt(seed: a.coverSeed, source: a.cover, size: 40),
+          title: Text(a.title),
+          subtitle: Text(a.artist),
+          onTap: () {
+            close();
+            router.go('/albums/${a.id}');
+          },
+        ),
+    ],
+    if (tracks.isNotEmpty) ...[
+      header(l10n.sectionSongs),
+      for (var i = 0; i < tracks.length; i++)
+        ListTile(
+          leading: CoverArt(
+            seed: tracks[i].coverSeed,
+            source: tracks[i].cover,
+            size: 40,
+          ),
+          title: Text(tracks[i].title),
+          subtitle: Text('${tracks[i].artist} · ${tracks[i].album}'),
+          onTap: () {
+            close();
+            queue.playTracks(tracks, startIndex: i);
+          },
+        ),
+    ],
+  ];
 }

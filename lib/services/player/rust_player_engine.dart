@@ -120,6 +120,10 @@ class RustPlayerEngine implements PlayerEngine {
   }
 
   @override
+  Future<void> reorder(List<int> order) async =>
+      rust.playerReorder(order: order);
+
+  @override
   Future<void> setLoopMode(LoopMode mode) async => rust.playerSetRepeatMode(
     mode: switch (mode) {
       LoopMode.none => rust.RepeatMode.none,

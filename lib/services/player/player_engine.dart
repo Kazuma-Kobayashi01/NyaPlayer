@@ -29,6 +29,10 @@ abstract interface class PlayerEngine {
 
   /// Moves an item so that it ends up at [to] in the resulting list.
   Future<void> move(int from, int to);
+
+  /// Reorders by original indexes without reloading or seeking the current
+  /// source. [order] must contain each existing index exactly once.
+  Future<void> reorder(List<int> order);
   Future<void> setLoopMode(LoopMode mode);
 
   /// 10-band equalizer (TECH_SPEC §5); cheap enough to call while dragging.

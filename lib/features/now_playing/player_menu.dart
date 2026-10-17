@@ -63,6 +63,7 @@ class PlayerMenuButton extends ConsumerWidget {
         // dialog is opened from this (still mounted) button's context.
         _LyricsSettingsMenu(
           onEditFontSize: () => showLyricsFontSizeDialog(context, ref),
+          onEditLineHeight: () => showLyricsLineHeightDialog(context, ref),
         ),
       ],
       builder: (context, controller, _) => IconButton(
@@ -77,9 +78,13 @@ class PlayerMenuButton extends ConsumerWidget {
 
 /// Font size, alignment and translation toggle of the lyrics view.
 class _LyricsSettingsMenu extends ConsumerWidget {
-  const _LyricsSettingsMenu({required this.onEditFontSize});
+  const _LyricsSettingsMenu({
+    required this.onEditFontSize,
+    required this.onEditLineHeight,
+  });
 
   final VoidCallback onEditFontSize;
+  final VoidCallback onEditLineHeight;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -94,6 +99,13 @@ class _LyricsSettingsMenu extends ConsumerWidget {
           onPressed: onEditFontSize,
           child: Text(
             '${l10n.lyricsFontSize} · ${formatFontSize(settings.fontSize)} pt',
+          ),
+        ),
+        MenuItemButton(
+          leadingIcon: const Icon(Icons.format_line_spacing),
+          onPressed: onEditLineHeight,
+          child: Text(
+            '${l10n.lyricsLineHeight} · ${formatFontSize(settings.lineHeight)} ×',
           ),
         ),
         const Divider(height: 1),
@@ -125,30 +137,72 @@ class _LyricsSettingsMenu extends ConsumerWidget {
 }
 
 String formatFontSize(double size) =>
-    size == size.roundToDouble() ? '${size.round()}' : size.toStringAsFixed(1);
+    size.toStringAsFixed(2).replaceFirst(RegExp(r'\.?0+$'), '');
 
 /// Number input for the lyrics font size, with -/+ steppers.
 Future<void> showLyricsFontSizeDialog(BuildContext context, WidgetRef ref) {
   return showDialog<void>(
     context: context,
-    builder: (context) => _LyricsFontSizeDialog(
+    builder: (context) => _LyricsNumberDialog(
       initial: ref.read(lyricsSettingsProvider).fontSize,
       onApply: ref.read(lyricsSettingsProvider.notifier).setFontSize,
+      title: AppLocalizations.of(context).lyricsFontSize,
+      invalidMessage: AppLocalizations.of(context).lyricsFontSizeInvalid,
+      icon: Icons.format_size,
+      min: LyricsSettings.minFontSize,
+      max: LyricsSettings.maxFontSize,
+      step: 1,
+      suffix: 'pt',
     ),
   );
 }
 
-class _LyricsFontSizeDialog extends StatefulWidget {
-  const _LyricsFontSizeDialog({required this.initial, required this.onApply});
+Future<void> showLyricsLineHeightDialog(BuildContext context, WidgetRef ref) {
+  return showDialog<void>(
+    context: context,
+    builder: (context) => _LyricsNumberDialog(
+      initial: ref.read(lyricsSettingsProvider).lineHeight,
+      onApply: ref.read(lyricsSettingsProvider.notifier).setLineHeight,
+      title: AppLocalizations.of(context).lyricsLineHeight,
+      invalidMessage: AppLocalizations.of(context).lyricsLineHeightInvalid,
+      icon: Icons.format_line_spacing,
+      min: LyricsSettings.minLineHeight,
+      max: LyricsSettings.maxLineHeight,
+      step: 0.1,
+      suffix: '×',
+    ),
+  );
+}
+
+class _LyricsNumberDialog extends StatefulWidget {
+  const _LyricsNumberDialog({
+    required this.initial,
+    required this.onApply,
+    required this.title,
+    required this.invalidMessage,
+    required this.icon,
+    required this.min,
+    required this.max,
+    required this.step,
+    required this.suffix,
+  });
+
+  final String title;
+  final String invalidMessage;
+  final IconData icon;
+  final double min;
+  final double max;
+  final double step;
+  final String suffix;
 
   final double initial;
   final ValueChanged<double> onApply;
 
   @override
-  State<_LyricsFontSizeDialog> createState() => _LyricsFontSizeDialogState();
+  State<_LyricsNumberDialog> createState() => _LyricsNumberDialogState();
 }
 
-class _LyricsFontSizeDialogState extends State<_LyricsFontSizeDialog> {
+class _LyricsNumberDialogState extends State<_LyricsNumberDialog> {
   late final _text = TextEditingController(
     text: formatFontSize(widget.initial),
   );
@@ -161,9 +215,7 @@ class _LyricsFontSizeDialogState extends State<_LyricsFontSizeDialog> {
 
   double? get _value {
     final v = double.tryParse(_text.text.trim());
-    if (v == null ||
-        v < LyricsSettings.minFontSize ||
-        v > LyricsSettings.maxFontSize) {
+    if (v == null || !v.isFinite || v < widget.min || v > widget.max) {
       return null;
     }
     return v;
@@ -171,8 +223,8 @@ class _LyricsFontSizeDialogState extends State<_LyricsFontSizeDialog> {
 
   void _step(double delta) {
     final next = ((_value ?? widget.initial) + delta).clamp(
-      LyricsSettings.minFontSize,
-      LyricsSettings.maxFontSize,
+      widget.min,
+      widget.max,
     );
     setState(() => _text.text = formatFontSize(next));
   }
@@ -190,8 +242,8 @@ class _LyricsFontSizeDialogState extends State<_LyricsFontSizeDialog> {
     final material = MaterialLocalizations.of(context);
     final valid = _value != null;
     return AlertDialog(
-      icon: const Icon(Icons.format_size),
-      title: Text(l10n.lyricsFontSize),
+      icon: Icon(widget.icon),
+      title: Text(widget.title),
       content: Row(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -199,9 +251,9 @@ class _LyricsFontSizeDialogState extends State<_LyricsFontSizeDialog> {
           Padding(
             padding: const EdgeInsets.only(top: 8),
             child: IconButton.filledTonal(
-              tooltip: '-1',
+              tooltip: '-${formatFontSize(widget.step)}',
               icon: const Icon(Icons.remove),
-              onPressed: () => _step(-1),
+              onPressed: () => _step(-widget.step),
             ),
           ),
           const SizedBox(width: 12),
@@ -219,12 +271,13 @@ class _LyricsFontSizeDialogState extends State<_LyricsFontSizeDialog> {
               ],
               decoration: InputDecoration(
                 border: const OutlineInputBorder(),
-                suffixText: 'pt',
+                suffixText: widget.suffix,
                 helperText: l10n.lyricsFontSizeRange(
-                  LyricsSettings.minFontSize.round(),
-                  LyricsSettings.maxFontSize.round(),
+                  widget.min.round(),
+                  widget.max.round(),
                 ),
-                errorText: valid ? null : l10n.lyricsFontSizeInvalid,
+                errorText: valid ? null : widget.invalidMessage,
+                errorMaxLines: 3,
               ),
               onChanged: (_) => setState(() {}),
               onSubmitted: (_) => _apply(),
@@ -234,9 +287,9 @@ class _LyricsFontSizeDialogState extends State<_LyricsFontSizeDialog> {
           Padding(
             padding: const EdgeInsets.only(top: 8),
             child: IconButton.filledTonal(
-              tooltip: '+1',
+              tooltip: '+${formatFontSize(widget.step)}',
               icon: const Icon(Icons.add),
-              onPressed: () => _step(1),
+              onPressed: () => _step(widget.step),
             ),
           ),
         ],
@@ -294,15 +347,19 @@ class LyricsQueueToggle extends StatelessWidget {
       style: SegmentedButton.styleFrom(
         visualDensity: VisualDensity.compact,
         tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+        backgroundColor: Theme.of(context).colorScheme.surface
+            .withValues(alpha: 0),
+        selectedBackgroundColor: Theme.of(context).colorScheme.surface
+            .withValues(alpha: 0),
+        selectedForegroundColor: Theme.of(context).colorScheme.primary,
+        side: BorderSide.none,
       ),
       onSelectionChanged: (s) => onChanged(s.isEmpty ? null : s.first),
     );
   }
 }
 
-/// Transport row of the desktop players: favourite at the far left, the
-/// menu (and, in the immersive player, the lyrics / queue toggle) at the far
-/// right.
+/// Keep every desktop transport action together in one centred group.
 class PlayerControlsRow extends StatelessWidget {
   const PlayerControlsRow({
     super.key,
@@ -319,18 +376,24 @@ class PlayerControlsRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Row(
-      children: [
-        FavoriteButton(track: track),
-        const SizedBox(width: 8),
-        // Scales down in narrow panels instead of overflowing.
-        Expanded(
-          child: FittedBox(fit: BoxFit.scaleDown, child: transport),
+    return Center(
+      child: FittedBox(
+        fit: BoxFit.scaleDown,
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            FavoriteButton(track: track),
+            const SizedBox(width: 8),
+            transport,
+            const SizedBox(width: 8),
+            if (toggle case final toggle?) ...[
+              toggle,
+              const SizedBox(width: 4),
+            ],
+            PlayerMenuButton(items: menuItems),
+          ],
         ),
-        const SizedBox(width: 8),
-        if (toggle case final toggle?) ...[toggle, const SizedBox(width: 4)],
-        PlayerMenuButton(items: menuItems),
-      ],
+      ),
     );
   }
 }

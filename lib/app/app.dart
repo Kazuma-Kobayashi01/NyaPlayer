@@ -2,6 +2,7 @@ import 'package:dynamic_color/dynamic_color.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:nyaplayer/app/router.dart';
+import 'package:nyaplayer/app/app_commands.dart';
 import 'package:nyaplayer/app/theme/app_theme.dart';
 import 'package:nyaplayer/app/window_chrome.dart';
 import 'package:nyaplayer/app/theme/theme_settings.dart';
@@ -19,7 +20,7 @@ class NyaPlayerApp extends ConsumerWidget {
     return DynamicColorBuilder(
       builder: (lightDynamic, darkDynamic) {
         // The whole app follows the system palette unless a fixed colour is
-        // chosen; "follow cover" only re-tints the player on top of it.
+        // chosen. Blurred artwork is independent of the control colours.
         final useSystem = settings.source != ColorSource.fixed;
         final light = useSystem && lightDynamic != null
             ? adoptSystemScheme(lightDynamic.harmonized())
@@ -41,8 +42,9 @@ class NyaPlayerApp extends ConsumerWidget {
           localizationsDelegates: AppLocalizations.localizationsDelegates,
           supportedLocales: AppLocalizations.supportedLocales,
           routerConfig: router,
-          builder: (context, child) =>
-              TitlebarInset(child: child ?? const SizedBox.shrink()),
+          builder: (context, child) => TitlebarInset(
+            child: AppCommands(child: child ?? const SizedBox.shrink()),
+          ),
         );
       },
     );

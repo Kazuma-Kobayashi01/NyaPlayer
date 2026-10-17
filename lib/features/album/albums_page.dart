@@ -95,6 +95,7 @@ class AlbumCard extends StatelessWidget {
               aspectRatio: 1,
               child: CoverArt(
                 seed: album.coverSeed,
+                source: album.cover,
                 radius: 16,
                 heroTag: '$heroPrefix-${album.id}',
               ),

@@ -1,17 +1,22 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:nyaplayer/app/window_chrome.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:nyaplayer/app/start_page.dart';
 import 'package:nyaplayer/app/theme/app_theme.dart';
 import 'package:nyaplayer/app/theme/theme_settings.dart';
 import 'package:nyaplayer/features/now_playing/player_artwork.dart';
+import 'package:nyaplayer/features/now_playing/progress_slider.dart';
 import 'package:nyaplayer/features/search/library_app_bar.dart';
 import 'package:nyaplayer/l10n/app_localizations.dart';
 
 const _appVersion = '0.1.0';
 
 class SettingsPage extends ConsumerWidget {
-  const SettingsPage({super.key});
+  const SettingsPage({super.key, this.standalone = false});
+
+  final bool standalone;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -21,8 +26,10 @@ class SettingsPage extends ConsumerWidget {
     final controller = ref.read(themeSettingsProvider.notifier);
     final locale = ref.watch(localeProvider);
 
-    return Scaffold(
-      appBar: LibraryAppBar(title: l10n.navSettings, showSearch: false),
+    final page = Scaffold(
+      appBar: standalone
+          ? AppBar(title: Text(l10n.navSettings))
+          : LibraryAppBar(title: l10n.navSettings, showSearch: false),
       body: Center(
         child: ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: 720),
@@ -71,10 +78,6 @@ class SettingsPage extends ConsumerWidget {
                         ButtonSegment(
                           value: ColorSource.wallpaper,
                           label: Text(l10n.colorSourceWallpaper),
-                        ),
-                        ButtonSegment(
-                          value: ColorSource.cover,
-                          label: Text(l10n.colorSourceCover),
                         ),
                         ButtonSegment(
                           value: ColorSource.fixed,
@@ -141,6 +144,42 @@ class SettingsPage extends ConsumerWidget {
               _Group(
                 children: [
                   _Labeled(
+                    label: l10n.progressStyle,
+                    child: DropdownButton<ProgressStyle>(
+                      value: settings.progressStyle,
+                      isExpanded: true,
+                      items: [
+                        for (final style in ProgressStyle.values)
+                          DropdownMenuItem(
+                            value: style,
+                            child: Text(progressStyleLabel(style, l10n)),
+                          ),
+                      ],
+                      onChanged: (style) {
+                        if (style != null) controller.setProgressStyle(style);
+                      },
+                    ),
+                  ),
+                  _Labeled(
+                    label: l10n.playerBackground,
+                    hint: l10n.playerBackgroundHint,
+                    child: SegmentedButton<PlayerBackgroundStyle>(
+                      segments: [
+                        ButtonSegment(
+                          value: PlayerBackgroundStyle.gradient,
+                          label: Text(l10n.backgroundGradient),
+                        ),
+                        ButtonSegment(
+                          value: PlayerBackgroundStyle.blurredCover,
+                          label: Text(l10n.backgroundBlurredCover),
+                        ),
+                      ],
+                      selected: {settings.playerBackground},
+                      onSelectionChanged: (s) =>
+                          controller.setPlayerBackground(s.first),
+                    ),
+                  ),
+                  _Labeled(
                     label: l10n.coverShape,
                     child: SegmentedButton<CoverShape>(
                       segments: [
@@ -169,6 +208,33 @@ class SettingsPage extends ConsumerWidget {
                   ),
                 ],
               ),
+              if (isMacOS) ...[
+                _SectionTitle(l10n.settingsShortcuts),
+                _Group(
+                  children: [
+                    ListTile(
+                      title: Text(l10n.navSettings),
+                      trailing: const Text('⌘ ,'),
+                    ),
+                    ListTile(
+                      title: Text(l10n.search),
+                      trailing: const Text('⌘ F'),
+                    ),
+                    ListTile(
+                      title: Text(l10n.shortcutPlayback),
+                      trailing: Text(l10n.shortcutSpace),
+                    ),
+                    ListTile(
+                      title: Text(l10n.shortcutTracks),
+                      trailing: const Text('⌘ ← / →'),
+                    ),
+                    ListTile(
+                      title: Text(l10n.shortcutWindow),
+                      trailing: const Text('⌃ ⌘ F'),
+                    ),
+                  ],
+                ),
+              ],
               _SectionTitle(l10n.settingsLibrary),
               _Group(
                 children: [
@@ -229,6 +295,15 @@ class SettingsPage extends ConsumerWidget {
         ),
       ),
     );
+    return standalone
+        ? CallbackShortcuts(
+            bindings: {
+              const SingleActivator(LogicalKeyboardKey.escape): () =>
+                  context.pop(),
+            },
+            child: Focus(autofocus: true, child: page),
+          )
+        : page;
   }
 }
 

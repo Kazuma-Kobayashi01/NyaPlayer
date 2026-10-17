@@ -5,7 +5,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart' show Override;
+import 'package:audio_service/audio_service.dart';
 import 'package:nyaplayer/app/app.dart';
+import 'package:nyaplayer/app/desktop_lifecycle.dart';
 import 'package:nyaplayer/core/log.dart';
 import 'package:nyaplayer/data/library_providers.dart';
 import 'package:nyaplayer/data/sample_library.dart';
@@ -16,6 +18,7 @@ import 'package:nyaplayer/services/player/fake_player_engine.dart';
 import 'package:nyaplayer/services/player/player_engine.dart';
 import 'package:nyaplayer/services/player/queue_controller.dart';
 import 'package:nyaplayer/services/player/rust_player_engine.dart';
+import 'package:nyaplayer/services/player/lyra_audio_handler.dart';
 import 'package:nyaplayer/src/rust/api/core.dart';
 import 'package:nyaplayer/src/rust/frb_generated.dart';
 
@@ -49,6 +52,38 @@ Future<void> main() async {
   }
 
   final container = ProviderContainer(overrides: overrides);
+  LyraAudioHandler? handler;
+  if (Platform.isMacOS || Platform.isAndroid) {
+    handler = await AudioService.init(
+      builder: () => LyraAudioHandler(container),
+      config: const AudioServiceConfig(
+        androidNotificationChannelId: 'com.kazuma.nyaplayer.playback',
+        androidNotificationChannelName: 'NyaPlayer',
+        androidNotificationIcon: 'drawable/ic_stat_music',
+        androidStopForegroundOnPause: true,
+        artDownscaleWidth: 1024,
+        artDownscaleHeight: 1024,
+      ),
+    );
+    Log.i('main', 'System media session ready');
+  }
+  if (Platform.isMacOS) {
+    final lifecycle = DesktopLifecycle(
+      onExit: () async {
+        try {
+          await handler?.stop();
+        } finally {
+          try {
+            await handler?.dispose();
+          } finally {
+            await engine.dispose();
+            container.dispose();
+          }
+        }
+      },
+    );
+    await lifecycle.initialize();
+  }
   // The equalizer UI writes eqProvider; the engine follows it (TECH_SPEC §5).
   container.listen<EqState>(
     eqProvider,

@@ -47,7 +47,12 @@ class TrackTile extends ConsumerWidget {
         ),
       );
     } else {
-      leading = CoverArt(seed: track.coverSeed, size: 48, radius: 8);
+      leading = CoverArt(
+        seed: track.coverSeed,
+        source: track.cover,
+        size: 48,
+        radius: 8,
+      );
     }
 
     return ListTile(

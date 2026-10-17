@@ -14,9 +14,10 @@
 
 - Flutter：开工时的最新 **stable** 版本，Dart 3。
 - Android：**`minSdk 31`（Android 12 起，开发者 2026-10-17 决定）**，`targetSdk` / `compileSdk` 跟随 Flutter 模板默认值（不得低于 34）。Rust 输出库 cpal 直接使用 AAudio（需 API 26+），Android 12 基线同时保证壁纸取色（`UI-03`）全员可用。
-- macOS：部署目标跟随 Flutter 模板（≥ 10.15）。
-- 不支持的平台目录（ios / web / windows / linux）在创建工程时不生成：
-  `flutter create --platforms=android,macos --org <your.org> lyra`
+- macOS：部署目标 **15.0（Sequoia）**，Intel + arm64。
+- iOS：部署目标 **18.0**，arm64。
+- 平台优先级（2026-10-18 开发者决定，详见 [`PLATFORM_SUPPORT.md`](./PLATFORM_SUPPORT.md)）：**优先适配 macOS、Android、iOS；次级适配 Windows（10+，x64/arm64）、Linux（Ubuntu 22.04，x64/aarch64）；明确拒绝适配 HarmonyOS**，Web 同样不做。
+- 平台目录按优先级逐步生成：当前已有 android、macos；iOS 适配开始时执行 `flutter create --platforms=ios .`；windows / linux 在次级适配开始时再生成。不生成 web 与 ohos 目录。
 
 ### 1.2 核心依赖（版本为 2026-10-17 在 pub.dev / crates.io 核实的最新版）
 
@@ -56,6 +57,7 @@ Rust 侧（`rust/Cargo.toml`）：
 | 路径 | `path_provider`、`path` |
 | macOS 窗口控制 | `window_manager`（关闭窗口改为隐藏） |
 | 图片缩放 | `image`（生成封面缩略图，在 isolate 中执行） |
+| 缓存键 SHA-1 | `crypto` 3.0.7（2026-10-18 开发者授权，从已有间接依赖声明为直接依赖） |
 | 国际化 | `flutter_localizations` + `intl`（ARB 文件） |
 | 列表拖拽排序 | Flutter 自带 `ReorderableListView` 即可 |
 | 测试 | `flutter_test`、`mocktail` |
@@ -166,7 +168,7 @@ Future<void> main() async {
     config: const AudioServiceConfig(
       androidNotificationChannelId: '<org>.lyra.playback',
       androidNotificationChannelName: '播放',
-      androidStopForegroundOnPause: false,      // 见 §6.1 风险说明，M4 再评估
+      androidStopForegroundOnPause: true,       // 暂停后交还系统调度（§6.1）
     ),
   );
   await AudioFocusCoordinator.configure(handler); // audio_session
@@ -195,6 +197,7 @@ abstract interface class PlayerEngine {
   Future<void> insert(int index, String filePath);  // 通过 add + move 实现
   Future<void> remove(int index);
   Future<void> move(int from, int to);
+  Future<void> reorder(List<int> order); // 原索引的完整排列；保留当前音源和进度
   Future<void> setLoopMode(LoopMode mode);           // none / all / one
   Future<void> setEqualizer(EqParams params);        // EQ，见 §5；开关、10 段增益、前级增益
   Future<void> setVolume(double linear);             // 0..1，用于音频焦点 duck
@@ -208,9 +211,9 @@ abstract interface class PlayerEngine {
 - **队列在 Rust 侧只保留"路径列表 + 当前下标 + 循环模式"**，真相仍在 Dart `QueueController`；Dart 每次变更用增量命令（add/insert/remove/move）同步。
 - **无缝播放（`PLAY-07`）**：当前曲目剩余约 5 秒（或解码完成时）预先打开并解码下一首，追加到 rodio 队列；symphonia 打开 `enable_gapless`，按编码器延迟/填充裁剪首尾样本；两首在同一输出流里首尾相接，不重建设备。下一首的身份由包装 Source 在其第一个样本被取用时发出 `currentIndex` 事件。🔍 M0 验证。
 - **采样率**：输出流按设备默认配置打开；音源采样率不同时由 rodio 的高质量重采样转换（如 192k → 48k）。切到采样率不同的下一首时只换重采样器，不重开设备。
-- **EQ 位置**：在重采样之后、输出之前（按设备采样率计算系数），见 §5。
+- **EQ 位置**：在重采样之后、输出之前（按设备采样率计算系数），见 §5。2026-10-18 已修正实现：每首歌先通过 rodio `UniformSourceIterator` 转换为已打开设备的声道数/采样率，再包 `EqSource`、`Tracked`，最后追加给 `Player`；离线回归与 macOS 基础实听结果见 `SPIKE_REPORT.md` §3，Android 仍待验证。
 - **循环模式**：none / all / one 由引擎决定"下一首是谁"（one 时预读同一首）。
-- **随机播放**：由 `QueueController` 自己打乱后重新下发队列，Rust 不实现随机。
+- **随机播放**：由 `QueueController` 决定排列，通过 `reorder` 原子地重排 Rust 队列；Rust 不实现随机算法。
 - **解码失败**：发出 `error` 事件并自动跳到下一首；连续失败超过 5 首则停止，避免死循环（`FMT-07`）。
 - **输出设备变化**（拔耳机、蓝牙断开/切换）：cpal 报错或默认设备改变时，引擎重建输出流并从当前位置继续（是否继续播放由 Dart 侧"拔耳机即暂停"规则决定）。🔍 M0 验证 Android。
 - 不读取视频轨/封面流：解码只取第一条音频轨。
@@ -218,7 +221,7 @@ abstract interface class PlayerEngine {
 ### 4.4 QueueController
 
 - 是播放队列的**唯一真相来源**：持有 `originalOrder`、`shuffledOrder`、`currentIndex`、`loopMode`、`shuffleEnabled`。
-- 开启随机：保留当前曲目在第 0 位，其余 Fisher–Yates 打乱，重新 `openQueue(..., autoplay: 当前状态)` 并 seek 回原位置。关闭随机：恢复原顺序，定位到当前曲目。
+- 开启随机：保留当前曲目实例在第 0 位，其余 Fisher–Yates 打乱；关闭随机恢复原顺序。2026-10-18 严重 bug 修复：两者均发送完整索引排列 `reorder`，校验后一次替换队列顺序，保留条目的稳定 ID、当前解码器、输出流、进度与暂停/播放状态，只刷新下一曲预载。不得重新 openQueue、seek 或暂停/恢复当前曲目。重复歌曲按出现次数匹配，保持当前实例而非仅按文件名匹配；非法排列不改变队列。
 - 每次队列变化后：
   1. 同步给 `PlayerEngine`（尽量用 add/remove/move 增量操作，避免整体重开打断播放）；
   2. 推送 `queue` 和 `mediaItem` 给 `AudioHandler`；
@@ -232,6 +235,7 @@ abstract interface class PlayerEngine {
 - 把 `PlayerEngine` 的流合成 `PlaybackState` 推送，规则：**只在状态变化或 seek 时更新 `updatePosition`**，不要每帧推送位置（audio_service 会自己外推）。
 - 通知栏控件：上一首 / 播放或暂停 / 下一首；`androidCompactActionIndices: [0, 1, 2]`；`systemActions` 包含 `seek`。
 - `MediaItem.artUri` 必须是 `file://` URI，指向 `CoverCache` 中写好的 1024px 封面文件（见 §7.3）。
+- 2026-10-18 实现：`LyraAudioHandler` 观察同一个 QueueController / PlayerEngine，不创建第二个播放器。系统指令走 QueueController；小幅度 seek 通过独立 seekEvents 同步，正常位置轮询只更新本地锚点，循环回到开头时更新系统。封面先发布文字，再异步发布本地文件 URI，使用歌曲代次防止旧封面串图。macOS 的 MPNowPlayingInfoCenter / MPRemoteCommandCenter 及 Android MediaSession 由 audio_service 的官方平台桥接提供。
 - 循环、随机、EQ 预设切换等通过 `customAction` 暴露给 UI。
 
 ### 4.6 音频焦点与中断（AudioFocusCoordinator）
@@ -335,7 +339,7 @@ Android 11+ 的分区存储下，`READ_MEDIA_AUDIO` 只能读音频文件，**�
 - Android 12（API 31–32）：`READ_EXTERNAL_STORAGE`；Android 13+：`READ_MEDIA_AUDIO`。（minSdk 31，不再考虑 Android 10 及以下。）
 - 🔍 M0 验证方案 A 在一台 Android 13+ 真机上能读到 `.lrc`。
 
-**`androidStopForegroundOnPause`**：设为 `true` 时，暂停后服务退出前台，之后从后台（如蓝牙耳机按键）恢复播放可能触发 `ForegroundServiceStartNotAllowedException`。先设 `false` 保证稳定，代价是暂停时通知不能被划掉；M4 实测后再决定。
+**`androidStopForegroundOnPause`**：2026-10-18 开发者指定服从系统电源调度，改为 `true`。播放期间使用 mediaPlayback 前台服务，暂停后退出前台并释放插件的播放唤醒锁；划掉最近任务不主动停止正在播放的队列，由系统电池设置、系统版本及厂商策略决定服务存活时间，不保证“无限制”绝不被回收。保持插件 START_NOT_STICKY，不请求电池优化豁免、不使用守护进程/定时拉起/重启保活、不实现自定义生存时限。后台恢复仍须满足系统前台服务启动限制，蓝牙恢复/系统停止等行为待 Android 真机实测；不得绕过系统限制强行恢复。
 
 ### 6.2 macOS
 
@@ -345,9 +349,12 @@ Android 11+ 的分区存储下，`READ_MEDIA_AUDIO` 只能读音频文件，**�
   - 用 `window_manager`：`setPreventClose(true)`，在 `onWindowClose` 中 `hide()`；
   - `AppDelegate.swift`：`applicationShouldTerminateAfterLastWindowClosed` 返回 `false`，`applicationShouldHandleReopen` 中重新显示窗口；
   - ⌘Q 和菜单"退出"走正常退出流程，退出前 `dispose` 播放器、保存播放状态。
+  - 2026-10-18 开发者指定：补齐原生“关闭窗口 / ⌘W”菜单，红色关闭按钮采用同样的隐藏行为，保留窗口、Flutter 引擎与现有控制中心会话。Dock 或常驻菜单栏图标可显示原窗口，不重新建播放器。菜单栏图标使用 AppKit NSStatusItem（无额外依赖），包含显示窗口、播放/暂停、上下首、退出，标签跟随应用语言。
+  - 退出请求通过独立生命周期通道先停止媒体会话、释放 Dart 播放器和 provider，再批准 AppKit 终止；并发退出只清理一次，3 秒未回应时允许系统退出。播放状态持久化仍待 M3-9/数据库，不能把本次进程退出误记为恢复功能完成。
 - 媒体键与控制中心由 `audio_service` 提供（cpal 不注册"正在播放"，不会出现重复条目）；🔍 M0 验证。
 - Rust 库：Cargokit 构建通用二进制（arm64 + x86_64），随 App 打包，无需额外签名步骤。
-- 键盘快捷键（`SYS-10`）：用 `Shortcuts` + `Actions` 实现，只在 macOS 注册。
+- 键盘快捷键（`SYS-10`）：用 `Shortcuts` + `Actions` 实现，只在 macOS 注册。2026-10-18 开发者指定：⌘, 打开可返回原页面的设置，空格播放/暂停、⌘←/→ 上下首、⌘F 全局搜索；文本编辑期间不抢占空格与方向键。原生应用菜单的 Settings… / ⌘, 同步通过 MethodChannel 打开相同设置入口，保留系统自带的退出、隐藏、最小化与全屏快捷键。
+  - 设置中的快捷键说明按实际支持的平台显示：当前仅 macOS 展示；Android 不展示，Windows 待后续适配后再提供自己的按键说明，不显示 macOS 的 ⌘ 文案。
 - 分发：本地 `flutter build macos --release`，ad-hoc 签名即可，首次运行右键"打开"。
 
 ## 7. 曲库、元数据、封面
@@ -378,6 +385,8 @@ Android 11+ 的分区存储下，`READ_MEDIA_AUDIO` 只能读音频文件，**�
   - `<albumKeyHash>_256.jpg`（列表、网格用）
   - `<albumKeyHash>_1024.jpg`（播放页、通知栏 `artUri` 用）
 - 文件名用专辑键的 SHA-1；数据库 `albums.coverState` 记录：`unknown / none / cached`，避免重复尝试。
+- **2026-10-18 接入进度（M2-6）**：`CoverCache` 已复用 Rust `read_cover`，在 Dart isolate 中完成 EXIF 方向校正、等比缩放和 JPEG 编码；尺寸是长边上限，不放大低分辨率封面。文件放在 `covers/<源文件版本哈希>/<albumKeyHash>_256.jpg` 与 `_1024.jpg`，版本由文件路径、size、mtime 和缓存格式版本决定，避免标签更新后命中 Flutter 的旧图片内存缓存。完成标记最后写入；同一源并发请求去重，提取/解码串行执行，限制大图内存峰值。
+- Drift 尚未落地，**数据库 `coverState` 与孤立缓存清理待 M1-5 / M2 扫描器接入**；当前缺图结果按源版本在内存记忆，正向磁盘缓存可跨启动复用。按范围调整，本轮只读内嵌封面，文件夹封面仍为 P2。通过 `CoverSource` 给模型传递代表曲目的信息，UI 仅通过服务 provider 获取缓存文件，不直接调用 Rust API。
 - 列表中用 `Image.file(..., cacheWidth: 实际像素宽度)` 解码，严格控制内存（`NFR-04`）。
 - 专辑内歌曲封面不同的情况（少见）：P2 再考虑按曲目缓存。
 
@@ -410,6 +419,8 @@ GBK / Shift-JIS 解码实现 🔍 M0 选型：优先找纯 Dart 包（候选 `ch
 - 一行多个时间标签 → 展开成多行。
 - 元信息：`[ti:] [ar:] [al:] [by:] [offset:]`；`offset` 单位毫秒，正值表示歌词提前。
 - 同一时间戳出现两行 → 视为 原文 + 翻译（`LRC-08`），按出现顺序第一行为原文。
+- 2026-10-18 实际内嵌样本：《小小奇迹》42 组、《打上花火》44 组，均为同一时间标签内用 U+2009 细空格分隔原文和中文。新增同行双语识别：细空格/其他 Unicode 宽空格、制表符、至少两个普通空格、`//`、`|` / `｜`、两侧带空格的 `/`、字面 `\n` 与 `<br>`。仅在两侧语言文字特征符合英/日/中译文关系时拆分，普通句子词间空格、同语言片段、含冒号的制作信息和歌手名裸斜杠保持原样；同时间戳分行仍优先保留，不猜测原译倒序。
+- 带时间戳原文紧接一行无时间戳译文时，通过同样的语言判定附到前一时间标签（多时间标签全部复制）；纯文本只识别显式同行分隔，不把任意相邻段落配对。同时间戳下重复译文去重。显示开关通过 `LyricLine.translation` 生效，关闭后不应残留同行中译。
 - 空行保留为"间奏"占位（显示为 •••）。
 - 增强型 `<mm:ss.xx>` 逐字时间（`LRC-11`，P2）：P0 阶段解析时**剥离**这些标签，不能显示在文本中。
 - 输出按时间升序排列的 `List<LyricLine>`，每行含 `start`、`text`、`translation?`、`words?`。
@@ -418,7 +429,9 @@ GBK / Shift-JIS 解码实现 🔍 M0 选型：优先找纯 Dart 包（候选 `ch
 ### 8.3 歌词视图
 
 - 使用 `ScrollablePositionedList` 风格的定位方式或自己计算偏移，保证当前行垂直居中，`Curves.easeOutCubic` 300ms 滚动。
-- 当前行：`titleLarge` + `colorScheme.onSurface`；其他行：`bodyLarge` + `onSurfaceVariant` 降低透明度。
+- 当前行：`colorScheme.onSurface` + 加粗，按歌词字号的 1.15 倍再加 1pt（默认 20 → 24pt）；其他行使用歌词字号 + `onSurfaceVariant` 降低透明度。封面下三行预览的高亮字比原先增加 1pt。
+- 行距（2026-10-18 开发者指定）：默认行高 1.2 倍（原为 1.35），歌词条目上下留白从各 10pt 收紧到各 6pt。播放菜单 → 歌词设置可输入 1.0～2.0 倍行距，步进 0.1；同步作用于主歌词、翻译与三行预览。预览按行距和系统字体缩放计算占用高度，封面随剩余空间收缩；偏好暂存内存。
+- 封面下三行预览：当前行含翻译且开关开启时，第三行显示当前译文（较小字号），否则显示下一行原文；不增加预览高度。完整歌词把译文独立放在原文下方，较小字号，关闭翻译后两处都隐藏译文。
 - 用户拖动后停止自动跟随 3 秒（`LRC-07`）。
 - 位置更新：播放中用 `Ticker` 根据"最后一次位置 + 经过时间 × 速率"推算，避免依赖高频 position 流；不可见时停止 Ticker（`NFR-07`）。
 
@@ -456,19 +469,21 @@ scan_errors(path PK, message, at)
 
 - `ThemeData(useMaterial3: true, colorScheme: ...)`，全部颜色从 `ColorScheme` 取，**禁止硬编码颜色值**（占位封面的生成色除外）。
 - 配色来源（`UI-04`、`SET-02`）：
-  - **跟随封面**：用 `ColorScheme.fromImageProvider(provider: FileImage(256px 封面), brightness: ...)` 生成，结果按专辑缓存在内存；
   - **系统配色（默认）**：`dynamic_color` 的 `DynamicColorBuilder`（Android 12+ 壁纸色板，macOS 强调色；不可用时回退到固定色）。整套色板逐个角色复制到 Flutter 的 `ColorScheme`（见附录 B 第 1 条）；
   - **固定主题色**：`ColorScheme.fromSeed`。
-- "跟随封面"只作用于播放页、播放条和专辑详情页，其余界面仍用系统配色，切歌时用 `ColorScheme.lerp` + `AnimationController`（400ms）过渡。
+- 2026-10-18 开发者调整：移除中间的“跟随封面”取色选项及播放器局部主题覆盖，配色仅保留系统 / 固定色；专辑封面模糊背景独立保留，不改变控件的主题色。
 - 字体：默认系统字体；中日文混排时设置 `fontFamilyFallback`，Android 上避免日文汉字被渲染成中文字形——根据界面语言设置 `Locale`，必要时为日文文本单独指定 `locale: Locale('ja')`。
 
 ### 10.2 自适应布局（按 Material 3 窗口尺寸类）
 
 | 宽度 | 导航 | 播放器 |
 |---|---|---|
-| 竖屏且 < 840dp | 左侧滑出 `NavigationDrawer`（顶栏左侧菜单按钮打开） | 底部常驻播放条（替代底部导航栏），点击展开为全屏播放页（横屏或宽 ≥ 720dp 时封面与歌词并排） |
-| 横屏（宽 > 高）或 ≥ 840dp，且不满足下一行 | 左侧常驻侧边栏（244dp，与手机抽屉共用 `NavigationPanel`），内容区为圆角 surface | 悬浮圆角播放条（与手机一致，浮在内容区底部） |
-| 横屏且宽 ≥ 1100dp、高 ≥ 480dp | 同上 | 右侧常驻"正在播放"面板（封面/歌词/队列切换），与目录区按 8:5 分配宽度（重心在播放面板）；"放大"按钮推入沉浸式播放页（横屏或宽 ≥ 720dp 时的播放页布局，矮窗口自动精简标题区：左封面、右歌词/队列且歌词区高度与封面等高对齐、底部控制） |
+| 竖屏且 < 720dp | 左侧滑出 `NavigationDrawer`（顶栏左侧菜单按钮打开） | 底部常驻播放条，点击展开为全屏播放页（横屏或宽 ≥ 720dp 时封面与歌词并排） |
+| 横屏（宽 > 高）或 ≥ 720dp，且不满足下一行 | 左侧常驻侧边栏（244dp，与手机抽屉共用 `NavigationPanel`），内容区为圆角 surface | 悬浮圆角播放条（与手机一致，浮在内容区底部） |
+| 宽 ≥ 960dp、高 ≥ 480dp（含宽竖屏） | 同上 | 右侧常驻正在播放面板。中间目录栏分配剩余宽度约 42%，最小 300dp、最大 420dp 后停止增长，其余空间均给播放面板；放大按钮推入沉浸式播放页，矮窗口精简标题区。歌词容器保留与封面/音质信息的外边界对齐，文字留白另见 §10.3。 |
+
+- 2026-10-18 开发者指定折叠屏与桌面调整：按可用逻辑宽度放宽判定，不依赖横竖屏方向。按开发者最新要求移除侧栏收起功能及 macOS 原生收起按钮；桌面侧栏固定 244dp 展开，双栏最低宽度统一为 960dp。手机继续使用抽屉导航。
+- 桌面播放面板与沉浸式页面的放大/退出放大按钮使用 18dp 图标、34dp 点击区域，取消 Material 默认的额外触摸留白；按钮无常驻背景。
 
 - 一级导航：歌曲、收藏、专辑、艺术家、文件夹、播放列表、设置（设置与前六项之间用分隔线隔开）；顶栏标题居中，右侧只有搜索（`SearchAnchor`），不设溢出菜单；均衡器从设置页和播放页进入。
 - macOS 标题栏：去掉系统标题栏（`titlebarAppearsTransparent` + `fullSizeContentView`，标题隐藏），红绿灯直接浮在应用界面上；红绿灯向内偏移（右 8pt、下 6pt，类似 VS Code，在 `MainFlutterWindow.swift` 里重设按钮位置）；Flutter 侧用 `TitlebarInset`（`lib/app/window_chrome.dart`）在顶部留出 34dp 安全区，桌面布局由侧边栏避让；全屏时通过 MethodChannel `nyaplayer/window` 收到通知并取消该留白。
@@ -477,10 +492,18 @@ scan_errors(path PK, message, at)
 ### 10.3 组件约定
 
 - 列表项：`ListTile` 系列；专辑网格：`Card`（filled）+ 封面 + 两行文字。
-- 播放页的次要功能（歌词、队列、均衡器、歌曲信息、放大/收起）统一放进右上角三横线的 `PlayerMenuButton` 菜单，每项带图标和文字；随机/循环放在播放控制行两侧。
-- 进度条：P0 用 `Slider`（2024 M3 样式），P2 再替换为 Expressive 波浪进度条。沉浸式播放页采用"控制按钮在上、时间—进度条—时间同一行在下"的布局。
+- 一级页面顶部标题（Songs 等）：在现有全局字号调整基础上再减小 1pt，列表正文与播放器标题字号保持各自设置。
+- 播放页次要操作使用 `PlayerMenuButton`，每项带图标和文字。2026-10-18 开发者调整：手机紧凑播放页菜单去掉歌词/队列条目，保留左右滑切歌词和上滑队列入口；桌面歌词/队列通过顶部分段按钮切换。桌面展开页与右侧面板底部的收藏、播放控制、更多按钮作为一组居中排列，不再贴两边。
+- 桌面展开歌词：外容器保持与封面顶部、音质标签底部对齐，面板向左扩展 48pt，右边界不变，队列位置不变。2026-10-18 开发者再次调整：容器内歌词上下各留约 7% 空白（8–48dp），左右各留约 5%（12–32dp），可滚动的歌词区最大宽度 560dp，基于居中位置再向左偏约 16dp（用不对称内边距实现，左边距不低于 0），避免全屏文字完全撑满。歌词淡出边缘跟随内层滚动区，手机紧凑页维持原布局。
+- 进度条（2026-10-18 开发者指定）：设置提供 Material（默认）、经典圆点、细线、波浪四种样式，手机/侧栏/沉浸式播放器共用同一偏好；均基于 Slider 保留拖动、键盘及无障碍语义。波浪为静态装饰，不伪装成音频波形，不启动常驻动画。沉浸式采用“控制在上、时间—进度条—时间在下”布局，样式暂存内存，待设置表落地后统一持久化。
+- 播放器的播放/暂停、上下首、随机、循环、收藏、菜单及歌词/队列切换均使用无常驻背景的图标按钮；选中项使用主题主色表示状态，保留悬停、聚焦与按下反馈及原触控面积。
 - 手机播放条悬浮：`PlayerBar(floating: true)` 叠在页面之上，外壳通过 `MediaQuery` 把 `PlayerBar.floatingInset` 加进底部 padding，列表自动留白。
+- 字号（2026-10-18 开发者调整）：全局 `textTheme` / `primaryTextTheme` 的各级字号在 Material 3 默认值上减 1 个逻辑像素，保留系统字体缩放；歌词单独使用设置值，默认 20pt，不再叠加全局减量。
 - 字体：设置中切换 `AppFont.serif / sans`；衬线体不打包字体，macOS 用 Times New Roman + 宋体/明朝，Android 用系统 serif + Noto Serif CJK。
+- 播放页背景（2026-10-18 开发者指定）：独立于主题配色来源，设置中可选主题渐变或封面模糊，默认封面模糊。手机完整播放页、桌面展开播放页和右侧播放器共用同一实现；使用缓存的 256px 封面放大并进行高度模糊，叠加 ColorScheme 表面色保证可读，切歌平滑过渡，无封面回退主题渐变。设置暂随现有 ThemeSettings 存内存，后续统一接 settings 表。
+  - 封面背景微调（2026-10-18 开发者纠正）：仅深色模式在 48% surface 遮罩上再叠加 ColorScheme.scrim 的 10% 黑色遮罩；浅色模式不加黑色遮罩，surface 遮罩不透明度由 68% 降为 50%，减少泛白、保留封面色彩。播放条同样仅深色叠 10% 黑色遮罩，浅色的 surfaceContainerHigh 遮罩由 45% 降为 35%。只作用于封面背景，不修改主题渐变或前景封面。
+  - 缩放窗口时使用固定的 256/1024px 解码缓存键，不随每个布局像素重新解码；图片替换期间保留上一帧。同源已解析的封面路径有最多 128 条的内存缓存（不持有图片字节），布局切换重建时可同步复用，后台仍验证磁盘缓存；源版本变化独立加载，避免旧封面串图。
+- 手机封面：完整播放页封面在现有尺寸基础上缩小约 6%，保留原有进度、歌词及手势布局。
 - 封面样式：`PlayerArtwork` 统一渲染方形/唱片两种样式；唱片的旋转 `AnimationController` 只在播放时运行（`NFR-07`）。
 - 播放/暂停主按钮：`FilledButton` 大尺寸或 `FloatingActionButton.large`。
 - 弹出操作：`MenuAnchor` / `showModalBottomSheet`（M3 样式）。
@@ -532,6 +555,7 @@ scan_errors(path PK, message, at)
 
 | 日期 | 变更 | 理由 |
 |---|---|---|
+| 2026-10-18 | 开发者已授权：将锁文件已有的间接依赖 `crypto` 3.0.7 声明为直接依赖；加入 `image` ^4.12.0、`path_provider` ^2.1.6 | M2-6 按 §7.3 使用 SHA-1 专辑键命名、在 isolate 生成缩略图、存到应用支持目录。`crypto` 复用锁定版本；后两项原已在 §1.3 清单内。 |
 | 2026-10-17 | 初始依赖列表 | 见 §1 |
 | 2026-10-17 | 主工程已加入：`flutter_riverpod`、`go_router`、`dynamic_color`、`path`、`intl`、`flutter_localizations`、`mocktail`（dev） | 均在 §1.3 表内，M1 骨架使用 |
 | 2026-10-17 | 移除计划中的 `media_kit`、`media_kit_libs_audio`、`audio_metadata_reader`；新增 Dart `flutter_rust_bridge` 2.13.0，Rust `symphonia`、`rodio`、`biquad`、`lofty`、`flutter_rust_bridge`、`anyhow`、`log` | 播放内核改为 Rust（附录 B 第 3 条），开发者已同意 |

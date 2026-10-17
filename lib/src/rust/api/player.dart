@@ -46,6 +46,10 @@ void playerRemove({required int index}) =>
 void playerMove({required int from, required int to}) =>
     RustLib.instance.api.crateApiPlayerPlayerMove(from: from, to: to);
 
+/// A complete permutation of old queue indexes. Keeps the playing source.
+void playerReorder({required List<int> order}) =>
+    RustLib.instance.api.crateApiPlayerPlayerReorder(order: order);
+
 void playerSetRepeatMode({required RepeatMode mode}) =>
     RustLib.instance.api.crateApiPlayerPlayerSetRepeatMode(mode: mode);
 

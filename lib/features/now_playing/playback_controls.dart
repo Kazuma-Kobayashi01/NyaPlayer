@@ -4,6 +4,7 @@ import 'package:nyaplayer/core/format.dart';
 import 'package:nyaplayer/data/library_providers.dart';
 import 'package:nyaplayer/domain/models.dart';
 import 'package:nyaplayer/features/shared/quality_badge.dart';
+import 'package:nyaplayer/features/now_playing/progress_slider.dart';
 import 'package:nyaplayer/l10n/app_localizations.dart';
 import 'package:nyaplayer/services/player/player_engine.dart';
 import 'package:nyaplayer/services/player/queue_controller.dart';
@@ -117,7 +118,7 @@ class _SeekBarState extends ConsumerState<SeekBar> {
       style: labelStyle,
     );
     final total = Text(formatDuration(widget.duration), style: labelStyle);
-    final slider = Slider(
+    final slider = ProgressSlider(
       value: value,
       max: max,
       onChanged: (v) => setState(() => _dragValue = v),
@@ -161,7 +162,6 @@ class TransportControls extends ConsumerWidget {
     super.key,
     this.large = true,
     this.showModes = true,
-    this.tonalSkip = true,
     this.spacing,
   });
 
@@ -174,9 +174,6 @@ class TransportControls extends ConsumerWidget {
   /// Shuffle and repeat on either side of the transport buttons.
   final bool showModes;
 
-  /// Tonal circles behind previous/next; plain icons when false.
-  final bool tonalSkip;
-
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context);
@@ -186,21 +183,13 @@ class TransportControls extends ConsumerWidget {
 
     Widget skip(IconData icon, String tooltip, VoidCallback onPressed) {
       final style = IconButton.styleFrom(minimumSize: Size.square(skipSize));
-      return tonalSkip
-          ? IconButton.filledTonal(
-              iconSize: 24,
-              style: style,
-              tooltip: tooltip,
-              icon: Icon(icon),
-              onPressed: onPressed,
-            )
-          : IconButton(
-              iconSize: 30,
-              style: style,
-              tooltip: tooltip,
-              icon: Icon(icon),
-              onPressed: onPressed,
-            );
+      return IconButton(
+        iconSize: 30,
+        style: style,
+        tooltip: tooltip,
+        icon: Icon(icon),
+        onPressed: onPressed,
+      );
     }
 
     return Row(
@@ -238,7 +227,7 @@ class ShuffleButton extends ConsumerWidget {
       isSelected: state.shuffle,
       tooltip: state.shuffle ? l10n.shuffleOn : l10n.shuffleOff,
       icon: const Icon(Icons.shuffle),
-      selectedIcon: const Icon(Icons.shuffle_on),
+      selectedIcon: const Icon(Icons.shuffle),
       onPressed: ref.read(queueProvider.notifier).toggleShuffle,
     );
   }
@@ -254,8 +243,8 @@ class RepeatButton extends ConsumerWidget {
     final l10n = AppLocalizations.of(context);
     final (icon, tip) = switch (state.loopMode) {
       LoopMode.none => (Icons.repeat, l10n.repeatOff),
-      LoopMode.all => (Icons.repeat_on, l10n.repeatAll),
-      LoopMode.one => (Icons.repeat_one_on, l10n.repeatOne),
+      LoopMode.all => (Icons.repeat, l10n.repeatAll),
+      LoopMode.one => (Icons.repeat_one, l10n.repeatOne),
     };
     return IconButton(
       iconSize: 22,
@@ -267,8 +256,7 @@ class RepeatButton extends ConsumerWidget {
   }
 }
 
-/// Wide filled play button whose corners morph between a pill (paused) and a
-/// rounded square (playing), in the spirit of Material 3 Expressive.
+/// Large, unfilled play button with the same touch target in all states.
 class _PlayPauseButton extends StatelessWidget {
   const _PlayPauseButton({
     required this.playing,
@@ -286,33 +274,23 @@ class _PlayPauseButton extends StatelessWidget {
   Widget build(BuildContext context) {
     final width = large ? 84.0 : 68.0;
     final height = large ? 62.0 : 50.0;
-    return TweenAnimationBuilder<double>(
-      tween: Tween(end: playing ? height * 0.3 : height / 2),
-      duration: Durations.medium2,
-      curve: Easing.emphasizedDecelerate,
-      builder: (context, radius, child) => SizedBox(
-        width: width,
-        height: height,
-        child: Tooltip(
-          message: tooltip,
-          child: FilledButton(
-            onPressed: onPressed,
-            style: FilledButton.styleFrom(
-              padding: EdgeInsets.zero,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(radius),
-              ),
-            ),
-            child: child,
-          ),
+    return SizedBox(
+      width: width,
+      height: height,
+      child: IconButton(
+        tooltip: tooltip,
+        onPressed: onPressed,
+        style: IconButton.styleFrom(
+          padding: EdgeInsets.zero,
+          foregroundColor: Theme.of(context).colorScheme.primary,
         ),
-      ),
-      child: AnimatedSwitcher(
-        duration: Durations.short4,
-        child: Icon(
-          playing ? Icons.pause : Icons.play_arrow,
-          key: ValueKey(playing),
-          size: large ? 32 : 26,
+        icon: AnimatedSwitcher(
+          duration: Durations.short4,
+          child: Icon(
+            playing ? Icons.pause : Icons.play_arrow,
+            key: ValueKey(playing),
+            size: large ? 44 : 36,
+          ),
         ),
       ),
     );

@@ -3,11 +3,12 @@ import 'dart:io';
 import 'package:path/path.dart' as p;
 import 'package:nyaplayer/data/library.dart';
 import 'package:nyaplayer/domain/models.dart';
+import 'package:nyaplayer/domain/cover_source.dart';
 import 'package:nyaplayer/src/rust/api/meta.dart' as rust;
 
 /// Debug-only (M0 test harness, not the M2 scanner): builds a [Library] from
 /// the FLAC/MP3 files under [root], reading tags with the Rust core. No
-/// database, no covers yet (placeholder colours), no incremental scan.
+/// database or incremental scan. Cover bytes are loaded lazily by CoverCache.
 Future<Library> loadFolderLibrary(String root) async {
   final paths = <String>[];
   await for (final entity in Directory(
@@ -21,6 +22,7 @@ Future<Library> loadFolderLibrary(String root) async {
 
   final results = await rust.readMetadataBatch(paths: paths);
   final albumIds = <String, int>{};
+  final covers = <String, CoverSource>{};
   final albums = <Album>[];
   final tracks = <Track>[];
   for (final result in results) {
@@ -32,6 +34,16 @@ Future<Library> loadFolderLibrary(String root) async {
     final albumArtist = meta.albumArtist ?? artist;
     final key = '${albumArtist.toLowerCase()}\u0000${albumTitle.toLowerCase()}';
     final seed = _seedFor(key);
+    final stat = await File(result.path).stat();
+    final cover = covers.putIfAbsent(
+      key,
+      () => CoverSource(
+        albumKey: key,
+        path: result.path,
+        size: stat.size,
+        modifiedMs: stat.modified.millisecondsSinceEpoch,
+      ),
+    );
     final albumId = albumIds.putIfAbsent(key, () {
       final id = albums.length + 1;
       albums.add(
@@ -41,6 +53,7 @@ Future<Library> loadFolderLibrary(String root) async {
           artist: albumArtist,
           year: meta.year,
           coverSeed: seed,
+          cover: cover,
         ),
       );
       return id;
@@ -61,8 +74,9 @@ Future<Library> loadFolderLibrary(String root) async {
         bitDepth: meta.bitDepth ?? 16,
         bitrateKbps: meta.bitrateKbps ?? 0,
         channels: meta.channels ?? 2,
-        addedAt: File(result.path).statSync().modified,
+        addedAt: stat.modified,
         coverSeed: seed,
+        cover: cover,
         year: meta.year,
         genre: meta.genre,
         lyrics: meta.lyrics,

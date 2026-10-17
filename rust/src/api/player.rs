@@ -151,6 +151,14 @@ pub fn player_move(from: u32, to: u32) {
     send(Command::Move(from as usize, to as usize));
 }
 
+/// A complete permutation of old queue indexes. Keeps the playing source.
+#[flutter_rust_bridge::frb(sync)]
+pub fn player_reorder(order: Vec<u32>) {
+    send(Command::Reorder(
+        order.into_iter().map(|i| i as usize).collect(),
+    ));
+}
+
 #[flutter_rust_bridge::frb(sync)]
 pub fn player_set_repeat_mode(mode: RepeatMode) {
     send(Command::SetLoopMode(match mode {

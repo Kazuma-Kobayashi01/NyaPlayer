@@ -205,6 +205,24 @@ class FakePlayerEngine implements PlayerEngine {
   @override
   Future<void> setLoopMode(LoopMode mode) async => _loop = mode;
 
+  @override
+  Future<void> reorder(List<int> order) async {
+    if (order.length != _paths.length ||
+        order.toSet().length != _paths.length ||
+        order.any((i) => i < 0 || i >= _paths.length)) {
+      throw ArgumentError.value(order, 'order', 'Not a queue permutation');
+    }
+    final previous = List.of(_paths);
+    final current = _current;
+    _paths
+      ..clear()
+      ..addAll(order.map((i) => previous[i]));
+    if (current != null) {
+      _current = order.indexOf(current);
+      if (_current != current && !_disposed) _index.add(_current);
+    }
+  }
+
   EqParams eqParams = EqParams.flat;
   double volume = 1;
 

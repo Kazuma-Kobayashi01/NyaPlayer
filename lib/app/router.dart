@@ -50,8 +50,13 @@ CustomTransitionPage<void> _slideUp(GoRouterState state, Widget child) {
   );
 }
 
+final rootNavigatorKeyProvider = Provider<GlobalKey<NavigatorState>>(
+  (ref) => GlobalKey<NavigatorState>(),
+);
+
 final routerProvider = Provider<GoRouter>((ref) {
   return GoRouter(
+    navigatorKey: ref.watch(rootNavigatorKeyProvider),
     // Read once: changing the setting applies from the next launch.
     initialLocation: ref.read(startPageProvider).path,
     routes: [
@@ -144,6 +149,10 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/queue',
         pageBuilder: (_, state) => _slideUp(state, const QueuePage()),
+      ),
+      GoRoute(
+        path: '/preferences',
+        builder: (_, _) => const SettingsPage(standalone: true),
       ),
       GoRoute(path: '/equalizer', builder: (_, _) => const EqualizerPage()),
       GoRoute(path: '/onboarding', builder: (_, _) => const OnboardingPage()),

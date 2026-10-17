@@ -1,6 +1,8 @@
 {
   "@@locale": "zh",
   "appName": "NyaPlayer",
+  "showAppWindow": "显示 NyaPlayer 窗口",
+  "quitApp": "退出 NyaPlayer",
   "navSongs": "歌曲",
   "navAlbums": "专辑",
   "navArtists": "艺术家",
@@ -124,7 +126,6 @@
   "themeDark": "深色",
   "themeSystem": "跟随系统",
   "settingsColorSource": "配色来源",
-  "colorSourceCover": "跟随封面",
   "colorSourceWallpaper": "系统配色",
   "colorSourceFixed": "固定主题色",
   "settingsSeedColor": "主题色",
@@ -159,7 +160,7 @@
   "favoritesEmptyTitle": "还没有收藏的歌曲",
   "favoritesEmptyBody": "在歌曲菜单或播放页点按 ♡ 即可收藏。",
   "settingsPlayback": "播放",
-  "colorSourceHint": "“跟随封面”只作用于播放器，其余界面使用系统配色。",
+  "colorSourceHint": "选择系统配色或固定主题色，播放器背景可单独设置。",
   "settingsEqualizerSubtitle": "10 段均衡器与预设",
   "coverShape": "封面样式",
   "coverShapeSquare": "方形",
@@ -188,5 +189,22 @@
         "type": "int"
       }
     }
-  }
+  },
+  "playerBackground": "播放页背景",
+  "progressStyle": "播放进度条样式",
+  "progressMaterial": "Material",
+  "progressClassic": "经典圆点",
+  "progressSlim": "细线",
+  "progressWave": "波浪",
+  "backgroundGradient": "主题渐变",
+  "backgroundBlurredCover": "封面模糊",
+  "playerBackgroundHint": "放大并高度模糊专辑封面，营造沉浸背景。",
+  "settingsShortcuts": "键盘快捷键",
+  "shortcutPlayback": "播放 / 暂停",
+  "shortcutSpace": "空格",
+  "shortcutTracks": "上一首 / 下一首",
+  "shortcutWindow": "进入 / 退出全屏",
+  "lyricsLineHeight": "行距",
+  "lyricsLineHeightInvalid": "请输入 1–2 之间的行距倍数",
+  "toggleSidebar": "显示或隐藏侧边栏"
 }

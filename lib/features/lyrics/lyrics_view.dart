@@ -35,10 +35,20 @@ class _LyricsViewState extends ConsumerState<LyricsView> {
 
   void _resetFor(Track track, Lyrics lyrics) {
     _trackId = track.id;
-    _active = -1;
+    final position = ref.read(positionProvider).value ?? Duration.zero;
+    _active = lyrics.synced ? lyrics.indexAt(position) : -1;
     _keys = List.generate(lyrics.lines.length, (_) => GlobalKey());
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!_scroll.hasClients) return;
+      if (!mounted || !_scroll.hasClients) return;
+      // Opening lyrics while paused must still reveal and highlight the
+      // current line; no new position event is guaranteed in that case.
+      final activeContext = _active >= 0 && _active < _keys.length
+          ? _keys[_active].currentContext
+          : null;
+      if (activeContext != null) {
+        Scrollable.ensureVisible(activeContext, alignment: 0.5);
+        return;
+      }
       final position = _scroll.position;
       // Before the first line is sung, show it in the upper third instead of
       // leaving the top half of the pane empty with the text cut off below.
@@ -53,8 +63,13 @@ class _LyricsViewState extends ConsumerState<LyricsView> {
     if (index == _active) return;
     setState(() => _active = index);
     if (index < 0 || DateTime.now().isBefore(_followAfter)) return;
+    _revealActive();
+  }
+
+  void _revealActive() {
+    final index = _active;
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!mounted || index >= _keys.length) return;
+      if (!mounted || index < 0 || index >= _keys.length) return;
       final context = _keys[index].currentContext;
       if (context == null) return;
       Scrollable.ensureVisible(
@@ -78,6 +93,14 @@ class _LyricsViewState extends ConsumerState<LyricsView> {
       return EmptyState(icon: Icons.lyrics_outlined, title: l10n.noLyrics);
     }
     final settings = ref.watch(lyricsSettingsProvider);
+    ref.listen(lyricsSettingsProvider, (previous, next) {
+      if (previous?.fontSize != next.fontSize ||
+          previous?.lineHeight != next.lineHeight ||
+          previous?.centered != next.centered ||
+          previous?.showTranslation != next.showTranslation) {
+        _revealActive();
+      }
+    });
     if (_trackId != track.id || _keys.length != lyrics.lines.length) {
       _resetFor(track, lyrics);
     }
@@ -155,8 +178,8 @@ class _LyricTile extends StatelessWidget {
     final scheme = theme.colorScheme;
     final size = settings.fontSize;
     final base = theme.textTheme.bodyLarge?.copyWith(
-      fontSize: synced && active ? size * 1.15 : size,
-      height: 1.35,
+      fontSize: synced && active ? size * 1.15 + 1 : size,
+      height: settings.lineHeight,
     );
     final color = active || !synced
         ? scheme.onSurface
@@ -166,6 +189,7 @@ class _LyricTile extends StatelessWidget {
     final translation = settings.showTranslation ? line.translation : null;
     final translationStyle = theme.textTheme.bodyMedium?.copyWith(
       fontSize: (size * 0.82).clamp(LyricsSettings.minFontSize, size),
+      height: settings.lineHeight,
     );
 
     return InkWell(
@@ -175,13 +199,20 @@ class _LyricTile extends StatelessWidget {
         opacity: active || !synced ? 1 : 0.55,
         duration: Durations.medium2,
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 10),
+          padding: EdgeInsets.symmetric(
+            horizontal: 24,
+            vertical:
+                6 * settings.lineHeight / LyricsSettings.defaultLineHeight,
+          ),
           child: Column(
             crossAxisAlignment: settings.centered
                 ? CrossAxisAlignment.center
                 : CrossAxisAlignment.start,
             children: [
               AnimatedDefaultTextStyle(
+                // Settings edits apply their new geometry before recentering;
+                // playback highlighting still animates between lyric lines.
+                key: ValueKey((settings.fontSize, settings.lineHeight)),
                 style: (base ?? const TextStyle()).copyWith(
                   color: color,
                   fontWeight: active ? FontWeight.w700 : FontWeight.w500,

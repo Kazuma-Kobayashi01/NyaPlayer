@@ -25,7 +25,7 @@ List<String> get _serifFallback => switch (defaultTargetPlatform) {
 /// their colours from the scheme; nothing is hard-coded.
 ThemeData buildTheme(ColorScheme scheme, {AppFont font = AppFont.sans}) {
   final serif = font == AppFont.serif;
-  return ThemeData(
+  final theme = ThemeData(
     useMaterial3: true,
     colorScheme: scheme,
     fontFamily: serif ? _serifFamily : null,
@@ -64,6 +64,16 @@ ThemeData buildTheme(ColorScheme scheme, {AppFont font = AppFont.sans}) {
         TargetPlatform.android: PredictiveBackPageTransitionsBuilder(),
         TargetPlatform.macOS: FadeForwardsPageTransitionsBuilder(),
       },
+    ),
+  );
+  // Sizes are resolved from the locale's text geometry at Theme.of(context),
+  // so adjust each script category before that merge (including CJK).
+  final typography = theme.typography;
+  return theme.copyWith(
+    typography: typography.copyWith(
+      englishLike: typography.englishLike.apply(fontSizeDelta: -1),
+      dense: typography.dense.apply(fontSizeDelta: -1),
+      tall: typography.tall.apply(fontSizeDelta: -1),
     ),
   );
 }
@@ -133,32 +143,4 @@ ColorScheme schemeFromSeed(int seed, Brightness brightness) {
     (seed, brightness),
     () => ColorScheme.fromSeed(seedColor: Color(seed), brightness: brightness),
   );
-}
-
-/// Re-themes [child] with the colours of the current cover and animates the
-/// change when the track switches (UI-04, TECH_SPEC §10.1).
-class CoverTheme extends StatelessWidget {
-  const CoverTheme({
-    super.key,
-    required this.seed,
-    required this.child,
-    this.font = AppFont.sans,
-  });
-
-  final int? seed;
-  final AppFont font;
-  final Widget child;
-
-  @override
-  Widget build(BuildContext context) {
-    final base = Theme.of(context);
-    final seed = this.seed;
-    if (seed == null) return child;
-    return AnimatedTheme(
-      data: buildTheme(schemeFromSeed(seed, base.brightness), font: font),
-      duration: Durations.medium4,
-      curve: Easing.emphasizedDecelerate,
-      child: child,
-    );
-  }
 }

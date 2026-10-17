@@ -64,6 +64,7 @@ class Library {
           trackCount: e.value.length,
           albumCount: e.value.map((t) => t.albumId).toSet().length,
           coverSeed: e.value.first.coverSeed,
+          cover: e.value.first.cover,
         ),
     ]..sort((a, b) => sortKey(a.name).compareTo(sortKey(b.name)));
     return List.unmodifiable(result);

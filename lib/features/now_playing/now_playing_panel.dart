@@ -4,11 +4,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:nyaplayer/app/layout/adaptive_shell.dart';
-import 'package:nyaplayer/app/theme/player_theme.dart';
 import 'package:nyaplayer/features/lyrics/lyrics_lines.dart';
+import 'package:nyaplayer/features/lyrics/lyrics_settings.dart';
 import 'package:nyaplayer/features/lyrics/lyrics_view.dart';
 import 'package:nyaplayer/features/now_playing/playback_controls.dart';
 import 'package:nyaplayer/features/now_playing/player_artwork.dart';
+import 'package:nyaplayer/features/now_playing/player_background.dart';
 import 'package:nyaplayer/features/now_playing/player_menu.dart';
 import 'package:nyaplayer/features/queue/queue_list.dart';
 import 'package:nyaplayer/domain/models.dart';
@@ -37,16 +38,16 @@ class _NowPlayingPanelState extends ConsumerState<NowPlayingPanel> {
     final l10n = AppLocalizations.of(context);
     final track = ref.watch(queueProvider.select((s) => s.current));
 
-    return PlayerThemeScope(
-      seed: track?.coverSeed,
-      child: Builder(
-        builder: (context) {
-          final scheme = Theme.of(context).colorScheme;
-          return Card.filled(
-            margin: const EdgeInsets.fromLTRB(0, 8, 8, 8),
-            color: scheme.surface,
-            shape: RoundedRectangleBorder(borderRadius: desktopCardRadius),
-            clipBehavior: Clip.antiAlias,
+    return Builder(
+      builder: (context) {
+        final scheme = Theme.of(context).colorScheme;
+        return Card.filled(
+          margin: const EdgeInsets.fromLTRB(0, 8, 8, 8),
+          color: scheme.surface,
+          shape: RoundedRectangleBorder(borderRadius: desktopCardRadius),
+          clipBehavior: Clip.antiAlias,
+          child: PlayerBackground(
+            track: track,
             child: track == null
                 ? EmptyState(
                     icon: Icons.music_off_outlined,
@@ -87,6 +88,15 @@ class _NowPlayingPanelState extends ConsumerState<NowPlayingPanel> {
                             ),
                             IconButton(
                               tooltip: l10n.expandPlayer,
+                              style: const ButtonStyle(
+                                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                              ),
+                              iconSize: 18,
+                              padding: const EdgeInsets.all(4),
+                              constraints: const BoxConstraints.tightFor(
+                                width: 34,
+                                height: 34,
+                              ),
                               icon: const Icon(Icons.open_in_full),
                               onPressed: () => context.push('/now-playing'),
                             ),
@@ -122,10 +132,7 @@ class _NowPlayingPanelState extends ConsumerState<NowPlayingPanel> {
                         padding: const EdgeInsets.fromLTRB(12, 0, 12, 20),
                         child: PlayerControlsRow(
                           track: track,
-                          transport: const TransportControls(
-                            tonalSkip: false,
-                            spacing: 12,
-                          ),
+                          transport: const TransportControls(spacing: 12),
                           menuItems: [
                             PlayerMenuButton.equalizer(context),
                             PlayerMenuButton.songInfo(context, track),
@@ -134,9 +141,9 @@ class _NowPlayingPanelState extends ConsumerState<NowPlayingPanel> {
                       ),
                     ],
                   ),
-          );
-        },
-      ),
+          ),
+        );
+      },
     );
   }
 }
@@ -177,7 +184,7 @@ class _TitleBlock extends StatelessWidget {
 
 /// Cover, the audio-format badge centred right below it, then three lyric
 /// lines as wide as the cover.
-class _CoverView extends StatelessWidget {
+class _CoverView extends ConsumerWidget {
   const _CoverView({super.key, required this.track, required this.onLyrics});
 
   final Track track;
@@ -187,15 +194,21 @@ class _CoverView extends StatelessWidget {
   static const _gaps = 16.0 + 16;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final lineHeight = ref.watch(
+      lyricsSettingsProvider.select((s) => s.lineHeight),
+    );
     return Padding(
       padding: const EdgeInsets.fromLTRB(32, 16, 32, 8),
       child: LayoutBuilder(
         builder: (context, constraints) {
           final room =
-              constraints.maxHeight - _badgeHeight - LyricsLines.height - _gaps;
+              constraints.maxHeight -
+              _badgeHeight -
+              LyricsLines.heightOf(context, lineHeight) -
+              _gaps;
           final size = math.max(
-            120.0,
+            0.0,
             math.min(math.min(constraints.maxWidth, room), 520.0),
           );
           return Center(

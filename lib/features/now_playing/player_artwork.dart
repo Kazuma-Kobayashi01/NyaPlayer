@@ -70,7 +70,12 @@ class _SquareCover extends StatelessWidget {
       shadowColor: scheme.shadow,
       borderRadius: BorderRadius.circular(28),
       clipBehavior: Clip.antiAlias,
-      child: CoverArt(seed: track.coverSeed, radius: 28),
+      child: CoverArt(
+        seed: track.coverSeed,
+        source: track.cover,
+        highResolution: true,
+        radius: 28,
+      ),
     );
   }
 }
@@ -125,7 +130,12 @@ class _SpinningDiscState extends State<_SpinningDisc>
       clipBehavior: Clip.antiAlias,
       child: RotationTransition(
         turns: _turns,
-        child: CoverArt(seed: widget.track.coverSeed, radius: 10000),
+        child: CoverArt(
+          seed: widget.track.coverSeed,
+          source: widget.track.cover,
+          highResolution: true,
+          radius: 10000,
+        ),
       ),
     );
   }

@@ -32,6 +32,7 @@ class ArtistsPage extends StatelessWidget {
               return ListTile(
                 leading: CoverArt(
                   seed: artist.coverSeed,
+                  source: artist.cover,
                   size: 48,
                   radius: 24,
                   icon: Icons.person,
