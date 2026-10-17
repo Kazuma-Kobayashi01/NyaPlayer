@@ -40,6 +40,9 @@ dependencies:
   intl: ^0.20.3
   flutter_localizations:
     sdk: flutter
+  nya_core:
+    path: rust_builder
+  flutter_rust_bridge: 2.13.0
 
 dev_dependencies:
   flutter_test:

@@ -6,6 +6,7 @@ analyzer:
     - android/**
     - macos/**
 
+    - rust_builder/cargokit/**
 linter:
   rules:
     prefer_final_locals: true
