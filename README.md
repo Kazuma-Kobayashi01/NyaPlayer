@@ -5,13 +5,26 @@
 **No ads. No accounts. No network. Just your music.**
 
 [![Flutter](https://img.shields.io/badge/Flutter-02569B?style=for-the-badge&logo=flutter&logoColor=white)](https://flutter.dev)
+[![Dart](https://img.shields.io/badge/Dart-0175C2?style=for-the-badge&logo=dart&logoColor=white)](https://dart.dev)
 [![Rust](https://img.shields.io/badge/Rust-000000?style=for-the-badge&logo=rust&logoColor=white)](https://www.rust-lang.org)
 [![Material 3](https://img.shields.io/badge/Material%20Design-3-6750A4?style=for-the-badge&logo=materialdesign&logoColor=white)](https://m3.material.io)
 [![Offline](https://img.shields.io/badge/100%25-Offline-2ea44f?style=for-the-badge)](#-privacy)
+[![License: MIT](https://img.shields.io/badge/License-MIT-22C55E?style=for-the-badge)](LICENSE)
+
+[![FRB](https://img.shields.io/badge/Flutter_Rust_Bridge-2.13-2563EB?style=for-the-badge)](docs/TECH_SPEC.md)
+[![Riverpod](https://img.shields.io/badge/State-Riverpod-00A6A6?style=for-the-badge)](docs/TECH_SPEC.md)
+[![Symphonia](https://img.shields.io/badge/Decode-Symphonia-E56B6F?style=for-the-badge)](docs/TECH_SPEC.md)
+[![Rodio / CPAL](https://img.shields.io/badge/Audio-Rodio_%2F_CPAL-7C3AED?style=for-the-badge)](docs/TECH_SPEC.md)
+[![Lofty](https://img.shields.io/badge/Tags-Lofty-F59E0B?style=for-the-badge)](docs/TECH_SPEC.md)
+[![audio_service](https://img.shields.io/badge/Media-audio__service-0891B2?style=for-the-badge)](docs/TECH_SPEC.md)
 
 **English** · [简体中文](README.zh-CN.md)
 
 </div>
+
+> [!WARNING]
+> **Under development. Not usable yet.**
+> No usable release is available. The feature list below includes unfinished functionality.
 
 ---
 
@@ -21,7 +34,7 @@
 |---|---|
 | 🎵 **Reliable playback** | FLAC (incl. 24‑bit / hi‑res) and MP3 with gapless playback, powered by a Rust audio core |
 | 🖼️ **Cover art & lyrics** | Reads embedded artwork and lyrics, with scrolling highlight, tap‑to‑seek and bilingual (original + translation) lines |
-| 🎨 **Material 3 design** | Light / dark themes, wallpaper‑based dynamic color, cover‑derived palettes, adaptive layouts for phone, tablet and desktop |
+| 🎨 **Material 3 design** | Light / dark themes, wallpaper‑based dynamic color, blurred album backgrounds, adaptive layouts for phone, tablet and desktop |
 | 📱 **System integration** | Background playback, media notifications, lock‑screen / headset / media‑key controls, audio focus handling |
 | 🎚️ **10‑band equalizer** | 31 Hz – 16 kHz, ±12 dB, built‑in and custom presets — identical sound on every platform |
 | 🔒 **Privacy first** | Zero network requests, zero telemetry. Your library never leaves your device |
@@ -32,8 +45,8 @@
 
 | Platform | Minimum version | Architectures | Status |
 |:--|:--|:--|:--|
-| 🤖 **Android** | Android 12 (API 31) | ARMv8‑A (`arm64-v8a`) | ✅ Primary |
-| 🍎 **macOS** | macOS 15 Sequoia | Intel · Apple Silicon | ✅ Supported |
+| 🤖 **Android** | Android 12 (API 31) | ARMv8‑A (`arm64-v8a`) | 🚧 Primary · in development |
+| 🍎 **macOS** | macOS 15 Sequoia | Intel · Apple Silicon | 🚧 In development |
 | 🍏 **iOS** | iOS 18 | arm64 | 🎯 Priority (next) |
 | 🪟 **Windows** | Windows 10 | x64 · arm64 | 🛠️ Secondary (planned) |
 | 🐧 **Linux** | Ubuntu 22.04 | x64 · aarch64 | 🛠️ Secondary (planned) |
@@ -46,7 +59,7 @@
 | Layer | Choice |
 |---|---|
 | UI | Flutter (stable) · Dart 3 · Material 3 |
-| Audio core | Rust crate `nya_core` — `symphonia` decode, `rodio`/`cpal` output, `biquad` EQ, `lofty` tags |
+| Audio core | Rust crate `nya_core` — `symphonia` decode, `rodio`/`cpal` output, custom biquad EQ, `lofty` tags |
 | Bridge | [`flutter_rust_bridge`](https://github.com/fzyzcjy/flutter_rust_bridge) 2.13 (built via Cargokit) |
 | System controls | `audio_service` · `audio_session` |
 | State / routing | `flutter_riverpod` · `go_router` |
@@ -59,7 +72,7 @@ Architecture: **UI** (`features/*`) → **services** (`services/*`) → **data**
 **Prerequisites:** Flutter stable (Dart ≥ 3.13), Rust stable via [`rustup`](https://rustup.rs), and the toolchain for your target platform (Xcode, Android SDK + NDK, …).
 
 ```bash
-git clone <this-repo> && cd NyaPlayer
+git clone git@github.com:Kazuma-Kobayashi01/NyaPlayer.git && cd NyaPlayer
 flutter pub get
 
 # Run
@@ -101,7 +114,7 @@ NyaPlayer never makes network requests and collects nothing. Library data and co
 
 ## 📄 License
 
-To be decided.
+Licensed under the [MIT License](LICENSE).
 
 <div align="center">
 <img src="https://capsule-render.vercel.app/api?type=waving&color=gradient&customColorList=12,20,24&height=100&section=footer" width="100%" alt=""/>

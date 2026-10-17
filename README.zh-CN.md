@@ -5,13 +5,26 @@
 **无广告 · 无账号 · 无联网 · 只有你的音乐**
 
 [![Flutter](https://img.shields.io/badge/Flutter-02569B?style=for-the-badge&logo=flutter&logoColor=white)](https://flutter.dev)
+[![Dart](https://img.shields.io/badge/Dart-0175C2?style=for-the-badge&logo=dart&logoColor=white)](https://dart.dev)
 [![Rust](https://img.shields.io/badge/Rust-000000?style=for-the-badge&logo=rust&logoColor=white)](https://www.rust-lang.org)
 [![Material 3](https://img.shields.io/badge/Material%20Design-3-6750A4?style=for-the-badge&logo=materialdesign&logoColor=white)](https://m3.material.io)
 [![Offline](https://img.shields.io/badge/100%25-%E7%A6%BB%E7%BA%BF-2ea44f?style=for-the-badge)](#-隐私)
+[![License: MIT](https://img.shields.io/badge/License-MIT-22C55E?style=for-the-badge)](LICENSE)
+
+[![FRB](https://img.shields.io/badge/Flutter_Rust_Bridge-2.13-2563EB?style=for-the-badge)](docs/TECH_SPEC.md)
+[![Riverpod](https://img.shields.io/badge/State-Riverpod-00A6A6?style=for-the-badge)](docs/TECH_SPEC.md)
+[![Symphonia](https://img.shields.io/badge/Decode-Symphonia-E56B6F?style=for-the-badge)](docs/TECH_SPEC.md)
+[![Rodio / CPAL](https://img.shields.io/badge/Audio-Rodio_%2F_CPAL-7C3AED?style=for-the-badge)](docs/TECH_SPEC.md)
+[![Lofty](https://img.shields.io/badge/Tags-Lofty-F59E0B?style=for-the-badge)](docs/TECH_SPEC.md)
+[![audio_service](https://img.shields.io/badge/Media-audio__service-0891B2?style=for-the-badge)](docs/TECH_SPEC.md)
 
 [English](README.md) · **简体中文**
 
 </div>
+
+> [!WARNING]
+> **正在开发中，无法使用。**
+> 目前没有可用的发布版本，下方功能列表包含尚未完成的功能。
 
 ---
 
@@ -21,7 +34,7 @@
 |---|---|
 | 🎵 **稳定播放** | FLAC（含 24bit / 高采样率）与 MP3，支持无缝播放，由 Rust 音频内核驱动 |
 | 🖼️ **封面与歌词** | 读取内嵌封面与歌词，支持滚动高亮、点击跳转、双语（原文 + 翻译）歌词 |
-| 🎨 **Material 3 界面** | 浅色 / 深色、壁纸动态取色、跟随封面配色，手机、平板、桌面自适应布局 |
+| 🎨 **Material 3 界面** | 浅色 / 深色、壁纸动态取色、封面模糊背景，手机、平板、桌面自适应布局 |
 | 📱 **系统集成** | 后台播放、媒体通知、锁屏 / 耳机 / 媒体键控制、音频焦点处理 |
 | 🎚️ **10 段均衡器** | 31 Hz – 16 kHz，±12 dB，内置与自定义预设，各平台听感一致 |
 | 🔒 **隐私优先** | 不发起任何网络请求，不收集任何数据，曲库永远留在你的设备上 |
@@ -32,8 +45,8 @@
 
 | 平台 | 最低版本 | 架构 | 状态 |
 |:--|:--|:--|:--|
-| 🤖 **Android** | Android 12（API 31） | ARMv8‑A（`arm64-v8a`） | ✅ 主平台 |
-| 🍎 **macOS** | macOS 15 Sequoia | Intel · Apple Silicon | ✅ 已支持 |
+| 🤖 **Android** | Android 12（API 31） | ARMv8‑A（`arm64-v8a`） | 🚧 主平台 · 开发中 |
+| 🍎 **macOS** | macOS 15 Sequoia | Intel · Apple Silicon | 🚧 开发中 |
 | 🍏 **iOS** | iOS 18 | arm64 | 🎯 优先适配（下一个） |
 | 🪟 **Windows** | Windows 10 | x64 · arm64 | 🛠️ 次级适配（计划中） |
 | 🐧 **Linux** | Ubuntu 22.04 | x64 · aarch64 | 🛠️ 次级适配（计划中） |
@@ -46,7 +59,7 @@
 | 层 | 方案 |
 |---|---|
 | 界面 | Flutter（stable）· Dart 3 · Material 3 |
-| 音频内核 | Rust crate `nya_core`：`symphonia` 解码、`rodio`/`cpal` 输出、`biquad` 均衡器、`lofty` 标签 |
+| 音频内核 | Rust crate `nya_core`：`symphonia` 解码、`rodio`/`cpal` 输出、自写 biquad 均衡器、`lofty` 标签 |
 | 桥接 | [`flutter_rust_bridge`](https://github.com/fzyzcjy/flutter_rust_bridge) 2.13（经 Cargokit 构建） |
 | 系统控制 | `audio_service` · `audio_session` |
 | 状态管理 / 路由 | `flutter_riverpod` · `go_router` |
@@ -59,7 +72,7 @@
 **前置条件：** Flutter stable（Dart ≥ 3.13）、通过 [`rustup`](https://rustup.rs) 安装的 Rust stable，以及目标平台的工具链（Xcode、Android SDK + NDK 等）。
 
 ```bash
-git clone <this-repo> && cd NyaPlayer
+git clone git@github.com:Kazuma-Kobayashi01/NyaPlayer.git && cd NyaPlayer
 flutter pub get
 
 # 运行
@@ -99,7 +112,7 @@ NyaPlayer 不发起任何网络请求，也不收集任何数据。曲库数据�
 
 ## 📄 许可证
 
-待定。
+采用 [MIT 许可证](LICENSE)。
 
 <div align="center">
 <img src="https://capsule-render.vercel.app/api?type=waving&color=gradient&customColorList=12,20,24&height=100&section=footer" width="100%" alt=""/>
