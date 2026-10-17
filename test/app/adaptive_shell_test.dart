@@ -202,7 +202,7 @@ void main() {
     await tester.pump(const Duration(milliseconds: 800));
     // Phones close the player with the system back gesture.
     expect(find.byTooltip('Collapse'), findsNothing);
-    expect(find.text('Now playing'), findsNothing);
+    expect(find.text('Playing'), findsNothing);
     expect(find.byTooltip('Player menu'), findsOneWidget);
     await tester.tap(find.byTooltip('Player menu'));
     await tester.pumpAndSettle();

@@ -30,7 +30,7 @@
   "songInfo": "Song info",
   "addedToQueue": "Added to queue",
   "willPlayNext": "Will play next",
-  "nowPlaying": "Now playing",
+  "nowPlaying": "Playing",
   "notPlaying": "Nothing playing",
   "notPlayingHint": "Pick a song from your library to start",
   "queue": "Queue",

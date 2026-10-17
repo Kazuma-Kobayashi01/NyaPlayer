@@ -116,7 +116,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get willPlayNext => 'Will play next';
 
   @override
-  String get nowPlaying => 'Now playing';
+  String get nowPlaying => 'Playing';
 
   @override
   String get notPlaying => 'Nothing playing';

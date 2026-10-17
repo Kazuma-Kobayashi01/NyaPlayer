@@ -13,7 +13,7 @@ import 'package:nyaplayer/l10n/app_localizations.dart';
 const sidebarBreakpoint = 840.0;
 
 /// Width of the permanent sidebar.
-const sidebarWidth = 280.0;
+const sidebarWidth = 244.0;
 
 /// At or above this width (and tall enough) the player moves from the bottom
 /// bar into a persistent right-hand panel (UI-05).

@@ -274,14 +274,17 @@ class _QuickAction extends StatelessWidget {
                 child: Icon(icon, size: 22, color: tone.$2),
               ),
               const SizedBox(height: 6),
-              // Shrinks a little instead of truncating ("Now playing").
-              FittedBox(
-                fit: BoxFit.scaleDown,
-                child: Text(
-                  label,
-                  maxLines: 1,
-                  style: theme.textTheme.labelMedium?.copyWith(
-                    color: theme.colorScheme.onSurfaceVariant,
+              // Shrinks a little instead of truncating ("Now playing" in English).
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 4),
+                child: FittedBox(
+                  fit: BoxFit.scaleDown,
+                  child: Text(
+                    label,
+                    maxLines: 1,
+                    style: theme.textTheme.labelMedium?.copyWith(
+                      color: theme.colorScheme.onSurfaceVariant,
+                    ),
                   ),
                 ),
               ),
