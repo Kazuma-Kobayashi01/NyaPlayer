@@ -10,15 +10,17 @@
 - 一次只做一个里程碑里的任务；开始前先说明要做哪几个任务编号。
 - 实现与 TECH_SPEC 冲突时先停下来说明，不要自行改方案。
 - 不要新增 TECH_SPEC §1 之外的依赖，除非先在附录 A 记录理由并征得同意。
-- UI 不得直接调用 media_kit Player，必须经过 AudioHandler / QueueController。
+- UI 不得直接调用 Rust 内核 API（lib/src/rust/），必须经过 AudioHandler / QueueController。
 - 耗时操作放 isolate；不要硬编码颜色，全部从 ColorScheme 取。
-- 完成任务后：dart format . && flutter analyze && flutter test，然后勾选 PLAN.md 中的复选框。
+- 完成任务后：dart format . && flutter analyze && flutter test（改了 rust/ 时再加 cargo fmt && cargo clippy -- -D warnings && cargo test），然后勾选 PLAN.md 中的复选框。
 
 ## 常用命令
 - flutter run -d macos
 - flutter run --release -d <android-device-id>
 - dart run build_runner build --delete-conflicting-outputs   # drift 代码生成
 - flutter test
+- flutter_rust_bridge_codegen generate          # 改了 rust/src/api 后重新生成桥接代码
+- (cd rust && cargo test)
 
 ## 开发者偏好
 - 回复用中文；代码注释中英文均可，标识符用英文。

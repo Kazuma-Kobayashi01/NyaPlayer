@@ -42,25 +42,24 @@
 
 **任务清单**
 
-- [x] M0-1 新建 `spike/` Flutter 工程（仅 android、macos），加入 `media_kit`、`media_kit_libs_audio`、`audio_service`、`audio_session`、`audio_metadata_reader`。（2026-10-17：`spike/` 目录已删除；M0 剩余验证项以后需要时再建，或在主工程分支里做。）
-- [ ] M0-2 **格式**：在 Android 真机和 macOS 上依次播放 FLAC（16/24bit）、MP3（CBR/VBR），记录能否播放。（范围已缩小到 FLAC/MP3，其余格式为 P2，见 REQUIREMENTS §4.1）
-- [ ] M0-3 **EQ**：设置 `af` 为 `TECH_SPEC.md` §5.1 的示例字符串，确认：
-  - 两个平台均无报错（监听 `stream.log` / `stream.error`）；
-  - 把 31Hz 设为 +12dB / 16kHz 设为 -12dB 时能明显听出变化；
-  - 播放中修改 `af` 是否有爆音、静音、卡顿。
-  - 若失败，依次尝试备选方案并记录。
-- [ ] M0-4 **无缝播放**：用一张现场专辑的连续两轨测试 `gapless-audio`。
-- [ ] M0-5 **后台**：最小 `AudioHandler` 包住 media_kit `Player`，验证 Android 通知栏控制、锁屏后持续播放 10 分钟、蓝牙耳机按键；macOS 媒体键和控制中心显示（检查是否出现重复条目）。
-- [ ] M0-6 **音频焦点**：Android 上播放时打一个电话 / 打开另一个音乐 App，确认 media_kit 自身是否会处理焦点，以及 `audio_session` 处理是否生效且不冲突。
-- [ ] M0-7 **INTERNET 权限**：去掉 `INTERNET` 权限后本地播放是否正常。
-- [ ] M0-8 **Android 文件访问**：Android 13+ 真机上**只授予 `READ_MEDIA_AUDIO`**（方案 C），确认 `dart:io` 能递归列出音乐目录、按路径读取 FLAC/MP3，并能被 media_kit 播放；失败再测方案 A（"所有文件访问权限"）。
-- [ ] M0-9 **标签**（歌词是唯一来源，最关键）：用**开发者真实曲库中的样本**检查 `audio_metadata_reader` 能否读出：中日英标签、内嵌封面、FLAC `LYRICS`/`UNSYNCEDLYRICS`、MP3 `USLT`（并确认有无 `SYLT` 同步歌词）、采样率/位深/码率；归纳出开发者歌词的实际形态（带时间戳 LRC 文本 / 纯文本 / SYLT）；在 isolate 中调用是否正常；粗测 1000 个文件的读取耗时（含读取内嵌封面）。
-- [ ] M0-10 **编码**（降为 P2，仅在 M0-9 发现内嵌歌词/标签有乱码时才做）：选定 GBK / Shift-JIS 解码方案（纯 Dart 包或 platform channel）。
+- [x] M0-1 新建 `spike/` Flutter 工程验证 media_kit 方案。（2026-10-17：`spike/` 已删除；同日决定改用 Rust 内核，M0 改在主工程 `1.0.0.universal` 分支上验证 Rust 方案，见 TECH_SPEC 附录 B 第 3 条。）
+- [x] M0-R1 安装 Rust 工具链（rustup stable 1.99.1，clippy、rustfmt；macOS 双架构与 Android 三个 ABI 的 target）。
+- [ ] M0-R2 **桥接**：在主工程集成 `flutter_rust_bridge` 2.13.0（`rust/` crate `nya_core` + `rust_builder/` Cargokit 插件），Dart 调用一个 Rust 函数成功；macOS debug 与 Android `flutter build apk` 都能编过。
+- [ ] M0-2 **格式**：Rust 引擎在 macOS 和 Android 真机上播放 FLAC（16/24bit，44.1k～192k）、MP3（CBR/VBR），记录结果；确认 192k 被正确重采样到设备采样率。
+- [ ] M0-3 **EQ**：Rust 10 段 biquad EQ（TECH_SPEC §5.1）。`cargo test` 验证频响；实听确认各预设生效、拖动滑块时无爆音/静音。
+- [ ] M0-4 **无缝播放**：连续两轨（现场专辑或自制的切开的正弦波）首尾无缝；`cargo test` 用自制音频验证裁剪后样本连续。
+- [ ] M0-5 **后台**：最小 `AudioHandler` 包住 `RustPlayerEngine`，验证 Android 通知栏控制、锁屏后持续播放 10 分钟、蓝牙耳机按键；macOS 媒体键和控制中心显示（检查是否出现重复条目）。
+- [ ] M0-6 **音频焦点**：Android 上播放时打一个电话 / 打开另一个音乐 App，确认 cpal/Oboe 不自行处理焦点，`audio_session` 处理生效。
+- [ ] M0-7 **输出设备切换**：播放中拔插有线耳机、连接/断开蓝牙耳机，Android 与 macOS 上输出流能重建且不崩溃。
+- [ ] M0-8 **Android 文件访问**：Android 13+ 真机上**只授予 `READ_MEDIA_AUDIO`**（方案 C），确认 `dart:io` 能递归列出音乐目录，Rust 能按路径打开播放；失败再测方案 A（"所有文件访问权限"）。
+- [ ] M0-9 **标签**（歌词是唯一来源，最关键）：用**开发者真实曲库中的样本**检查 Rust `lofty` 能否读出：中日英标签、内嵌封面、FLAC `LYRICS`/`UNSYNCEDLYRICS`、MP3 `USLT`（并确认有无 `SYLT` 同步歌词）、采样率/位深/码率；归纳出开发者歌词的实际形态；粗测 1000 个文件的读取耗时。
+- [ ] M0-10 **编码**（降为 P2，仅在 M0-9 发现内嵌歌词/标签有乱码时才做）：选定 GBK / Shift-JIS 解码方案（Rust `encoding_rs`）。
 - [ ] M0-11 **FTS5**：在 `sqlite3_flutter_libs` 上创建 `trigram` 分词的 FTS5 表并查询中日文子串。
 - [ ] M0-12 **M3 Expressive 现状**：查 Flutter 当前 stable 对 M3 Expressive 的支持情况，写一段结论。
+- [ ] M0-14 **Release 与性能**：Release 包体（各 ABI）、192k/24-bit 播放时的 CPU 占用（Android 中低端机）。
 - [ ] M0-13 写 `docs/SPIKE_REPORT.md`：每项的结论、遇到的坑、需要修改的 TECH_SPEC 条目；更新 `TECH_SPEC.md`，把已验证的 🔍 去掉或改写。
 
-**验收**：开发者阅读 SPIKE_REPORT，确认没有阻断性问题（尤其 M0-3、M0-5、M0-8），或对阻断问题选定了替代方案。
+**验收**：开发者阅读 SPIKE_REPORT，确认没有阻断性问题（尤其 M0-3、M0-4、M0-5、M0-7、M0-8），或对阻断问题选定了替代方案（退路：media_kit）。
 
 ---
 
@@ -103,7 +102,7 @@
 
 ## M3 播放核心
 
-- [ ] M3-1 `PlayerEngine` 接口与 `MediaKitEngine` 实现（§4.2、§4.3），含解码失败自动跳过。
+- [ ] M3-1 `PlayerEngine` 接口与 `RustPlayerEngine` 实现（§4.2、§4.3），含解码失败自动跳过。
 - [ ] M3-2 `QueueController`（§4.4）+ 用 fake engine 的单元测试：随机开关、增删移动、上一首 3 秒规则、循环模式。
 - [ ] M3-3 `LyraAudioHandler` 基础版：把队列和状态桥接给 audio_service（通知栏细节在 M4 完善）。
 - [ ] M3-4 从任意列表"播放全部 / 点击某首播放 / 下一首播放 / 加入队列"。
@@ -213,7 +212,7 @@ flutter build macos --release
 - 一次只做一个里程碑里的任务；开始前先说明要做哪几个任务编号。
 - 实现与 TECH_SPEC 冲突时先停下来说明，不要自行改方案。
 - 不要新增 TECH_SPEC §1 之外的依赖，除非先在附录 A 记录理由并征得同意。
-- UI 不得直接调用 media_kit Player，必须经过 AudioHandler / QueueController。
+- UI 不得直接调用 Rust 内核 API，必须经过 AudioHandler / QueueController。
 - 耗时操作放 isolate；不要硬编码颜色，全部从 ColorScheme 取。
 - 完成任务后：dart format . && flutter analyze && flutter test，然后勾选 PLAN.md 中的复选框。
 
