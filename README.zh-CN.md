@@ -114,6 +114,8 @@ NyaPlayer 不发起任何网络请求，也不收集任何数据。曲库数据�
 
 采用 [MIT 许可证](LICENSE)。
 
+**字体声明**：NyaPlayer 内置 *HarmonyOS Sans*（© 华为终端有限公司，遵循 [HarmonyOS Sans 字体许可协议](assets/fonts/licenses/HarmonyOS-Sans.txt)，未经修改使用）、*EB Garamond* 与 *Noto Serif SC*（思源宋体，均为 [SIL OFL 1.1](assets/fonts/licenses/)）。字体沿用各自的许可，MIT 许可仅覆盖本应用的代码。
+
 <div align="center">
 <img src="https://capsule-render.vercel.app/api?type=waving&color=gradient&customColorList=12,20,24&height=100&section=footer" width="100%" alt=""/>
 </div>

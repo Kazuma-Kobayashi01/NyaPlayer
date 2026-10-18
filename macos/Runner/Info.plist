@@ -12,6 +12,18 @@
 	<string>$(PRODUCT_BUNDLE_IDENTIFIER)</string>
 	<key>CFBundleInfoDictionaryVersion</key>
 	<string>6.0</string>
+	<key>CFBundleLocalizations</key>
+	<array>
+		<string>de</string>
+		<string>en</string>
+		<string>es</string>
+		<string>fr</string>
+		<string>ja</string>
+		<string>ko</string>
+		<string>ru</string>
+		<string>zh-Hans</string>
+		<string>zh-Hant</string>
+	</array>
 	<key>CFBundleName</key>
 	<string>$(PRODUCT_NAME)</string>
 	<key>CFBundlePackageType</key>
@@ -22,6 +34,16 @@
 	<string>$(FLUTTER_BUILD_NUMBER)</string>
 	<key>LSMinimumSystemVersion</key>
 	<string>$(MACOSX_DEPLOYMENT_TARGET)</string>
+	<key>NSDesktopFolderUsageDescription</key>
+	<string>NyaPlayer reads the music files in the folders you choose.</string>
+	<key>NSDocumentsFolderUsageDescription</key>
+	<string>NyaPlayer reads the music files in the folders you choose.</string>
+	<key>NSDownloadsFolderUsageDescription</key>
+	<string>NyaPlayer reads the music files in the folders you choose.</string>
+	<key>NSRemovableVolumesUsageDescription</key>
+	<string>NyaPlayer reads the music files in the folders you choose.</string>
+	<key>NSNetworkVolumesUsageDescription</key>
+	<string>NyaPlayer reads the music files in the folders you choose.</string>
 	<key>NSHumanReadableCopyright</key>
 	<string>$(PRODUCT_COPYRIGHT)</string>
 	<key>NSMainNibFile</key>

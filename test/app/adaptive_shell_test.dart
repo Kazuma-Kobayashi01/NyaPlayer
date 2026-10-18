@@ -11,8 +11,11 @@ import 'package:nyaplayer/app/layout/phone_drawer.dart';
 import 'package:nyaplayer/app/router.dart';
 import 'package:nyaplayer/features/album/albums_page.dart';
 import 'package:nyaplayer/app/start_page.dart';
+import 'package:nyaplayer/app/theme/app_theme.dart'
+    show bundledSansFamily, bundledSerifFamily;
 import 'package:nyaplayer/app/theme/theme_settings.dart';
 import 'package:nyaplayer/data/sample_library.dart';
+import 'package:nyaplayer/data/db/database_providers.dart';
 import 'package:nyaplayer/data/library_providers.dart';
 import 'package:nyaplayer/features/lyrics/lyrics_settings.dart';
 import 'package:nyaplayer/features/lyrics/lyrics_view.dart';
@@ -25,6 +28,7 @@ import 'package:nyaplayer/domain/models.dart';
 import 'package:nyaplayer/features/shared/player_bar.dart';
 import 'package:nyaplayer/features/shared/quality_badge.dart';
 import 'package:nyaplayer/features/settings/settings_page.dart';
+import 'package:nyaplayer/l10n/language_options.dart';
 import 'package:nyaplayer/services/player/fake_player_engine.dart';
 import 'package:nyaplayer/services/player/queue_controller.dart';
 
@@ -38,10 +42,14 @@ Future<FakePlayerEngine> _pumpApp(WidgetTester tester, Size size) async {
         sampleLibrary.trackByPath(p)?.duration ?? const Duration(minutes: 3),
   );
   addTearDown(engine.dispose);
-
   await tester.pumpWidget(
     ProviderScope(
-      overrides: [playerEngineProvider.overrideWithValue(engine)],
+      overrides: [
+        playerEngineProvider.overrideWithValue(engine),
+        // These tests do not exercise scan locations; a drift stream would
+        // leave a timer pending when the tree is torn down.
+        rootsProvider.overrideWith((ref) => Stream.value(const [])),
+      ],
       child: const NyaPlayerApp(),
     ),
   );
@@ -445,6 +453,235 @@ void main() {
   });
 
   testWidgets(
+    'a big window gets a bigger cover and more air, never a runaway gap',
+    (tester) async {
+      final engine = await _pumpApp(tester, const Size(1400, 900));
+      await tester.tap(find.text('Afterglow').first);
+      await tester.pump(const Duration(milliseconds: 300));
+      await engine.pause();
+      final container = ProviderScope.containerOf(
+        tester.element(find.byType(NyaPlayerApp)),
+      );
+      unawaited(container.read(routerProvider).push('/now-playing'));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 800));
+      await tester.pump(const Duration(milliseconds: 800));
+
+      final sizes = const [
+        Size(1400, 900), // an ordinary window: the reference look
+        Size(1920, 1080), // 16:9 full screen
+        Size(2200, 1200),
+        Size(3200, 1400),
+      ];
+      final covers = <double>[];
+      final gaps = <double>[];
+      for (final size in sizes) {
+        tester.view.physicalSize = size;
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 800));
+        final page = find.byType(NowPlayingPage);
+        final art = tester.getRect(
+          find.descendant(of: page, matching: find.byType(PlayerArtwork)),
+        );
+        final lyrics = tester.getRect(
+          find.descendant(of: page, matching: find.byType(LyricsView)),
+        );
+        covers.add(art.width);
+        gaps.add(lyrics.left - art.right);
+        expect(gaps.last, lessThan(260), reason: 'runaway gap at $size');
+        // The cover + lyrics group stays centred in the window.
+        expect(
+          (art.left + lyrics.right) / 2,
+          closeTo(size.width / 2, 60),
+          reason: 'at $size',
+        );
+        expect(tester.takeException(), isNull);
+      }
+      // Unchanged in an ordinary window.
+      expect(covers[0], 520);
+      expect(gaps[0], lessThan(60));
+      // Bigger screens give a bigger cover and more space, step by step.
+      for (var i = 1; i < sizes.length; i++) {
+        expect(covers[i], greaterThan(covers[i - 1]), reason: '${sizes[i]}');
+        expect(gaps[i], greaterThan(gaps[i - 1] + 20), reason: '${sizes[i]}');
+      }
+    },
+    variant: TargetPlatformVariant.only(TargetPlatform.macOS),
+  );
+
+  testWidgets(
+    'player buttons and progress bar are neutral grey-white, not the theme colour',
+    (tester) async {
+      final engine = await _pumpApp(tester, const Size(1400, 900));
+      final container = ProviderScope.containerOf(
+        tester.element(find.byType(NyaPlayerApp)),
+      );
+      container.read(themeSettingsProvider.notifier)
+        ..setSource(ColorSource.fixed)
+        ..setSeed(seedColorChoices[4]); // a strongly red theme
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Afterglow').first);
+      await tester.pump(const Duration(milliseconds: 300));
+      await container.read(queueProvider.notifier).toggleShuffle();
+      await tester.pumpAndSettle();
+      final primary = Theme.of(tester.element(find.byType(NowPlayingPanel)))
+          .colorScheme
+          .primary;
+      expect(HSLColor.fromColor(primary).saturation, greaterThan(0.3));
+
+      bool neutral(Color c) => HSLColor.fromColor(c).saturation < 0.01;
+
+      final slider = tester.element(find.byType(Slider).first);
+      final sliderTheme = SliderTheme.of(slider);
+      expect(neutral(sliderTheme.activeTrackColor!), isTrue);
+      expect(neutral(sliderTheme.thumbColor!), isTrue);
+      expect(neutral(sliderTheme.inactiveTrackColor!), isTrue);
+
+      IconButton button(String tooltip) => tester.widget<IconButton>(
+        find
+            .ancestor(
+              of: find.byTooltip(tooltip).first,
+              matching: find.byType(IconButton),
+            )
+            .first,
+      );
+      Color colour(String tooltip, [Set<WidgetState> states = const {}]) =>
+          button(tooltip).style!.foregroundColor!.resolve(states)!;
+
+      expect(neutral(colour('Pause')), isTrue);
+      expect(neutral(colour('Next')), isTrue);
+      expect(neutral(colour('Previous')), isTrue);
+      // Shuffle is on: bright. Repeat is off: dimmer. Both grey.
+      final shuffleOn = colour('Shuffle: on', {WidgetState.selected});
+      final repeatOff = colour('Repeat: off');
+      expect(neutral(shuffleOn), isTrue);
+      expect(neutral(repeatOff), isTrue);
+      expect(repeatOff.a, lessThan(shuffleOn.a));
+
+      await engine.pause();
+      await tester.pump(const Duration(milliseconds: 300));
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+  testWidgets('the built-in fonts switch in settings changes the app font', (
+    tester,
+  ) async {
+    await _pumpApp(tester, const Size(1000, 800));
+    final container = ProviderScope.containerOf(
+      tester.element(find.byType(NyaPlayerApp)),
+    );
+    String? family() =>
+        Theme.of(tester.element(find.byType(Scaffold).first))
+            .textTheme
+            .bodyMedium!
+            .fontFamily;
+    expect(container.read(themeSettingsProvider).useBundledFonts, isTrue);
+    expect(family(), bundledSansFamily);
+
+    container.read(routerProvider).go('/settings');
+    await tester.pumpAndSettle();
+    final toggle = find.widgetWithText(SwitchListTile, 'Use built-in fonts');
+    await tester.ensureVisible(toggle);
+    await tester.pumpAndSettle();
+    await tester.tap(toggle);
+    await tester.pumpAndSettle();
+
+    expect(container.read(themeSettingsProvider).useBundledFonts, isFalse);
+    expect(family(), isNot(bundledSansFamily));
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('the language is chosen in a dialog and applied at once', (
+    tester,
+  ) async {
+    // Tall enough that the whole list is built.
+    await _pumpApp(tester, const Size(1000, 1500));
+    final container = ProviderScope.containerOf(
+      tester.element(find.byType(NyaPlayerApp)),
+    );
+    container.read(routerProvider).go('/settings');
+    await tester.pumpAndSettle();
+
+    Future<void> openDialog(String tileTitle) async {
+      final tile = find.widgetWithText(ListTile, tileTitle);
+      await tester.ensureVisible(tile);
+      await tester.pumpAndSettle();
+      await tester.tap(tile);
+      await tester.pumpAndSettle();
+    }
+
+    // The current value is shown on the row, and the dialog lists "System"
+    // first, then every language by its own name in English-name order.
+    expect(find.text('System'), findsWidgets);
+    await openDialog('Language');
+    final rows = find.descendant(
+      of: find.byType(AlertDialog),
+      matching: find.byType(ListTile),
+    );
+    final labels = [
+      for (final e in rows.evaluate())
+        ((e.widget as ListTile).title as Text).data,
+    ];
+    expect(labels, ['System', for (final o in languageOptions) o.label]);
+    expect(
+      find.descendant(
+        of: find.byKey(const ValueKey('language-system')),
+        matching: find.byIcon(Icons.check),
+      ),
+      findsOneWidget,
+      reason: 'the system option is the current one',
+    );
+
+    // Cancelling changes nothing.
+    await tester.tap(find.text('Cancel'));
+    await tester.pumpAndSettle();
+    expect(container.read(localeProvider), isNull);
+
+    // German applies immediately, to this page too.
+    await openDialog('Language');
+    await tester.tap(find.text('Deutsch'));
+    await tester.pumpAndSettle();
+    expect(container.read(localeProvider), const Locale('de'));
+    expect(find.text('Einstellungen'), findsWidgets);
+    expect(find.text('Deutsch'), findsOneWidget, reason: 'shown on the row');
+
+    // Reopened (now in German) the current language carries the tick.
+    await openDialog('Sprache');
+    expect(
+      find.descendant(
+        of: find.byKey(const ValueKey('language-de')),
+        matching: find.byIcon(Icons.check),
+      ),
+      findsOneWidget,
+    );
+    await tester.tap(find.text('繁體中文（台灣）'));
+    await tester.pumpAndSettle();
+    expect(
+      container.read(localeProvider),
+      const Locale.fromSubtags(
+        languageCode: 'zh',
+        scriptCode: 'Hant',
+        countryCode: 'TW',
+      ),
+    );
+    expect(find.text('設定'), findsWidgets);
+
+    await openDialog('語言');
+    await tester.tap(find.text('English (UK)'));
+    await tester.pumpAndSettle();
+    expect(container.read(localeProvider), const Locale('en', 'GB'));
+    expect(find.text('Settings'), findsWidgets);
+
+    // Back to following the system.
+    await openDialog('Language');
+    await tester.tap(find.byKey(const ValueKey('language-system')));
+    await tester.pumpAndSettle();
+    expect(container.read(localeProvider), isNull);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets(
     'desktop lyrics keep breathing room inside artwork and quality bounds',
     (tester) async {
       final engine = await _pumpApp(tester, const Size(1400, 900));
@@ -508,16 +745,33 @@ void main() {
             .bodyMedium
             ?.fontFamily;
 
-    final sans = family();
-    container.read(themeSettingsProvider.notifier).setFont(AppFont.serif);
-    await tester.pump();
-    await tester.pump(const Duration(milliseconds: 400));
-    expect(family(), isNot(sans));
+    final settings = container.read(themeSettingsProvider.notifier);
+    Future<void> apply() async {
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 400));
+    }
+
+    // Default: the bundled fonts.
+    expect(family(), bundledSansFamily);
+    settings.setFont(AppFont.serif);
+    await apply();
+    expect(family(), bundledSerifFamily);
+    settings.setFont(AppFont.sans);
+    await apply();
+    expect(family(), bundledSansFamily);
+
+    // Bundled fonts off: back to the system fonts, as before they existed.
+    settings.setUseBundledFonts(false);
+    await apply();
+    final systemSans = family();
+    expect(systemSans, isNot(bundledSansFamily));
+    settings.setFont(AppFont.serif);
+    await apply();
+    expect(family(), isNot(systemSans));
     expect(family(), 'serif');
-    container.read(themeSettingsProvider.notifier).setFont(AppFont.sans);
-    await tester.pump();
-    await tester.pump(const Duration(milliseconds: 400));
-    expect(family(), sans);
+    settings.setFont(AppFont.sans);
+    await apply();
+    expect(family(), systemSans);
   });
 
   testWidgets('phone: the player bar floats above the list', (tester) async {
@@ -581,11 +835,11 @@ void main() {
     await tester.pumpAndSettle();
     await tester.tap(find.text('Font size · 20 pt'));
     await tester.pumpAndSettle();
-    await tester.enterText(find.byType(TextField), '18');
+    await tester.enterText(find.byType(TextField), '22');
     await tester.pump();
     await tester.tap(find.text('OK'));
     await tester.pumpAndSettle();
-    expect(container.read(lyricsSettingsProvider).fontSize, 18);
+    expect(container.read(lyricsSettingsProvider).fontSize, 22);
     expect(container.read(lyricsSettingsProvider).lineHeight, 1.2);
     await tester.tap(find.byTooltip('Player menu'));
     await tester.pumpAndSettle();
@@ -608,7 +862,7 @@ void main() {
     await tester.tap(find.text('OK'));
     await tester.pumpAndSettle();
     expect(container.read(lyricsSettingsProvider).lineHeight, 2);
-    expect(container.read(lyricsSettingsProvider).fontSize, 18);
+    expect(container.read(lyricsSettingsProvider).fontSize, 22);
     expect(tester.takeException(), isNull);
     // Larger line spacing still reserves enough room in a short phone layout.
     tester.view.physicalSize = const Size(360, 640);
@@ -644,7 +898,7 @@ void main() {
       );
       expect(active, findsOneWidget);
       TextStyle style() => DefaultTextStyle.of(tester.element(active)).style;
-      expect(style().fontSize, closeTo(24, 0.001));
+      expect(style().fontSize, closeTo(26, 0.001)); // 20 × 1.15 + 3
       expect(style().height, 1.2);
       expect(
         tester.getCenter(active).dy,
@@ -827,6 +1081,7 @@ void main() {
             )
             .first,
       );
+      await tester.ensureVisible(find.text('Keyboard shortcuts'));
       expect(find.text('Keyboard shortcuts'), findsOneWidget);
       await tester.sendKeyEvent(LogicalKeyboardKey.escape);
       await tester.pumpAndSettle();
@@ -894,6 +1149,8 @@ void main() {
             )
             .first,
       );
+      await tester.ensureVisible(find.text('Theme gradient'));
+      await tester.pumpAndSettle();
       await tester.tap(find.text('Theme gradient'));
       await tester.pumpAndSettle();
       container.read(themeSettingsProvider.notifier).setMode(ThemeMode.dark);

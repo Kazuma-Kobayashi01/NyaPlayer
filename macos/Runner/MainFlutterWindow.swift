@@ -56,6 +56,40 @@ class MainFlutterWindow: NSWindow {
       result(FlutterMethodNotImplemented)
     }
 
+    // Native folder chooser (NSOpenPanel) for the library's scan locations.
+    // Shown as a sheet on this window; several folders can be chosen at once.
+    // The app is not sandboxed, so plain paths are enough (no security-scoped
+    // bookmarks).
+    let foldersChannel = FlutterMethodChannel(
+      name: "nyaplayer/folders",
+      binaryMessenger: flutterViewController.engine.binaryMessenger)
+    foldersChannel.setMethodCallHandler { [weak self] call, result in
+      guard call.method == "pickDirectories" else {
+        result(FlutterMethodNotImplemented)
+        return
+      }
+      let args = call.arguments as? [String: Any] ?? [:]
+      let panel = NSOpenPanel()
+      panel.canChooseDirectories = true
+      panel.canChooseFiles = false
+      panel.allowsMultipleSelection = true
+      panel.canCreateDirectories = false
+      if let title = args["title"] as? String { panel.title = title }
+      if let message = args["message"] as? String { panel.message = message }
+      if let prompt = args["prompt"] as? String { panel.prompt = prompt }
+      if let start = args["initialDirectory"] as? String {
+        panel.directoryURL = URL(fileURLWithPath: start, isDirectory: true)
+      }
+      let finish: (NSApplication.ModalResponse) -> Void = { response in
+        result(response == .OK ? panel.urls.map { $0.path } : [String]())
+      }
+      if let window = self {
+        panel.beginSheetModal(for: window, completionHandler: finish)
+      } else {
+        finish(panel.runModal())
+      }
+    }
+
     lifecycleChannel = FlutterMethodChannel(
       name: "nyaplayer/lifecycle",
       binaryMessenger: flutterViewController.engine.binaryMessenger)

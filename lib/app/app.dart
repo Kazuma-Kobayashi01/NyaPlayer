@@ -35,8 +35,16 @@ class NyaPlayerApp extends ConsumerWidget {
         return MaterialApp.router(
           onGenerateTitle: (context) => AppLocalizations.of(context).appName,
           debugShowCheckedModeBanner: false,
-          theme: buildTheme(light, font: settings.font),
-          darkTheme: buildTheme(dark, font: settings.font),
+          theme: buildTheme(
+            light,
+            font: settings.font,
+            bundledFonts: settings.useBundledFonts,
+          ),
+          darkTheme: buildTheme(
+            dark,
+            font: settings.font,
+            bundledFonts: settings.useBundledFonts,
+          ),
           themeMode: settings.mode,
           locale: locale,
           localizationsDelegates: AppLocalizations.localizationsDelegates,

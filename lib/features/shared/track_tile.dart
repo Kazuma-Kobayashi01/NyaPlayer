@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:nyaplayer/core/format.dart';
 import 'package:nyaplayer/data/library_providers.dart';
 import 'package:nyaplayer/domain/models.dart';
+import 'package:nyaplayer/features/playlists/playlist_dialogs.dart';
 import 'package:nyaplayer/features/shared/cover_art.dart';
 import 'package:nyaplayer/features/shared/song_info_sheet.dart';
 import 'package:nyaplayer/l10n/app_localizations.dart';
@@ -14,10 +15,18 @@ class TrackTile extends ConsumerWidget {
     required this.track,
     required this.onTap,
     this.leadingNumber,
+    this.menuExtras = const [],
+    this.endAdornment,
   });
 
   final Track track;
   final VoidCallback onTap;
+
+  /// Extra entries for the track menu (for example "remove from playlist").
+  final List<Widget> menuExtras;
+
+  /// Shown after the menu button (for example a drag handle).
+  final Widget? endAdornment;
 
   /// Shows the track number instead of the cover (album detail pages).
   final int? leadingNumber;
@@ -88,7 +97,8 @@ class TrackTile extends ConsumerWidget {
               color: theme.colorScheme.onSurfaceVariant,
             ),
           ),
-          TrackMenuButton(track: track),
+          TrackMenuButton(track: track, extraItems: menuExtras),
+          ?endAdornment,
         ],
       ),
     );
@@ -96,9 +106,14 @@ class TrackTile extends ConsumerWidget {
 }
 
 class TrackMenuButton extends ConsumerWidget {
-  const TrackMenuButton({super.key, required this.track});
+  const TrackMenuButton({
+    super.key,
+    required this.track,
+    this.extraItems = const [],
+  });
 
   final Track track;
+  final List<Widget> extraItems;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -130,6 +145,12 @@ class TrackMenuButton extends ConsumerWidget {
           },
           child: Text(l10n.addToQueue),
         ),
+        MenuItemButton(
+          leadingIcon: const Icon(Icons.library_add_outlined),
+          onPressed: () => showAddToPlaylist(context, ref, [track]),
+          child: Text(l10n.addToPlaylist),
+        ),
+        ...extraItems,
         MenuItemButton(
           leadingIcon: Icon(
             isFavorite ? Icons.favorite : Icons.favorite_outline,

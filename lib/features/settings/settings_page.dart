@@ -9,6 +9,8 @@ import 'package:nyaplayer/app/theme/theme_settings.dart';
 import 'package:nyaplayer/features/now_playing/player_artwork.dart';
 import 'package:nyaplayer/features/now_playing/progress_slider.dart';
 import 'package:nyaplayer/features/search/library_app_bar.dart';
+import 'package:nyaplayer/features/settings/language_dialog.dart';
+import 'package:nyaplayer/features/settings/library_folders.dart';
 import 'package:nyaplayer/l10n/app_localizations.dart';
 
 const _appVersion = '0.1.0';
@@ -24,7 +26,6 @@ class SettingsPage extends ConsumerWidget {
     final theme = Theme.of(context);
     final settings = ref.watch(themeSettingsProvider);
     final controller = ref.read(themeSettingsProvider.notifier);
-    final locale = ref.watch(localeProvider);
 
     final page = Scaffold(
       appBar: standalone
@@ -43,6 +44,8 @@ class SettingsPage extends ConsumerWidget {
             children: [
               _SectionTitle(l10n.settingsGeneral),
               const _Group(children: [_StartPageTile()]),
+              _SectionTitle(l10n.settingsLibrary),
+              const _Group(children: [LibraryFoldersTile()]),
               _SectionTitle(l10n.settingsAppearance),
               _Group(
                 children: [
@@ -121,23 +124,14 @@ class SettingsPage extends ConsumerWidget {
                       onSelectionChanged: (s) => controller.setFont(s.first),
                     ),
                   ),
-                  _Labeled(
-                    label: l10n.settingsLanguage,
-                    child: SegmentedButton<String>(
-                      segments: [
-                        ButtonSegment(
-                          value: 'system',
-                          label: Text(l10n.langSystem),
-                        ),
-                        ButtonSegment(value: 'zh', label: Text(l10n.langZh)),
-                        ButtonSegment(value: 'en', label: Text(l10n.langEn)),
-                      ],
-                      selected: {locale?.languageCode ?? 'system'},
-                      onSelectionChanged: (s) => ref
-                          .read(localeProvider.notifier)
-                          .set(s.first == 'system' ? null : Locale(s.first)),
-                    ),
+                  SwitchListTile(
+                    secondary: const Icon(Icons.text_fields),
+                    title: Text(l10n.useBundledFonts),
+                    subtitle: Text(l10n.useBundledFontsHint),
+                    value: settings.useBundledFonts,
+                    onChanged: controller.setUseBundledFonts,
                   ),
+                  const LanguageTile(),
                 ],
               ),
               _SectionTitle(l10n.settingsPlayback),
@@ -235,30 +229,6 @@ class SettingsPage extends ConsumerWidget {
                   ],
                 ),
               ],
-              _SectionTitle(l10n.settingsLibrary),
-              _Group(
-                children: [
-                  ListTile(
-                    leading: const Icon(Icons.folder_outlined),
-                    title: Text(l10n.settingsFolders),
-                    subtitle: const Text('/Music'),
-                    trailing: IconButton(
-                      tooltip: l10n.settingsAddFolder,
-                      icon: const Icon(Icons.add),
-                      onPressed: () {},
-                    ),
-                  ),
-                  ListTile(
-                    leading: const Icon(Icons.refresh),
-                    title: Text(l10n.settingsRescan),
-                    onTap: () => ScaffoldMessenger.of(context)
-                      ..hideCurrentSnackBar()
-                      ..showSnackBar(
-                        SnackBar(content: Text(l10n.rescanStarted)),
-                      ),
-                  ),
-                ],
-              ),
               _SectionTitle(l10n.settingsAbout),
               _Group(
                 children: [
@@ -271,6 +241,11 @@ class SettingsPage extends ConsumerWidget {
                         color: theme.colorScheme.onSurfaceVariant,
                       ),
                     ),
+                  ),
+                  ListTile(
+                    leading: const Icon(Icons.font_download_outlined),
+                    title: Text(l10n.aboutFonts),
+                    subtitle: Text(l10n.aboutFontsCredit),
                   ),
                   ListTile(
                     leading: const Icon(Icons.description_outlined),

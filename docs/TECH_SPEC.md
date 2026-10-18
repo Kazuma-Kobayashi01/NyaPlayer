@@ -50,7 +50,7 @@ Rust 侧（`rust/Cargo.toml`）：
 |---|---|
 | 状态管理 | `flutter_riverpod`（3.x，可不使用代码生成） |
 | 路由 | `go_router` |
-| 数据库 | `drift` + `drift_flutter` + `sqlite3_flutter_libs`；dev: `drift_dev`、`build_runner` |
+| 数据库 | `drift` + `drift_flutter`（SQLite 由 `sqlite3` 3.x 官方构建 hook 提供，不再单独依赖已停维的 `sqlite3_flutter_libs`）；dev: `drift_dev`、`build_runner` |
 | 壁纸动态取色 | `dynamic_color` |
 | 权限 | `permission_handler` |
 | 文件夹选择 | `file_picker`（macOS 选目录；Android 可选） |
@@ -226,7 +226,7 @@ abstract interface class PlayerEngine {
   1. 同步给 `PlayerEngine`（尽量用 add/remove/move 增量操作，避免整体重开打断播放）；
   2. 推送 `queue` 和 `mediaItem` 给 `AudioHandler`；
   3. 防抖（1 秒）持久化到数据库（`PLAY-05`）。
-- 恢复播放状态时：`openQueue(autoplay: false)` 后 seek 到上次位置。
+- 恢复播放状态时：`openQueue(autoplay: false)` 后 seek 到上次位置。（2026-10-18 已实现：`QueueController.restore` + `PlaybackPersistence`；保存节奏——队列变化防抖 1 秒、播放中每 10 秒存位置、暂停立即存、退出前 flush；曲库中已不存在的曲目剔除，保存的曲目缺失则落在下一首并从头开始。）
 - "上一首"规则（`PLAY-06`）：位置 > 3 秒 → seek(0)；否则上一首。
 
 ### 4.5 LyraAudioHandler
@@ -373,7 +373,8 @@ Android 11+ 的分区存储下，`READ_MEDIA_AUDIO` 只能读音频文件，**�
 
 ### 7.2 归类规则
 
-- **专辑键**：`normalize(albumArtist ?? artist) + '\u0000' + normalize(album)`；`album` 为空时，用"所在目录路径"作为专辑键（让无标签的文件夹也能当专辑浏览）。
+- **专辑键**（2026-10-18 按 LIB-10 修订）：有 Album Artist 标签 → `normalize(albumArtist) + '\u0000' + normalize(album)`（跨文件夹合并，合辑/多碟不被拆散）；**没有该标签 → `目录路径 + '\u0000' + normalize(album)`，不再使用曲目艺术家**（合作专辑每首艺术家不同，用它会把一张专辑拆开）；`album` 为空时只用所在目录路径（让无标签的文件夹也能当专辑浏览）。已知取舍：没有标签、分放在不同目录的多碟专辑会被分成多张。
+- **专辑显示艺术家**：有标签用标签（`tracks.album_artist` 只存标签值，空串表示没有标签）；否则所有曲目艺术家相同就用它，不同则存空串，界面显示本地化的“多位艺术家”。
 - `normalize`：去首尾空白、Unicode NFKC、转小写。显示时用原始文本。
 - **艺术家**：P0 只按整个 artist 字符串归类；P1 支持按 `; / 、 feat.` 拆分多艺术家（拆分规则做成可配置）。
 - 排序键（`core/sort_key.dart`）：去掉开头的 "The "、全角转半角、英文小写；汉字（U+4E00–U+9FFF）换成无声调拼音并逐音节比较，与英文字母混排（"CATHY" < "曾经" < "CheerS"）；首字符为数字的排最前，其他符号与假名排最后。多音字取最常见读音。拼音数据由 `tool/gen_pinyin.swift`（macOS 的 Mandarin-Latin 转换）生成、`tool/build_pinyin_table.py` 编译为 `lib/core/pinyin_table.dart`，**不引入第三方依赖**，纯 Dart，可在 isolate 内使用。日文假名按码点排序（P2 再考虑读音）。
@@ -452,6 +453,7 @@ track_artists(track_id, artist_id)                 -- P1 多艺术家
 library_roots(id PK, path TEXT UNIQUE, excluded BOOL)
 playlists(id PK, name, created_at, updated_at)
 playlist_items(playlist_id, position, track_id)
+favorites(track_id PK FK→tracks ON DELETE CASCADE, added_at)   -- schema v2 新增（LIB-16）
 eq_presets(id PK, name, builtin BOOL, gains_json TEXT, preamp REAL)
 playback_state(id = 1, queue_json, shuffled_json, current_index, position_ms, loop_mode, shuffle)
 settings(key TEXT PK, value TEXT)                  -- 简单 KV
@@ -460,8 +462,9 @@ scan_errors(path PK, message, at)
 
 - 索引：`tracks(album_id)`、`tracks(title)`、`tracks(artist)`、`tracks(added_at)`。
 - 搜索（`LIB-09`）：建立 FTS5 虚表索引 title/artist/album，分词器使用 `trigram`，以支持中日文子串搜索。🔍 M0 确认 `sqlite3_flutter_libs` 自带的 SQLite 版本支持 FTS5 trigram（需 ≥ 3.34）。
-- 数据库在后台 isolate 运行（`drift_flutter` 默认即可）。
-- Schema 变更必须写迁移，不允许直接删库重建（会丢播放列表）。
+- 数据库在后台 isolate 运行（`drift_flutter` 默认即可）。文件位于 `getApplicationSupportDirectory()/nyaplayer.sqlite`（`drift_flutter` 默认的“文档目录”在 macOS 上是用户的 ~/Documents，故显式改用应用支持目录）。
+- Schema 变更必须写迁移，不允许直接删库重建（会丢播放列表）。当前 schemaVersion = 2：v1→v2 新增 `favorites`，并把所有 `tracks.mtime` 置 -1，使下次扫描重读全部文件、按新专辑规则重新归类。
+- `settings` 表键：`theme.mode/source/seed/font`、`player.background/progressStyle/coverShape`、`ui.locale/startPage`、`lyrics.fontSize/lineHeight/centered/showTranslation`、`eq.state`（JSON）。启动时整表读入内存，写入走后台串行队列；只在值真正变化时写，不写默认值。
 
 ## 10. UI 与主题
 
@@ -499,7 +502,10 @@ scan_errors(path PK, message, at)
 - 播放器的播放/暂停、上下首、随机、循环、收藏、菜单及歌词/队列切换均使用无常驻背景的图标按钮；选中项使用主题主色表示状态，保留悬停、聚焦与按下反馈及原触控面积。
 - 手机播放条悬浮：`PlayerBar(floating: true)` 叠在页面之上，外壳通过 `MediaQuery` 把 `PlayerBar.floatingInset` 加进底部 padding，列表自动留白。
 - 字号（2026-10-18 开发者调整）：全局 `textTheme` / `primaryTextTheme` 的各级字号在 Material 3 默认值上减 1 个逻辑像素，保留系统字体缩放；歌词单独使用设置值，默认 20pt，不再叠加全局减量。
-- 字体：设置中切换 `AppFont.serif / sans`；衬线体不打包字体，macOS 用 Times New Roman + 宋体/明朝，Android 用系统 serif + Noto Serif CJK。
+- 字体（2026-10-18 改）：设置中有两项——“衬线 / 非衬线”（`AppFont`）和“使用内置字体”（`useBundledFonts`，默认开）。开：非衬线 = **HarmonyOS Sans SC**（拉丁 + 简繁中文 + 假名，Regular/Medium/Bold）；衬线 = **EB Garamond**（拉丁，400/500/600/700）+ **Noto Serif SC（思源宋体）**（中文，500/700），衬线整体放大 `bundledSerifSizeFactor`=1.08 并整体加重一档（EB Garamond 字面小、笔画细，不补偿会显得偏小偏淡；歌词通过 `FontTuning` 主题扩展同样放大）。关：回到打包字体之前的系统字体配置（非衬线用系统默认；衬线 macOS 用 Times New Roman + 宋体/明朝，Android 用系统 serif + Noto Serif CJK）。内置字体家族名统一加 `Nya ` 前缀，避免与同名系统字体（含用户自装的 EB Garamond、系统衬线回退列表里的 Noto Serif SC）互相遮蔽。字体文件在 `assets/fonts/`，协议文本在 `assets/fonts/licenses/` 并登记进应用的开源许可页。
+  - 许可：HarmonyOS Sans 协议允许打包再分发**未修改**的副本，条件是软件内显著声明使用、不得修改（所以**不做子集裁剪**）、保留协议文本——设置“关于”里有字体声明，协议在许可页。EB Garamond、Noto Serif SC 为 SIL OFL 1.1；二者的静态字重由官方变量字体用 fonttools `varLib.instancer` 切出（OFL 允许修改）。
+  - “宋体”说明：macOS 自带的 Songti SC 是苹果的专有字体，不能打包；选用思源宋体（Noto Serif SC，OFL）作为可再分发的开源宋体。
+  - 体积：字体共约 54MB（HarmonyOS Sans 三字重 24.6MB、Noto Serif SC 两字重 29.7MB、EB Garamond 约 2MB），macOS Debug 包约 257MB。需要时可对 OFL 的两款做子集裁剪（可再省约 20–25MB），HarmonyOS Sans 不可。
 - 播放页背景（2026-10-18 开发者指定）：独立于主题配色来源，设置中可选主题渐变或封面模糊，默认封面模糊。手机完整播放页、桌面展开播放页和右侧播放器共用同一实现；使用缓存的 256px 封面放大并进行高度模糊，叠加 ColorScheme 表面色保证可读，切歌平滑过渡，无封面回退主题渐变。设置暂随现有 ThemeSettings 存内存，后续统一接 settings 表。
   - 封面背景微调（2026-10-18 开发者纠正）：仅深色模式在 48% surface 遮罩上再叠加 ColorScheme.scrim 的 10% 黑色遮罩；浅色模式不加黑色遮罩，surface 遮罩不透明度由 68% 降为 50%，减少泛白、保留封面色彩。播放条同样仅深色叠 10% 黑色遮罩，浅色的 surfaceContainerHigh 遮罩由 45% 降为 35%。只作用于封面背景，不修改主题渐变或前景封面。
   - 缩放窗口时使用固定的 256/1024px 解码缓存键，不随每个布局像素重新解码；图片替换期间保留上一帧。同源已解析的封面路径有最多 128 条的内存缓存（不持有图片字节），布局切换重建时可同步复用，后台仍验证磁盘缓存；源版本变化独立加载，避免旧封面串图。
@@ -555,6 +561,9 @@ scan_errors(path PK, message, at)
 
 | 日期 | 变更 | 理由 |
 |---|---|---|
+| 2026-10-18 | 加入 `permission_handler` ^13.0.2；Android 清单新增 `READ_MEDIA_AUDIO` 与 `READ_EXTERNAL_STORAGE`（`maxSdkVersion=32`）；`MainActivity.kt` 新增一个只返回 `Build.VERSION.SDK_INT` 的通道；macOS `Info.plist` 增加桌面/文档/下载/可移动/网络卷的用途说明 | 均在 §1.3 清单内、符合 §6.1 方案 C（只申请音频读取权限）。permission_handler 在 Android 12 上把音频权限当作空操作、在 13+ 上拒绝存储权限，必须按系统版本选对权限，所以需要版本号。**Android 部分按开发者要求未编译、未真机验证。** |
+| 2026-10-18 | 新增打包字体资源（非 Dart 依赖）：HarmonyOS Sans SC ×3、EB Garamond ×4、Noto Serif SC ×2 及三份协议文本 | 开发者要求内置字体；许可与取舍见 §10 “字体”。 |
+| 2026-10-18 | M1-5 加入 `drift`、`drift_flutter`；dev：`drift_dev`、`build_runner`。随后按开发者“sqlite 用主流版本”的指示**不直接依赖 `sqlite3_flutter_libs`**（已移除；它被 `drift_flutter` 传递引入，但 0.6.0+eol 版本是不含原生代码的空壳），SQLite 由 `sqlite3` 3.x 官方构建 hook 内置（macOS 实测 `sqlite3` 与 drift 正常工作）。加入 `file_picker` ^13.1.0 | 均在 §1.3 清单内。`file_picker` 用于“添加音乐文件夹”（SET-01、LIB-01）。FTS5 trigram 是否可用仍待 M0-11 验证。 |
 | 2026-10-18 | 开发者已授权：将锁文件已有的间接依赖 `crypto` 3.0.7 声明为直接依赖；加入 `image` ^4.12.0、`path_provider` ^2.1.6 | M2-6 按 §7.3 使用 SHA-1 专辑键命名、在 isolate 生成缩略图、存到应用支持目录。`crypto` 复用锁定版本；后两项原已在 §1.3 清单内。 |
 | 2026-10-17 | 初始依赖列表 | 见 §1 |
 | 2026-10-17 | 主工程已加入：`flutter_riverpod`、`go_router`、`dynamic_color`、`path`、`intl`、`flutter_localizations`、`mocktail`（dev） | 均在 §1.3 表内，M1 骨架使用 |

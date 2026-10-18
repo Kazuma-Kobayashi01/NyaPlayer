@@ -49,7 +49,10 @@ dependencies:
   audio_service: ^0.18.19
   audio_session: ^0.2.4
   window_manager: ^0.5.2
-
+  drift: ^2.35.2
+  drift_flutter: ^0.3.1
+  file_picker: ^13.1.0
+  permission_handler: ^13.0.2
 dev_dependencies:
   flutter_test:
     sdk: flutter
@@ -61,6 +64,8 @@ dev_dependencies:
   # rules and activating additional ones.
   flutter_lints: ^6.0.0
   mocktail: ^1.0.5
+  drift_dev: ^2.35.1
+  build_runner: ^2.16.2
 
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec
@@ -74,6 +79,43 @@ flutter:
   uses-material-design: true
   assets:
     - assets/images/
+    - assets/fonts/licenses/
+
+  # Bundled fonts (TECH_SPEC appendix A). Static weights only: Flutter picks
+  # the nearest declared weight. Licences are in assets/fonts/licenses/.
+  # Families carry a "Nya " prefix on purpose: a bundled family shadows a
+  # system font of the same name, and the system serif list (used when the
+  # bundled fonts are switched off) names "Noto Serif SC".
+  fonts:
+    # HarmonyOS Sans SC: Latin + Simplified/Traditional Chinese + kana.
+    # Used unmodified, as its licence requires.
+    - family: Nya HarmonyOS Sans SC
+      fonts:
+        - asset: assets/fonts/HarmonyOS_Sans_SC_Regular.ttf
+          weight: 400
+        - asset: assets/fonts/HarmonyOS_Sans_SC_Medium.ttf
+          weight: 500
+        - asset: assets/fonts/HarmonyOS_Sans_SC_Bold.ttf
+          weight: 700
+    # EB Garamond: static instances of the variable font (SIL OFL).
+    - family: Nya EB Garamond
+      fonts:
+        - asset: assets/fonts/EBGaramond-400.ttf
+          weight: 400
+        - asset: assets/fonts/EBGaramond-500.ttf
+          weight: 500
+        - asset: assets/fonts/EBGaramond-600.ttf
+          weight: 600
+        - asset: assets/fonts/EBGaramond-700.ttf
+          weight: 700
+    # Noto Serif SC (Source Han Serif): the open-source Song/Ming-style CJK
+    # serif that EB Garamond falls back to. Static instances (SIL OFL).
+    - family: Nya Noto Serif SC
+      fonts:
+        - asset: assets/fonts/NotoSerifSC-500.ttf
+          weight: 500
+        - asset: assets/fonts/NotoSerifSC-700.ttf
+          weight: 700
   generate: true
 
   # To add assets to your application, add an assets section, like this:

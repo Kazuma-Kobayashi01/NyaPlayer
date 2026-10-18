@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:nyaplayer/app/theme/app_theme.dart' show FontTuning;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:nyaplayer/data/library_providers.dart';
 import 'package:nyaplayer/domain/models.dart';
@@ -176,9 +177,11 @@ class _LyricTile extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final scheme = theme.colorScheme;
-    final size = settings.fontSize;
+    final size =
+        settings.fontSize * (theme.extension<FontTuning>()?.sizeFactor ?? 1.0);
     final base = theme.textTheme.bodyLarge?.copyWith(
-      fontSize: synced && active ? size * 1.15 + 1 : size,
+      // The line being sung is two sizes larger than the 1.15x step alone.
+      fontSize: synced && active ? size * 1.15 + 3 : size,
       height: settings.lineHeight,
     );
     final color = active || !synced

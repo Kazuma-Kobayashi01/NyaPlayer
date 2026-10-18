@@ -37,15 +37,18 @@ class Library {
     : tracks = List.unmodifiable(tracks),
       albums = List.unmodifiable(albums),
       _albumById = {for (final a in albums) a.id: a},
-      _trackByPath = {for (final t in tracks) t.path: t};
+      _trackByPath = {for (final t in tracks) t.path: t},
+      _trackById = {for (final t in tracks) t.id: t};
 
   final List<Track> tracks;
   final List<Album> albums;
   final Map<int, Album> _albumById;
   final Map<String, Track> _trackByPath;
+  final Map<int, Track> _trackById;
 
   Album? albumById(int id) => _albumById[id];
   Track? trackByPath(String path) => _trackByPath[path];
+  Track? trackById(int id) => _trackById[id];
 
   List<Track> tracksOfAlbum(int albumId) =>
       sortTracks(tracks.where((t) => t.albumId == albumId), SongSort.album);

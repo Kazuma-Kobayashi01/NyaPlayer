@@ -2,9 +2,107 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:nyaplayer/app/theme/theme_settings.dart';
 
-/// Serif text uses each platform's own serif faces (nothing is bundled):
-/// Times New Roman + Songti SC / Mincho on macOS, the system serif + Noto
-/// Serif CJK on Android.
+/// Bundled font families (see pubspec.yaml and assets/fonts/licenses).
+const bundledSansFamily = 'Nya HarmonyOS Sans SC';
+const bundledSerifFamily = 'Nya EB Garamond';
+const bundledSerifCjkFamily = 'Nya Noto Serif SC';
+
+/// EB Garamond has a small x-height and thin strokes, so next to the sans
+/// face it looks undersized and pale. Bundled serif text is enlarged slightly
+/// and set one weight step heavier.
+const bundledSerifSizeFactor = 1.08;
+
+/// How fonts are applied: family, fallback faces and the serif correction.
+@immutable
+class FontPlan {
+  const FontPlan({
+    this.family,
+    this.fallback,
+    this.sizeFactor = 1,
+    this.heavier = false,
+  });
+
+  final String? family;
+  final List<String>? fallback;
+  final double sizeFactor;
+
+  /// Shift every text style one weight step heavier.
+  final bool heavier;
+}
+
+/// Picks the fonts for a style choice (SET-06). With [bundled] off this is
+/// the system-font setup the app had before the fonts were bundled.
+FontPlan fontPlanFor(AppFont font, {required bool bundled}) {
+  final serif = font == AppFont.serif;
+  if (bundled) {
+    return serif
+        ? const FontPlan(
+            family: bundledSerifFamily,
+            // Latin comes from EB Garamond; Chinese (and kana) from here.
+            fallback: [bundledSerifCjkFamily],
+            sizeFactor: bundledSerifSizeFactor,
+            heavier: true,
+          )
+        : const FontPlan(family: bundledSansFamily);
+  }
+  return serif
+      ? FontPlan(family: _serifFamily, fallback: _serifFallback)
+      : const FontPlan();
+}
+
+/// Lets widgets that set absolute font sizes (the lyrics) follow
+/// [FontPlan.sizeFactor].
+@immutable
+class FontTuning extends ThemeExtension<FontTuning> {
+  const FontTuning({this.sizeFactor = 1});
+
+  final double sizeFactor;
+
+  @override
+  FontTuning copyWith({double? sizeFactor}) =>
+      FontTuning(sizeFactor: sizeFactor ?? this.sizeFactor);
+
+  @override
+  FontTuning lerp(FontTuning? other, double t) => FontTuning(
+    sizeFactor: other == null
+        ? sizeFactor
+        : sizeFactor + (other.sizeFactor - sizeFactor) * t,
+  );
+}
+
+FontWeight _heavier(FontWeight? weight) {
+  // values[i] is w(100 * (i + 1)), so value ~/ 100 is the next step's index.
+  final next = ((weight ?? FontWeight.w400).value ~/ 100).clamp(
+    0,
+    FontWeight.values.length - 1,
+  );
+  return FontWeight.values[next];
+}
+
+TextStyle? _heavierStyle(TextStyle? s) =>
+    s?.copyWith(fontWeight: _heavier(s.fontWeight));
+
+TextTheme _heavierTheme(TextTheme t) => t.copyWith(
+  displayLarge: _heavierStyle(t.displayLarge),
+  displayMedium: _heavierStyle(t.displayMedium),
+  displaySmall: _heavierStyle(t.displaySmall),
+  headlineLarge: _heavierStyle(t.headlineLarge),
+  headlineMedium: _heavierStyle(t.headlineMedium),
+  headlineSmall: _heavierStyle(t.headlineSmall),
+  titleLarge: _heavierStyle(t.titleLarge),
+  titleMedium: _heavierStyle(t.titleMedium),
+  titleSmall: _heavierStyle(t.titleSmall),
+  bodyLarge: _heavierStyle(t.bodyLarge),
+  bodyMedium: _heavierStyle(t.bodyMedium),
+  bodySmall: _heavierStyle(t.bodySmall),
+  labelLarge: _heavierStyle(t.labelLarge),
+  labelMedium: _heavierStyle(t.labelMedium),
+  labelSmall: _heavierStyle(t.labelSmall),
+);
+
+// System serif faces (used when bundled fonts are switched off): Times New
+// Roman + Songti SC / Mincho on macOS, the system serif + Noto Serif CJK on
+// Android.
 String get _serifFamily => switch (defaultTargetPlatform) {
   TargetPlatform.macOS || TargetPlatform.iOS => 'Times New Roman',
   _ => 'serif',
@@ -23,13 +121,18 @@ List<String> get _serifFallback => switch (defaultTargetPlatform) {
 
 /// Builds the Material 3 [ThemeData] from a [ColorScheme]. All widgets take
 /// their colours from the scheme; nothing is hard-coded.
-ThemeData buildTheme(ColorScheme scheme, {AppFont font = AppFont.sans}) {
-  final serif = font == AppFont.serif;
+ThemeData buildTheme(
+  ColorScheme scheme, {
+  AppFont font = AppFont.sans,
+  bool bundledFonts = true,
+}) {
+  final plan = fontPlanFor(font, bundled: bundledFonts);
   final theme = ThemeData(
     useMaterial3: true,
     colorScheme: scheme,
-    fontFamily: serif ? _serifFamily : null,
-    fontFamilyFallback: serif ? _serifFallback : null,
+    fontFamily: plan.family,
+    fontFamilyFallback: plan.fallback,
+    extensions: [FontTuning(sizeFactor: plan.sizeFactor)],
     visualDensity: VisualDensity.standard,
     scaffoldBackgroundColor: scheme.surface,
     // The top bar keeps the page colour while content scrolls under it; the
@@ -69,11 +172,16 @@ ThemeData buildTheme(ColorScheme scheme, {AppFont font = AppFont.sans}) {
   // Sizes are resolved from the locale's text geometry at Theme.of(context),
   // so adjust each script category before that merge (including CJK).
   final typography = theme.typography;
+  TextTheme tuned(TextTheme t) {
+    final sized = t.apply(fontSizeFactor: plan.sizeFactor, fontSizeDelta: -1);
+    return plan.heavier ? _heavierTheme(sized) : sized;
+  }
+
   return theme.copyWith(
     typography: typography.copyWith(
-      englishLike: typography.englishLike.apply(fontSizeDelta: -1),
-      dense: typography.dense.apply(fontSizeDelta: -1),
-      tall: typography.tall.apply(fontSizeDelta: -1),
+      englishLike: tuned(typography.englishLike),
+      dense: tuned(typography.dense),
+      tall: tuned(typography.tall),
     ),
   );
 }

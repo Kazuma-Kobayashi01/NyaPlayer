@@ -1,3 +1,4 @@
+import 'package:nyaplayer/data/repositories/settings_repository.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:nyaplayer/domain/models.dart';
@@ -6,15 +7,26 @@ import 'package:nyaplayer/services/player/queue_controller.dart';
 
 enum CoverShape { square, disc }
 
-/// Player cover style, chosen in settings. In memory until settings are
-/// persisted (M1-6).
+/// Player cover style, chosen in settings.
 final coverShapeProvider = NotifierProvider<CoverShapeController, CoverShape>(
   CoverShapeController.new,
 );
 
 class CoverShapeController extends Notifier<CoverShape> {
   @override
-  CoverShape build() => CoverShape.square;
+  CoverShape build() {
+    final store = ref.read(settingsStoreProvider);
+    listenSelf(
+      skipInitial<CoverShape>(
+        (_, next) => store.put('player.coverShape', next.name),
+      ),
+    );
+    return enumByName(
+      CoverShape.values,
+      store.get('player.coverShape'),
+      CoverShape.square,
+    );
+  }
 
   void set(CoverShape shape) => state = shape;
 }

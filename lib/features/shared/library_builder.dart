@@ -28,11 +28,15 @@ class EmptyState extends StatelessWidget {
     required this.icon,
     required this.title,
     this.body,
+    this.action,
   });
 
   final IconData icon;
   final String title;
   final String? body;
+
+  /// Optional call to action under the text (hidden in very short panes).
+  final Widget? action;
 
   @override
   Widget build(BuildContext context) {
@@ -67,6 +71,10 @@ class EmptyState extends StatelessWidget {
                     ),
                     textAlign: TextAlign.center,
                   ),
+                ],
+                if (action != null && !compact) ...[
+                  const SizedBox(height: 20),
+                  action!,
                 ],
               ],
             ),

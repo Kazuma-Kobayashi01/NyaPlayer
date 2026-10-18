@@ -14,7 +14,38 @@
 - **系统媒体控制（2026-10-18）**：已接入 `LyraAudioHandler` + audio_service 0.18.19，同步队列、歌曲名/歌手/专辑/时长、播放状态、本地 1024px 封面，远程播放/暂停/切歌/seek/随机/循环通过同一 QueueController；普通轮询不反复推送系统位置，显式 seek（含小幅跳转）独立同步，封面代次防串图。macOS Debug 已重建，开发者确认控制中心及第三方软件的信息、封面与控制均正常。Android 三项媒体服务权限与组件已获授权加入，MainActivity 改继承 AudioServiceActivity；**按开发者最新指示本轮不编译 Android**，后续还需编译、设备验证及 M4-2 音频焦点/中断处理；audio_session 0.2.4 已在允许清单内引入，尚未配置焦点协调器。
 - **后台与进程生命周期（2026-10-18）**：已接入 §1 允许的 window_manager 0.5.2，⌘W / 红色关窗隐藏原窗口而不销毁引擎；AppDelegate 保留进程，Dock 可恢复同一窗口。按开发者补充加入 AppKit NSStatusItem 菜单栏常驻图标，可显示窗口、查看当前曲目、播放/暂停、上下首、退出；标签跟随应用语言，状态通过 provider 直接监听，即使隐藏窗口不渲染也更新。⌘Q / 菜单退出经生命周期通道先停止媒体会话、dispose handler/engine/container 再批准 AppKit 退出，并发退出只清理一次，3 秒无响应允许退出。开发者实测关窗后声音连续、控制中心保留、Dock/菜单恢复与控制正常，退出声音停止且图标消失。Android 划除任务由原先主动 stop 改为不干预正在播放的会话，androidStopForegroundOnPause=true，暂停时退出前台；不申请电池豁免、不加守护/定时拉起、不自定义存活时长，插件 START_NOT_STICKY，服从系统/厂商策略。Android 不编译、未真机验证；持久化和音频焦点仍待后续里程碑。格式化、分析、129 个 Flutter 测试通过，macOS Debug 构建成功；Rust 本轮未改。
 - **桌面 UI 微调（2026-10-18，为 10 月 19 日计划提前落地）**：macOS 桌面侧栏改为固定 244dp 展开，移除原生收起按钮、折叠导航栏和 Dart 同步入口；播放器面板及沉浸式页面的放大/退出放大按钮缩为 18dp 图标、34dp 点击区域，同时取消 Material 默认 48dp 触摸留白。M1-7/M3-6 子项已记录，格式化、分析及 129 个 Flutter 测试通过，macOS Debug 构建成功；新版视觉效果待开发者实际使用反馈。本轮没有编译 Android，也未改 Rust。
-- **进度盘点（2026-10-18）**：PLAN 的 M0–M6（MVP 范围）有 65 个顶层任务，其中 10 个已勾选、55 个未勾选；按里程碑分别为 M0 13、M1 5、M2 11、M3 8、M4 6、M5 7、M6 5 个未勾选。全 PLAN（含 P1/P2）共有 83 个顶层任务，12 个勾选、71 个未勾选。复选框数不是工时或代码完成度：多个未勾选项已有部分实现/子项验收，M0-10 仅在发现乱码时才需要做，M4-4/5/6 也各有已完成子项。MVP 仍未验收，主要缺口是 M0 Android/报告收尾、M1 数据库、M2 扫描与查询、M3 队列接入和状态恢复、M4 Android 真机系统行为、M5 完整加载/视图、M6 EQ。
+- **M1-5 drift 数据库（2026-10-18，已完成）**：`lib/data/db/tables.dart` 建 §9 全部 11 张表与 4 个索引，`app_database.dart` 开启外键、schemaVersion=1；`drift_schemas/drift_schema_v1.json` 为快照，`test/data/db/generated/` 为 `drift_dev schema generate` 产物。改 schema 时：bump 版本 → 写 onUpgrade → `dart run drift_dev schema dump lib/data/db/app_database.dart drift_schemas/` → `dart run drift_dev schema generate drift_schemas/ test/data/db/generated/` → 在测试里加旧版本迁移。按开发者“sqlite 用主流版本”不直接依赖 `sqlite3_flutter_libs`（见附录 A），SQLite 来自 `sqlite3` 3.x 官方构建 hook。
+- **扫描位置 + 真实曲库 + 自定义歌单（2026-10-18，开发者指定；M1-5 之后紧接做）**：任务编号 M2-2/3/4/5/10、M3-4（播放上下文）、LIB-13（歌单，提前自 M7）。
+  - **默认走真实链路**：`main.dart` 现在默认用 `RustPlayerEngine` + drift 数据库曲库；`NYA_SAMPLE=1`（仅 debug）回到假引擎+示例数据；`NYA_MUSIC_DIR=<目录>`（仅 debug）改为“把该目录加为扫描位置”（原 `dev/folder_library.dart` 调试扫描器已删除）。没有任何扫描位置时启动进 `/onboarding`。数据库文件在 `~/Library/Application Support/com.kazuma.nyaplayer/nyaplayer.sqlite`（`drift_flutter` 默认的文档目录在 macOS 上是 ~/Documents，已显式改掉）。
+  - **扫描**：`services/library/library_scanner.dart`（遍历在 isolate、`ScanDiff` 纯函数、每批 50 个走 Rust 读标签、按路径原位更新保持曲目 id 稳定、读失败按文件名入库并记 `scan_errors`、扫描末尾清理空专辑/孤立艺术家并选代表曲目）。根目录不存在（硬盘未挂载）时保留其歌曲，避免歌单被清空；已有歌曲被删则从所有歌单消失（外键级联）。添加/移除/排除文件夹、启动、手动“重新扫描”都触发增量扫描，扫描中再次触发会排队补扫一遍。只收 FLAC/MP3，跳过隐藏项与 `._*`。
+  - **曲库流**：`LibraryRepository.watchLibrary()` 把数据库行组装成原有的内存 `Library` 模型（250ms 去抖），所以所有页面不用改；`libraryProvider` 改为 `StreamProvider`。歌词不入库，`rawLyricsProvider` 打开时按需从文件读（`Track.hasEmbeddedLyrics` 标记有无）。
+  - **歌单**：`PlaylistRepository`（新建/重命名/删除/加入/移除/拖拽排序，位置保持 0..n-1 连续，允许同一首歌重复）；界面 `features/library/playlists_page.dart`、`playlist_detail_page.dart`、`features/playlists/playlist_dialogs.dart`；歌曲菜单新增“加入播放列表”。
+  - **播放上下文规则（开发者指定）**：点哪份列表里的歌，队列就是那份列表；同一首歌同时在总曲库和歌单时，以所点列表为准，上一首/下一首/随机都只在该列表内。所有列表页本来就把自己的列表传给 `QueueController.playTracks`，这次补了队列单测和“库里点 vs 歌单里点”的 widget 测试锁定语义。
+  - **验证**：Flutter 175 个测试通过（新增 39：键/差集/扫描器/仓库/播放上下文/歌单与设置 widget 流程），分析零问题；macOS 真机（Rust 引擎、音量 0）用 `test_music/` 实测 5 首全部入库（采样率/位深/时长/歌词标志正确），重启后无需重扫（`+0 ~0 -0`）。Android 未编译，`file_picker` 在 Android 上的目录授权/SAF 路径未验证（M0-8）。
+  - **已知问题/待你决定**（已更新）：①专辑拆分问题已在下一条修复；②收藏/设置已持久化（见下条），播放队列仍只在内存（M3-9）；③排除文件夹只支持“扫描根目录下的子目录”这一种用法；最短时长过滤（LIB-11）未做；④FTS5 搜索仍是内存子串搜索。
+- **专辑归类修复 + 收藏/设置持久化（2026-10-18，开发者指定；任务 LIB-10、M1-6，含 M6-2 的一部分）**：
+  - **专辑**：根因是没有 Album Artist 标签时 §7.2 用曲目艺术家做键，合作专辑被拆开。现在无标签时用“同目录+同专辑名”（规格 §7.2 已按此修订），专辑的显示艺术家由 `_tidy` 推导：有标签用标签，否则曲目艺术家都一样就用它，不一样存空串、界面显示“多位艺术家”（`albumArtistLabel`）。`tracks.album_artist` 现在只存标签值。取舍：没有标签又分放不同目录的多碟专辑会被分开。真实库验证：5 张专辑合并为 4 张，《星轨消逝之夜》两首归一。
+  - **schema v2**：新增 `favorites(track_id PK, added_at)` 外键级联；迁移同时把所有 `tracks.mtime` 置 -1，让下一次启动的增量扫描重读并重新归类（真实库已按此升级成功）。迁移测试覆盖 v1→v2 保留旧数据；快照 `drift_schemas/drift_schema_v2.json`。
+  - **设置**：`SettingsStore`（`data/repositories/settings_repository.dart`）启动时整表读入、后台串行写入；各控制器 `build()` 读初值，用 `listenSelf(skipInitial(...))` 在真正变化时保存（`listenSelf` 首次构建也会触发，所以必须跳过，否则每次启动会把默认值写进库）。覆盖主题模式/配色来源/种子色/字体/播放页背景/进度条样式、语言、启动页、封面形状、歌词显示选项、EQ 当前状态。未知或损坏的值回退默认值。测试里默认用内存 `MemorySettingsStore`，`main` 才换成数据库版本。退出（⌘Q）前会 flush 写队列。调试预览环境变量（NYA_THEME 等）会关闭持久化，不会覆盖你真实的设置。
+  - **收藏**：`FavoritesStore` 同样启动时读入集合、后台写库；文件被删后对应收藏随外键清除（与歌单一致）。
+  - **验证**：Flutter 193 个测试通过（新增 18：存储往返、各控制器还原、损坏数据兜底、收藏、迁移、新专辑规则），分析零问题；macOS 真实库升级、重扫、合并均已验证。设置/收藏的“重启后保留”在界面层未手工点验（测试覆盖存储与控制器层）。Android 未编译。
+- **M3-9 播放状态持久化与启动恢复（2026-10-18，已完成；M4-5 随之满足而勾选）**：`SavedPlayback` / `PlaybackStore`（`data/repositories/playback_repository.dart`，数据库版写 `playback_state` 单行）；`QueueController.restore(saved, lookup)` 剔除已不存在的曲目、校正索引（当前曲目缺失则落到下一首并从头开始）、先 `setLoopMode` 再 `openQueue(autoplay:false)` 再 seek；`PlaybackPersistence`（`services/player/playback_persistence.dart`）负责保存节奏。`main.dart` 在 `runApp` 之前恢复（先于首次扫描），随后启动持久化，⌘Q 的 `flushStores` 包含它。不保存“正在播放”状态，重启一律暂停（PLAY-05）。测试 16 个（存储、恢复各种缺失情形、保存节奏），Flutter 共 210 个通过，分析零问题。注意：恢复后系统控制中心会立刻出现暂停状态的当前曲目（audio_service 随队列同步）。未验证：Android。
+- **设置页清理 + 全屏歌词间距自适应（2026-10-18，开发者反馈）**：①设置页下方还留着最初的占位“Library”区块（硬编码 `/Music`、按钮无逻辑），已删除，只保留真正的“音乐库”区块，并清掉 4 个不再使用的字符串。②全屏播放页（`_StageLayout`）原先把宽度平分成左右两栏、封面与歌词各自在栏内居中，窗口拉大后两者相距越来越远（2200 宽实测 496px）。现在每栏宽度设上限 = 舞台高度 − 96，限制在 320–560 之间（矮窗口栏更窄、贴合变小的封面），整组水平居中，多出的宽度留给两侧；栏宽未到上限的窗口（普通窗口模式）布局与之前完全一致。回归测试覆盖 1000×600 到 3200×1400，验证间距 < 220px、整组居中、到达上限后间距不再增长（已确认去掉修复时该测试会失败）。右侧窄面板、手机布局未改动。Flutter 211 个测试通过，分析零问题。
+- **大屏全屏间距 + 歌词默认 18pt + 播放页灰白控件（2026-10-18，开发者反馈 16:9 显示器“太拥挤”）**：①`_StageLayout` 以普通窗口（舞台约 1300×750）为基准、此尺寸及以下完全不变；更大时封面和栏宽随舞台高度放大（最多 1.5 倍，封面实测 1400×900:520 → 2200×1200:666 → 3200×1400:780），多出来的宽度还会拉开封面与歌词的间距（随空余宽度增长，上限多 200px；实测 1400×900:34 → 2200×1200:180 → 3200×1400:246），整组始终水平居中；歌词栏不再固定 560 上限（由舞台封顶，≤840）。回归测试覆盖 1400×900 / 1920×1080 / 2200×1200 / 3200×1400。②歌词默认字号 20 → 18pt（只影响没改过的用户；已保存的值不变），测试里写死 20 的断言已更新。③播放页（全屏页、右侧面板、手机页）的控件改用灰白：`player_palette.dart` 取 `ColorScheme.onSurface` 去掉色相（深色下近白，浅色下深灰，仍来自 ColorScheme，无硬编码），用于进度条（四种样式全部）、播放/暂停、上下首、随机/循环/收藏（开=亮、关=60% 透明度，仍可区分）、歌词/队列切换、播放菜单按钮、手机翻页小圆点；不再跟主题色。迷你播放条、列表页和设置页未改。Flutter 212 个测试通过（新增 1 个灰白控件测试，重写 1 个自适应布局测试），分析零问题。
+- **歌词字号、内置字体、选择文件夹接系统接口（2026-10-18，开发者指定）**：
+  - **歌词**：默认字号改回 20pt；高亮行再加大 2pt（`字号×1.15+3`，手机三行预览同样 +3）。
+  - **内置字体**：非衬线 = HarmonyOS Sans SC（官方包，三字重，**未修改**——协议禁止修改，所以不能裁剪子集；协议要求的显著声明在“关于”页和 README，协议文本进了许可页）；衬线 = 开发者电脑上的 EB Garamond 变量字体切出 400/500/600/700 静态字重（拉丁）+ Noto Serif SC 500/700（中文，思源宋体，OFL）。macOS 自带的 Songti SC 是专有字体不能打包，所以宋体用思源宋体——**如果你想要别的宋体请告诉我**。衬线整体放大 1.08 倍并加重一档（歌词通过 `FontTuning` 一并放大）。设置里新增“使用内置字体”开关（默认开；关＝回到打包字体之前的系统字体配置，已有测试锁定）。内置字体家族名加 `Nya ` 前缀，避免与同名系统字体互相遮蔽——这一点是测试暴露的真实隐患：Android 系统衬线回退列表里本来就有 “Noto Serif SC”，不加前缀的话“关闭内置字体”时也会解析到打包的那份。字体共约 54MB，macOS Debug 包约 257MB；字符覆盖已用 fonttools 验证（简/繁/假名/日文汉字齐全，仅 〜 ♪ ♡ 三个符号在 HarmonyOS 中缺，回退系统字体）。
+  - **选择文件夹**：macOS 用原生 `NSOpenPanel`（挂在窗口上的 sheet、可多选、默认 ~/Music、文案跟随应用语言；App 未沙盒，直接用路径，无需安全作用域书签），`Info.plist` 补了桌面/文档/下载/可移动卷/网络卷用途说明；Android 先申请权限再弹系统目录选择器——Android 13+ 申请 `READ_MEDIA_AUDIO`，Android 12 申请 `READ_EXTERNAL_STORAGE`（permission_handler 在 12 上把音频权限当作空操作、在 13+ 拒绝存储权限，所以用 `MainActivity.kt` 里一个返回 `SDK_INT` 的小通道选权限）；被拒时说明原因，永久拒绝时给“打开系统设置”；选择器返回的不是真实路径时报错而不是静默失败；“排除文件夹”不需要权限。**Android 部分按要求未编译、未真机验证**，包括 `file_picker` 在 Android 上返回的路径是否可被 dart:io 递归列出（M0-8）。
+  - **验证**：Flutter 239 个测试通过（新增 27：字体方案/解析主题/打包文件与协议存在/设置开关/权限选择/macOS 通道/多选、被拒、出错、取消等流程），分析零问题，macOS Debug 构建与启动成功，截图确认播放页灰白控件与高亮歌词。未手工点验：macOS 原生文件夹面板的实际交互、衬线字体的实际观感（默认是非衬线）。
+  - **注意到的一件事**：本次启动时 `test_music/` 里《十年》和《缭花绚烂》两个文件已不在（目录修改时间 13:54），库按磁盘如实移除了这两首（库里现为 3 首）。不是我的操作；保存的上次队列在扫描前就已恢复，所以队列里可能还留着这两首的条目，播放到会被引擎当作无法解码而跳过。
+- **语言选择弹窗 + 国际化（2026-10-18，开发者指定；UI-13、M1-9）**：
+  - **弹窗**：设置里“语言”改为一行（图标 + 当前语言 + 箭头），点开弹窗：**“跟随系统”在最上面，下面按语言的英文名排序**——简体中文（中国）、繁體中文（香港）、繁體中文（台灣）、English (UK)、English (US)、Français、Deutsch、日本語、한국어、Русский、Español；每项用该语言自己的名称，括号里是地区；选中即生效，当前项带勾。选项表在 `lib/l10n/language_options.dart`（名称不翻译，保证读不懂当前语言的人也能找到自己的语言）。你的示例里台湾写的是“繁体中文（台湾）”，我按“用对应语种自己的写法”写成了繁體字“繁體中文（台灣）”——想要简体字写法改 `languageOptions` 里的 label 即可。
+  - **存储**：`ui.locale` 现存语言 id（`zh-CN`/`zh-HK`/`zh-TW`/`en-GB`/`en-US`/`fr`/`de`/`ja`/`ko`/`ru`/`es`/`system`）；旧版本存的 `zh`、`en` 仍可识别（对应简体、美式英语）。
+  - **翻译**：新增 fr、de、es、ru、ja、ko、zh_Hant（台灣用语）、zh_Hant_HK（香港用语）、en_GB，每份 196 条；俄语复数按 one/few/many 写全。**注意 gen-l10n 的继承规则**：`zh_Hant_HK` 继承的是简体 `zh` 而不是 `zh_Hant`，所以香港版必须写全（我只覆盖差异时会有 158 条落回简体，已修正）；`en_GB` 继承 `en`，只写 12 条英式拼写差异。台灣用 `zh_Hant`（带台湾国家码的区域会按文字系统匹配到它）。基础英文原来混用英式和美式拼写（“Colour”与“Favorite”并存），已统一成美式，英式放进 en_GB。译文是我写的，**没有母语者审校**——日、韩、俄、法、德、西、繁中尤其建议你或熟悉的人过一遍术语。
+  - **清理**：删除 5 条已不再使用的字符串和 2 条旧语言按钮标签；均衡器页那句“当前为界面预览，音频效果将在接入播放引擎后生效”早已不符合事实（EQ 已接入引擎），一并去掉。
+  - **macOS**：`Info.plist` 增加 `CFBundleLocalizations`（de/en/es/fr/ja/ko/ru/zh-Hans/zh-Hant），让系统把这些语言识别为应用支持的语言。`MainMenu.xib` 里的系统菜单项（如“Settings…”）没有本地化，保持英文；状态栏菜单的文字来自 Dart，会跟随语言。Android 不需要额外资源（语言在应用内切换），未编译。
+  - **测试**：Flutter 262 个通过（新增 23：语言表顺序/存取/旧 id 兼容、每份 ARB 键与占位符与模板一致（以后新增字符串漏翻会直接失败）、所有语种能加载含占位符与复数的文案、俄语复数、区域差异、弹窗完整流程）。**未手工点验**弹窗的视觉效果，也没有逐语种检查排版溢出（德语、俄语文案偏长，设置页和对话框里可能有换行或省略，值得你切换看看）。
+- **进度盘点（2026-10-18，已按本轮更新）**：PLAN 的 M0–M6（MVP 范围）有 65 个顶层任务，其中 20 个已勾选、45 个未勾选；按里程碑分别为 M0 13、M1 3、M2 6、M3 6、M4 5、M5 7、M6 5 个未勾选。全 PLAN（含 P1/P2）共 83 个顶层任务，23 个勾选、60 个未勾选（含已提前完成的 LIB-13 歌单）。复选框数不是工时或代码完成度：多个未勾选项已有部分实现/子项验收，M0-10 仅在发现乱码时才需要做，M4-4/5/6 也各有已完成子项。MVP 仍未验收，主要缺口是 M0 Android/报告收尾、M2 FTS 搜索与 SQL 层查询、M3 状态恢复、M4 Android 真机系统行为、M5 完整歌词加载/视图、M6 EQ。
 - **紧急事项（接手后第一件事）**：
   1. **接手时工作区干净**，前序改动已提交。2026-10-18 开发者已明确授权提交本轮累计成果，署名按 Kazuma-Kobayashi01（主作者）、Claude、Codex 排列；提交结果以 `git log` / `git status` 为准，不 push。
   2. （已完成）子代理的临时工作区和 `worktree-agent-*` 分支已于 2026-10-18 清理；`.claude/worktrees/` 已在 `.gitignore` 中，今后再用子代理时同样不要提交它。
@@ -108,7 +139,7 @@
 
 ## 5. PLAN 进度（以 `docs/PLAN.md` 复选框为准，下面是补充）
 
-> **剩余量（按顶层复选框统计，2026-10-18）**：MVP 的 M0–M6 共 65 项，10 项已勾选，55 项未勾选；分项：M0 13、M1 5、M2 11、M3 8、M4 6、M5 7、M6 5。整个计划（再含 M7/M8）共 83 项，12 项已勾选，71 项未勾选。该数字用于看清待验收清单，不能当成工作量百分比：未勾选项中有部分代码或子项已完成，条件任务 M0-10 也不一定需要实施。
+> **剩余量（按顶层复选框统计，2026-10-18）**：MVP 的 M0–M6 共 65 项，20 项已勾选，45 项未勾选；分项：M0 13、M1 3、M2 6、M3 6、M4 5、M5 7、M6 5。整个计划（再含 M7/M8）共 83 项，23 项已勾选，60 项未勾选。该数字用于看清待验收清单，不能当成工作量百分比：未勾选项中有部分代码或子项已完成，条件任务 M0-10 也不一定需要实施。
 
 - **M0**：M0-1、M0-R1、M0-R2 已勾选。M0-2/3/4 的 macOS 部分已有实测结果（`SPIKE_REPORT.md`），因 Android 等覆盖未完成，整项保持未勾选。
   - 待做：M0-2 更多格式规格及 Android、M0-3 Android EQ 与完整预设覆盖、M0-4 MP3 gapless/真实连续专辑与 Android、M0-5 后台/通知栏/耳机键、M0-6 音频焦点、M0-7 输出设备切换（含 Android 真机）、M0-8 Android 文件权限（只给 `READ_MEDIA_AUDIO`）、M0-9 标签（lofty 已验证两首真实文件；还要用开发者更多真实曲库样本、粗测 1000 文件耗时）、M0-11 FTS5、M0-12 M3 Expressive 调研、M0-14 Release 包体与 192k 在 Android 的 CPU、M0-13 补全 `docs/SPIKE_REPORT.md`（已有阶段记录，尚非最终验收报告）。
@@ -145,7 +176,7 @@
 - 运行：`flutter run -d macos`；Android：`flutter run --release -d <id>`；macOS 构建/`pod install` 时请带 `LANG=en_US.UTF-8`，否则 CocoaPods 会因编码报错。
 - 测试：`flutter test`；`cd rust && cargo test`；真实文件测试：`NYA_TEST_MUSIC=$PWD/../test_music cargo test real_test_music -- --ignored --nocapture`。
 - 不接 Flutter 直接驱动引擎：`cd rust && NYA_VOLUME=0 cargo run --example engine_smoke -- 文件1 文件2 …`（`NYA_SEEK=秒` 可跳到曲末附近测换曲；`NYA_TIMEOUT=秒`）；`cargo run --example devices` 列出输出设备。
-- 调试环境变量（仅 debug，`lib/dev/preview_hook.dart`）：`NYA_PREVIEW=player|panel`、`NYA_TRACK=序号`、`NYA_PAUSE=1`、`NYA_THEME=light|dark`、`NYA_FONT=serif`、`NYA_SHAPE=disc`、`NYA_LYRICS=center,large,notrans`、`NYA_QUEUE=1`、`NYA_DRAWER=1`、`NYA_VOLUME=0..1`、`NYA_MUSIC_DIR=文件夹`；`NYA_WINDOW_SIZE=宽x高` 由 `MainFlutterWindow.swift` 读取。
+- 调试环境变量（仅 debug，`lib/dev/preview_hook.dart`）：`NYA_PREVIEW=player|panel`、`NYA_TRACK=序号`、`NYA_PAUSE=1`、`NYA_THEME=light|dark`、`NYA_FONT=serif`、`NYA_SHAPE=disc`、`NYA_LYRICS=center,large,notrans`、`NYA_QUEUE=1`、`NYA_DRAWER=1`、`NYA_VOLUME=0..1`、`NYA_MUSIC_DIR=文件夹`（加为扫描位置）、`NYA_SAMPLE=1`（假引擎+示例数据）；`NYA_WINDOW_SIZE=宽x高` 由 `MainFlutterWindow.swift` 读取。
 - 截图验证用的脚本（`shot.sh`、`winid`）放在会话临时目录，**不在仓库里**，需要时自己重写：`screencapture -x -l <窗口id>`，窗口 id 用 CoreGraphics 的 `CGWindowListCopyWindowInfo` 取。
 
 ## 9. 已踩的坑（避免重复）
@@ -160,6 +191,11 @@
 - BSD `sed -i` 需要 `sed -i ''`；多行替换用 Python 更稳。
 - macOS 上 `screencapture -o`、系统事件脚本（需要辅助功能权限）都用不了，只能截窗口并读图。
 
+- **`drift_flutter` 默认把数据库放在“文档目录”**：macOS 上就是 ~/Documents。已在 `AppDatabase` 里用 `DriftNativeOptions(databaseDirectory: getApplicationSupportDirectory)` 改掉。
+- **widget 测试里用到 drift 流会留下零时长定时器**（流取消时 drift 起一个 Timer，被 flutter_test 判为未清理）：旧的外壳测试把 `rootsProvider` 换成 `Stream.value`；新的数据库测试在结尾 `pumpWidget(SizedBox)` 再 `pump` 一次（见 `test/features/playlists/library_flows_test.dart` 的 `finish`）。
+- `scrollUntilVisible` 只保证控件被构建，不保证在屏幕内；设置页变高后需再 `ensureVisible`。
+- macOS 会产生 `._xxx.mp3` 资源分叉残留文件，扫描器按“以 . 开头”统一跳过。
+
 ## 10. 已知限制 / 风险（尚未验证）
 
 - 无缝播放已通过自制连续 FLAC 的 macOS 实听及离线样本边界测试；真实连续专辑、MP3 和 Android 仍待验证，MP3 gapless 依赖 LAME/Xing 头。
@@ -168,7 +204,7 @@
 - `meta`：`lofty` 读 MP3 一定会把整个 ID3v2 标签（含封面）读进内存；FLAC 里仅靠 Vorbis 注释内嵌的封面（`METADATA_BLOCK_PICTURE`）在 `has_cover` 上会被判为 false（`read_cover` 仍可取到）。
 - Android 输出设备切换（拔耳机/蓝牙）后的流重建逻辑已写（`recover_device`），**未在真机验证**；系统媒体服务和共享 AudioHandler 已接入，但尚未进行本轮 Android 编译/真机验证。`AudioFocusCoordinator` 仍未实现（M4-2）。
 - Rust 引擎目前没有 `audioParams` 事件（TECH_SPEC §4.2 草案里有，实现时未包含），"歌曲信息"页的采样率/位深来自元数据而非实时输出参数。
-- 设置、收藏、播放队列全在内存里，重启丢失（drift 未做）。
+- 曲库、扫描位置、歌单、收藏、设置、EQ 当前状态以及播放队列/位置均已持久化（重启后队列暂停恢复）。
 - 播放位置在 macOS 上用 Dart 每 200ms 拉取；播放页歌词用 `positionProvider`，后台时是否节流未处理（NFR-07）。
 
 ### 2026-10-18 UI / macOS 命令补充

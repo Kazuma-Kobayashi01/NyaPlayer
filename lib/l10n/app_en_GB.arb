@@ -1,0 +1,15 @@
+{
+  "@@locale": "en_GB",
+  "eqTitle": "Equaliser",
+  "eqEnabled": "Enable equaliser",
+  "settingsColorSource": "Colour source",
+  "colorSourceFixed": "Fixed colour",
+  "settingsSeedColor": "Theme colour",
+  "navFavorites": "Favourites",
+  "favorite": "Favourite",
+  "unfavorite": "Remove from favourites",
+  "favoritesEmptyTitle": "No favourites yet",
+  "colorSourceHint": "Use system colours or a fixed theme colour. Player backgrounds are configured separately.",
+  "settingsEqualizerSubtitle": "10-band equaliser and presets",
+  "lyricsCentered": "Centre lines"
+}

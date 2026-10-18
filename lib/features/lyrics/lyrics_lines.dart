@@ -13,7 +13,7 @@ class LyricsLines extends ConsumerWidget {
 
   static double rowHeightOf(BuildContext context, double lineHeight) {
     final size = Theme.of(context).textTheme.bodyLarge?.fontSize ?? 16;
-    return MediaQuery.textScalerOf(context).scale(size + 1) * lineHeight + 8;
+    return MediaQuery.textScalerOf(context).scale(size + 3) * lineHeight + 8;
   }
 
   static double heightOf(BuildContext context, double lineHeight) =>
@@ -96,7 +96,7 @@ class LyricsLines extends ConsumerWidget {
               line(
                 textOf(current),
                 theme.textTheme.bodyLarge?.copyWith(
-                  fontSize: (theme.textTheme.bodyLarge?.fontSize ?? 16) + 1,
+                  fontSize: (theme.textTheme.bodyLarge?.fontSize ?? 16) + 3,
                   height: lineHeight,
                   color: scheme.onSurface,
                   fontWeight: FontWeight.w700,

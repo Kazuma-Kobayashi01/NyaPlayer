@@ -1,3 +1,4 @@
+import 'package:nyaplayer/data/repositories/settings_repository.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -47,7 +48,37 @@ final lyricsSettingsProvider =
 
 class LyricsSettingsController extends Notifier<LyricsSettings> {
   @override
-  LyricsSettings build() => const LyricsSettings();
+  LyricsSettings build() {
+    final store = ref.read(settingsStoreProvider);
+    listenSelf(
+      skipInitial<LyricsSettings>((previous, next) {
+        if (previous?.fontSize != next.fontSize) {
+          store.put('lyrics.fontSize', '${next.fontSize}');
+        }
+        if (previous?.lineHeight != next.lineHeight) {
+          store.put('lyrics.lineHeight', '${next.lineHeight}');
+        }
+        if (previous?.centered != next.centered) {
+          store.put('lyrics.centered', '${next.centered}');
+        }
+        if (previous?.showTranslation != next.showTranslation) {
+          store.put('lyrics.showTranslation', '${next.showTranslation}');
+        }
+      }),
+    );
+    return LyricsSettings(
+      fontSize: doubleOr(
+        store.get('lyrics.fontSize'),
+        LyricsSettings.defaultFontSize,
+      ).clamp(LyricsSettings.minFontSize, LyricsSettings.maxFontSize),
+      lineHeight: doubleOr(
+        store.get('lyrics.lineHeight'),
+        LyricsSettings.defaultLineHeight,
+      ).clamp(LyricsSettings.minLineHeight, LyricsSettings.maxLineHeight),
+      centered: boolOr(store.get('lyrics.centered'), false),
+      showTranslation: boolOr(store.get('lyrics.showTranslation'), true),
+    );
+  }
 
   void setFontSize(double size) => state = state.copyWith(
     fontSize: size.clamp(

@@ -116,6 +116,8 @@ NyaPlayer never makes network requests and collects nothing. Library data and co
 
 Licensed under the [MIT License](LICENSE).
 
+**Fonts.** NyaPlayer bundles *HarmonyOS Sans* (© Huawei Device Co., Ltd., [HarmonyOS Sans Fonts License Agreement](assets/fonts/licenses/HarmonyOS-Sans.txt), used unmodified), *EB Garamond* and *Noto Serif SC* (both [SIL OFL 1.1](assets/fonts/licenses/)). The fonts keep their own licences; the MIT licence covers the app's code.
+
 <div align="center">
 <img src="https://capsule-render.vercel.app/api?type=waving&color=gradient&customColorList=12,20,24&height=100&section=footer" width="100%" alt=""/>
 </div>

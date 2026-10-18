@@ -2,14 +2,16 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:nyaplayer/app/layout/adaptive_shell.dart';
+import 'package:nyaplayer/data/db/database_providers.dart';
 import 'package:nyaplayer/data/library_providers.dart';
 import 'package:nyaplayer/features/shared/cover_art.dart';
+import 'package:nyaplayer/features/shared/album_artist_label.dart';
 import 'package:nyaplayer/l10n/app_localizations.dart';
 import 'package:nyaplayer/services/player/queue_controller.dart';
 
 /// Centred top app bar of the top-level pages. Shows a menu button that opens
 /// the navigation drawer on narrow windows, and search (UI-09).
-class LibraryAppBar extends StatelessWidget implements PreferredSizeWidget {
+class LibraryAppBar extends ConsumerWidget implements PreferredSizeWidget {
   const LibraryAppBar({super.key, required this.title, this.showSearch = true});
 
   final String title;
@@ -19,11 +21,12 @@ class LibraryAppBar extends StatelessWidget implements PreferredSizeWidget {
   Size get preferredSize => const Size.fromHeight(kToolbarHeight);
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context);
+    final scanning = ref.watch(scanProvider.select((s) => s.running));
     final openNavigation = ShellScope.openNavigationOf(context);
     final titleStyle = Theme.of(context).textTheme.titleLarge;
-    return AppBar(
+    final bar = AppBar(
       automaticallyImplyLeading: false,
       leading: openNavigation == null
           ? null
@@ -39,6 +42,19 @@ class LibraryAppBar extends StatelessWidget implements PreferredSizeWidget {
       actions: [
         if (showSearch) const LibrarySearchAnchor(),
         const SizedBox(width: 4),
+      ],
+    );
+    if (!scanning) return bar;
+    // Scan progress (LIB-05) overlays the bar's bottom edge: no layout shift.
+    return Stack(
+      children: [
+        bar,
+        const Positioned(
+          left: 0,
+          right: 0,
+          bottom: 0,
+          child: LinearProgressIndicator(minHeight: 2),
+        ),
       ],
     );
   }
@@ -127,7 +143,7 @@ List<Widget> librarySearchSuggestions(
         ListTile(
           leading: CoverArt(seed: a.coverSeed, source: a.cover, size: 40),
           title: Text(a.title),
-          subtitle: Text(a.artist),
+          subtitle: Text(albumArtistLabel(l10n, a)),
           onTap: () {
             close();
             router.go('/albums/${a.id}');

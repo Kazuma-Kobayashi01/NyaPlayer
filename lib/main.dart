@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 
 import 'package:flutter/foundation.dart';
@@ -8,10 +9,18 @@ import 'package:flutter_riverpod/misc.dart' show Override;
 import 'package:audio_service/audio_service.dart';
 import 'package:nyaplayer/app/app.dart';
 import 'package:nyaplayer/app/desktop_lifecycle.dart';
+import 'package:nyaplayer/app/theme/font_licenses.dart';
+import 'package:nyaplayer/app/router.dart' show needsOnboardingProvider;
 import 'package:nyaplayer/core/log.dart';
+import 'package:nyaplayer/data/db/app_database.dart';
+import 'package:nyaplayer/data/db/database_providers.dart';
 import 'package:nyaplayer/data/library_providers.dart';
+import 'package:nyaplayer/data/repositories/favorites_repository.dart';
+import 'package:nyaplayer/data/repositories/library_repository.dart';
+import 'package:nyaplayer/data/repositories/playback_repository.dart';
+import 'package:nyaplayer/data/repositories/settings_repository.dart';
+import 'package:nyaplayer/services/player/playback_persistence.dart';
 import 'package:nyaplayer/data/sample_library.dart';
-import 'package:nyaplayer/dev/folder_library.dart';
 import 'package:nyaplayer/dev/preview_hook.dart';
 import 'package:nyaplayer/services/eq/eq_state.dart';
 import 'package:nyaplayer/services/player/fake_player_engine.dart';
@@ -27,28 +36,65 @@ Future<void> main() async {
   await RustLib.init(); // loads the Rust core (TECH_SPEC §4.1)
   Log.i('main', 'nya_core ${coreVersion()}');
   await SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
+  registerFontLicenses();
 
-  // Until the scanner and database exist (M2), real playback is a debug-only
-  // harness: NYA_MUSIC_DIR=<folder> loads that folder with the Rust core and
-  // plays through the Rust engine. Otherwise the sample library and a silent
-  // fake engine drive the UI.
-  final musicDir = kDebugMode ? Platform.environment['NYA_MUSIC_DIR'] : null;
+  // Real playback and the database-backed library by default. Debug builds
+  // can set NYA_SAMPLE=1 for the silent fake engine with sample data, and
+  // NYA_MUSIC_DIR=<folder> to add that folder as a scan location.
+  final useSample = kDebugMode && Platform.environment['NYA_SAMPLE'] == '1';
   final PlayerEngine engine;
   final List<Override> overrides;
-  if (musicDir != null) {
-    Log.i('main', 'real playback from $musicDir');
-    engine = RustPlayerEngine();
-    overrides = [
-      playerEngineProvider.overrideWithValue(engine),
-      libraryProvider.overrideWith((ref) => loadFolderLibrary(musicDir)),
-    ];
-  } else {
+  // Pending settings/favourites writes, awaited before the app exits.
+  Future<void> Function() flushStores = () async {};
+  // Restores the previous queue (paused) and starts remembering playback.
+  Future<void> Function(ProviderContainer) restorePlayback = (_) async {};
+  if (useSample) {
     engine = FakePlayerEngine(
       durationOf: (path) =>
           sampleLibrary.trackByPath(path)?.duration ??
           const Duration(minutes: 3),
     );
     overrides = [playerEngineProvider.overrideWithValue(engine)];
+  } else {
+    engine = RustPlayerEngine();
+    final database = AppDatabase();
+    final repository = LibraryRepository(database);
+    final devDir = kDebugMode ? Platform.environment['NYA_MUSIC_DIR'] : null;
+    if (devDir != null) {
+      Log.i('main', 'adding scan location from NYA_MUSIC_DIR: $devDir');
+      await repository.addRoot(devDir);
+    }
+    final needsOnboarding = (await repository.roots()).isEmpty;
+    final settings = await DbSettingsStore.open(database);
+    final favorites = await DbFavoritesStore.open(database);
+    final playback = DbPlaybackStore(database);
+    PlaybackPersistence? persistence;
+    flushStores = () => Future.wait([
+      settings.flush(),
+      favorites.flush(),
+      ?persistence?.flush(),
+    ]);
+    restorePlayback = (container) async {
+      final saved = await playback.load();
+      if (saved != null) {
+        final library = await repository.loadLibrary();
+        await container
+            .read(queueProvider.notifier)
+            .restore(saved, library.trackById);
+        Log.i('main', 'restored ${saved.queue.length} queued tracks, paused');
+      }
+      persistence = PlaybackPersistence(container, playback)..start();
+    };
+    overrides = [
+      settingsStoreProvider.overrideWithValue(settings),
+      favoritesStoreProvider.overrideWithValue(favorites),
+      playerEngineProvider.overrideWithValue(engine),
+      databaseProvider.overrideWithValue(database),
+      libraryProvider.overrideWith(
+        (ref) => ref.watch(libraryRepositoryProvider).watchLibrary(),
+      ),
+      needsOnboardingProvider.overrideWithValue(needsOnboarding),
+    ];
   }
 
   final container = ProviderContainer(overrides: overrides);
@@ -71,6 +117,7 @@ Future<void> main() async {
     final lifecycle = DesktopLifecycle(
       onExit: () async {
         try {
+          await flushStores();
           await handler?.stop();
         } finally {
           try {
@@ -90,6 +137,8 @@ Future<void> main() async {
     (_, state) => engine.setEqualizer(EqParams.fromState(state)),
     fireImmediately: true,
   );
+  await restorePlayback(container);
+  if (!useSample) unawaited(container.read(scanProvider.notifier).scan());
   runApp(
     UncontrolledProviderScope(
       container: container,

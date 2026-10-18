@@ -5,6 +5,7 @@ import 'package:nyaplayer/domain/models.dart';
 import 'package:nyaplayer/features/shared/cover_art.dart';
 import 'package:nyaplayer/features/shared/library_builder.dart';
 import 'package:nyaplayer/features/shared/track_tile.dart';
+import 'package:nyaplayer/features/shared/album_artist_label.dart';
 import 'package:nyaplayer/l10n/app_localizations.dart';
 import 'package:nyaplayer/services/player/queue_controller.dart';
 
@@ -68,7 +69,7 @@ class _AlbumBody extends ConsumerWidget {
         Text(album.title, style: theme.textTheme.headlineMedium),
         const SizedBox(height: 4),
         Text(
-          album.artist,
+          albumArtistLabel(l10n, album),
           style: theme.textTheme.titleMedium?.copyWith(
             color: theme.colorScheme.onSurfaceVariant,
           ),

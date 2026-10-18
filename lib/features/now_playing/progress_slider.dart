@@ -2,6 +2,7 @@ import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:nyaplayer/features/now_playing/player_palette.dart';
 import 'package:nyaplayer/app/theme/theme_settings.dart';
 import 'package:nyaplayer/l10n/app_localizations.dart';
 
@@ -33,7 +34,14 @@ class ProgressSlider extends ConsumerWidget {
     final style = ref.watch(
       themeSettingsProvider.select((s) => s.progressStyle),
     );
-    final base = SliderTheme.of(context);
+    final palette = PlayerPalette.of(context);
+    // Grey-white instead of the theme colour, for every style.
+    final base = SliderTheme.of(context).copyWith(
+      activeTrackColor: palette.strong,
+      inactiveTrackColor: palette.track,
+      thumbColor: palette.strong,
+      overlayColor: palette.strong.withValues(alpha: 0.12),
+    );
     final sliderTheme = style == ProgressStyle.material
         ? base
         : base.copyWith(

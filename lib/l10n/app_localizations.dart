@@ -5,7 +5,13 @@ import 'package:flutter/widgets.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:intl/intl.dart' as intl;
 
+import 'app_localizations_de.dart';
 import 'app_localizations_en.dart';
+import 'app_localizations_es.dart';
+import 'app_localizations_fr.dart';
+import 'app_localizations_ja.dart';
+import 'app_localizations_ko.dart';
+import 'app_localizations_ru.dart';
 import 'app_localizations_zh.dart';
 
 // ignore_for_file: type=lint
@@ -94,8 +100,21 @@ abstract class AppLocalizations {
 
   /// A list of this localizations delegate's supported locales.
   static const List<Locale> supportedLocales = <Locale>[
+    Locale('de'),
     Locale('en'),
+    Locale('en', 'GB'),
+    Locale('es'),
+    Locale('fr'),
+    Locale('ja'),
+    Locale('ko'),
+    Locale('ru'),
     Locale('zh'),
+    Locale.fromSubtags(languageCode: 'zh', scriptCode: 'Hant'),
+    Locale.fromSubtags(
+      languageCode: 'zh',
+      countryCode: 'HK',
+      scriptCode: 'Hant',
+    ),
   ];
 
   /// No description provided for @appName.
@@ -187,12 +206,6 @@ abstract class AppLocalizations {
   /// In zh, this message translates to:
   /// **'更多选项'**
   String get moreOptions;
-
-  /// No description provided for @sortBy.
-  ///
-  /// In zh, this message translates to:
-  /// **'排序方式'**
-  String get sortBy;
 
   /// No description provided for @sortTitle.
   ///
@@ -596,18 +609,6 @@ abstract class AppLocalizations {
   /// **'自定义'**
   String get eqPresetCustom;
 
-  /// No description provided for @eqNotWired.
-  ///
-  /// In zh, this message translates to:
-  /// **'当前为界面预览，音频效果将在接入播放引擎后生效。'**
-  String get eqNotWired;
-
-  /// No description provided for @settingsTitle.
-  ///
-  /// In zh, this message translates to:
-  /// **'设置'**
-  String get settingsTitle;
-
   /// No description provided for @settingsAppearance.
   ///
   /// In zh, this message translates to:
@@ -674,47 +675,11 @@ abstract class AppLocalizations {
   /// **'跟随系统'**
   String get langSystem;
 
-  /// No description provided for @langZh.
-  ///
-  /// In zh, this message translates to:
-  /// **'简体中文'**
-  String get langZh;
-
-  /// No description provided for @langEn.
-  ///
-  /// In zh, this message translates to:
-  /// **'English'**
-  String get langEn;
-
   /// No description provided for @settingsLibrary.
   ///
   /// In zh, this message translates to:
-  /// **'曲库'**
+  /// **'音乐库'**
   String get settingsLibrary;
-
-  /// No description provided for @settingsFolders.
-  ///
-  /// In zh, this message translates to:
-  /// **'音乐文件夹'**
-  String get settingsFolders;
-
-  /// No description provided for @settingsAddFolder.
-  ///
-  /// In zh, this message translates to:
-  /// **'添加文件夹'**
-  String get settingsAddFolder;
-
-  /// No description provided for @settingsRescan.
-  ///
-  /// In zh, this message translates to:
-  /// **'重新扫描全部'**
-  String get settingsRescan;
-
-  /// No description provided for @rescanStarted.
-  ///
-  /// In zh, this message translates to:
-  /// **'已开始扫描曲库'**
-  String get rescanStarted;
 
   /// No description provided for @settingsAbout.
   ///
@@ -773,7 +738,7 @@ abstract class AppLocalizations {
   /// No description provided for @playlistsEmptyBody.
   ///
   /// In zh, this message translates to:
-  /// **'播放列表功能即将推出。'**
+  /// **'点右下角的按钮新建一个，再从歌曲菜单把歌加进去。'**
   String get playlistsEmptyBody;
 
   /// No description provided for @loadFailed.
@@ -788,16 +753,10 @@ abstract class AppLocalizations {
   /// **'曲库是空的'**
   String get emptyLibrary;
 
-  /// No description provided for @unknownArtist.
-  ///
-  /// In zh, this message translates to:
-  /// **'未知艺术家'**
-  String get unknownArtist;
-
   /// No description provided for @variousArtists.
   ///
   /// In zh, this message translates to:
-  /// **'群星'**
+  /// **'多位艺术家'**
   String get variousArtists;
 
   /// No description provided for @navFavorites.
@@ -1064,11 +1023,275 @@ abstract class AppLocalizations {
   /// **'请输入 1–2 之间的行距倍数'**
   String get lyricsLineHeightInvalid;
 
-  /// No description provided for @toggleSidebar.
+  /// No description provided for @newPlaylist.
   ///
   /// In zh, this message translates to:
-  /// **'显示或隐藏侧边栏'**
-  String get toggleSidebar;
+  /// **'新建播放列表'**
+  String get newPlaylist;
+
+  /// No description provided for @playlistName.
+  ///
+  /// In zh, this message translates to:
+  /// **'播放列表名称'**
+  String get playlistName;
+
+  /// No description provided for @playlistNameHint.
+  ///
+  /// In zh, this message translates to:
+  /// **'例如：通勤路上'**
+  String get playlistNameHint;
+
+  /// No description provided for @create.
+  ///
+  /// In zh, this message translates to:
+  /// **'新建'**
+  String get create;
+
+  /// No description provided for @save.
+  ///
+  /// In zh, this message translates to:
+  /// **'保存'**
+  String get save;
+
+  /// No description provided for @cancel.
+  ///
+  /// In zh, this message translates to:
+  /// **'取消'**
+  String get cancel;
+
+  /// No description provided for @rename.
+  ///
+  /// In zh, this message translates to:
+  /// **'重命名'**
+  String get rename;
+
+  /// No description provided for @delete.
+  ///
+  /// In zh, this message translates to:
+  /// **'删除'**
+  String get delete;
+
+  /// No description provided for @remove.
+  ///
+  /// In zh, this message translates to:
+  /// **'移除'**
+  String get remove;
+
+  /// No description provided for @removeFromPlaylist.
+  ///
+  /// In zh, this message translates to:
+  /// **'从此播放列表移除'**
+  String get removeFromPlaylist;
+
+  /// No description provided for @addToPlaylist.
+  ///
+  /// In zh, this message translates to:
+  /// **'加入播放列表'**
+  String get addToPlaylist;
+
+  /// No description provided for @addedToPlaylist.
+  ///
+  /// In zh, this message translates to:
+  /// **'已加入“{name}”'**
+  String addedToPlaylist(String name);
+
+  /// No description provided for @deletePlaylistTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'删除播放列表？'**
+  String get deletePlaylistTitle;
+
+  /// No description provided for @deletePlaylistBody.
+  ///
+  /// In zh, this message translates to:
+  /// **'将删除“{name}”，歌曲文件不受影响。'**
+  String deletePlaylistBody(String name);
+
+  /// No description provided for @playlistEmpty.
+  ///
+  /// In zh, this message translates to:
+  /// **'这个播放列表还是空的'**
+  String get playlistEmpty;
+
+  /// No description provided for @playlistEmptyBody.
+  ///
+  /// In zh, this message translates to:
+  /// **'在任意歌曲的菜单里选择“加入播放列表”。'**
+  String get playlistEmptyBody;
+
+  /// No description provided for @playlistTracks.
+  ///
+  /// In zh, this message translates to:
+  /// **'{count} 首'**
+  String playlistTracks(int count);
+
+  /// No description provided for @reorder.
+  ///
+  /// In zh, this message translates to:
+  /// **'拖动排序'**
+  String get reorder;
+
+  /// No description provided for @libraryFolders.
+  ///
+  /// In zh, this message translates to:
+  /// **'音乐文件夹'**
+  String get libraryFolders;
+
+  /// No description provided for @libraryFoldersHint.
+  ///
+  /// In zh, this message translates to:
+  /// **'应用会递归扫描这些文件夹里的 FLAC 和 MP3。'**
+  String get libraryFoldersHint;
+
+  /// No description provided for @libraryNoFolders.
+  ///
+  /// In zh, this message translates to:
+  /// **'还没有添加音乐文件夹'**
+  String get libraryNoFolders;
+
+  /// No description provided for @addFolder.
+  ///
+  /// In zh, this message translates to:
+  /// **'添加文件夹'**
+  String get addFolder;
+
+  /// No description provided for @excludeFolder.
+  ///
+  /// In zh, this message translates to:
+  /// **'排除文件夹'**
+  String get excludeFolder;
+
+  /// No description provided for @excludedTag.
+  ///
+  /// In zh, this message translates to:
+  /// **'已排除'**
+  String get excludedTag;
+
+  /// No description provided for @removeFolder.
+  ///
+  /// In zh, this message translates to:
+  /// **'移除此文件夹'**
+  String get removeFolder;
+
+  /// No description provided for @folderAlreadyAdded.
+  ///
+  /// In zh, this message translates to:
+  /// **'这个文件夹已经在列表里了'**
+  String get folderAlreadyAdded;
+
+  /// No description provided for @rescan.
+  ///
+  /// In zh, this message translates to:
+  /// **'重新扫描'**
+  String get rescan;
+
+  /// No description provided for @scanWalking.
+  ///
+  /// In zh, this message translates to:
+  /// **'正在查找音乐文件…'**
+  String get scanWalking;
+
+  /// No description provided for @scanReading.
+  ///
+  /// In zh, this message translates to:
+  /// **'正在读取标签 {done} / {total}'**
+  String scanReading(int done, int total);
+
+  /// No description provided for @scanFinishing.
+  ///
+  /// In zh, this message translates to:
+  /// **'正在整理曲库…'**
+  String get scanFinishing;
+
+  /// No description provided for @scanDone.
+  ///
+  /// In zh, this message translates to:
+  /// **'扫描完成'**
+  String get scanDone;
+
+  /// No description provided for @scanDoneWithErrors.
+  ///
+  /// In zh, this message translates to:
+  /// **'扫描完成，{count} 个文件无法读取标签'**
+  String scanDoneWithErrors(int count);
+
+  /// No description provided for @scanFailed.
+  ///
+  /// In zh, this message translates to:
+  /// **'扫描失败'**
+  String get scanFailed;
+
+  /// No description provided for @emptyLibraryBody.
+  ///
+  /// In zh, this message translates to:
+  /// **'添加一个音乐文件夹，歌曲会出现在这里。'**
+  String get emptyLibraryBody;
+
+  /// No description provided for @useBundledFonts.
+  ///
+  /// In zh, this message translates to:
+  /// **'使用内置字体'**
+  String get useBundledFonts;
+
+  /// No description provided for @useBundledFontsHint.
+  ///
+  /// In zh, this message translates to:
+  /// **'无衬线用 HarmonyOS Sans，衬线用 EB Garamond 与思源宋体。关闭后使用系统字体。'**
+  String get useBundledFontsHint;
+
+  /// No description provided for @aboutFonts.
+  ///
+  /// In zh, this message translates to:
+  /// **'字体'**
+  String get aboutFonts;
+
+  /// No description provided for @aboutFontsCredit.
+  ///
+  /// In zh, this message translates to:
+  /// **'HarmonyOS Sans（© 华为终端有限公司）、EB Garamond、Noto Serif SC（思源宋体，SIL OFL）'**
+  String get aboutFontsCredit;
+
+  /// No description provided for @pickFolderMessage.
+  ///
+  /// In zh, this message translates to:
+  /// **'选择包含音乐（FLAC、MP3）的文件夹，可多选。'**
+  String get pickFolderMessage;
+
+  /// No description provided for @pickExcludeMessage.
+  ///
+  /// In zh, this message translates to:
+  /// **'选择扫描时要跳过的文件夹。'**
+  String get pickExcludeMessage;
+
+  /// No description provided for @folderNotUsable.
+  ///
+  /// In zh, this message translates to:
+  /// **'无法读取这个文件夹，请换一个位置'**
+  String get folderNotUsable;
+
+  /// No description provided for @folderPickFailed.
+  ///
+  /// In zh, this message translates to:
+  /// **'无法打开文件夹选择窗口'**
+  String get folderPickFailed;
+
+  /// No description provided for @musicPermissionTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'需要读取音乐的权限'**
+  String get musicPermissionTitle;
+
+  /// No description provided for @musicPermissionBody.
+  ///
+  /// In zh, this message translates to:
+  /// **'NyaPlayer 只在本机读取你选择的文件夹里的音频文件，不会联网。请允许访问音乐和音频，否则无法扫描曲库。'**
+  String get musicPermissionBody;
+
+  /// No description provided for @musicPermissionSettings.
+  ///
+  /// In zh, this message translates to:
+  /// **'打开系统设置'**
+  String get musicPermissionSettings;
 }
 
 class _AppLocalizationsDelegate
@@ -1081,18 +1304,68 @@ class _AppLocalizationsDelegate
   }
 
   @override
-  bool isSupported(Locale locale) =>
-      <String>['en', 'zh'].contains(locale.languageCode);
+  bool isSupported(Locale locale) => <String>[
+    'de',
+    'en',
+    'es',
+    'fr',
+    'ja',
+    'ko',
+    'ru',
+    'zh',
+  ].contains(locale.languageCode);
 
   @override
   bool shouldReload(_AppLocalizationsDelegate old) => false;
 }
 
 AppLocalizations lookupAppLocalizations(Locale locale) {
-  // Lookup logic when only language code is specified.
+  // Lookup logic when language+script+country codes are specified.
+  switch (locale.toString()) {
+    case 'zh_Hant_HK':
+      return AppLocalizationsZhHantHk();
+  }
+
+  // Lookup logic when language+script codes are specified.
+  switch (locale.languageCode) {
+    case 'zh':
+      {
+        switch (locale.scriptCode) {
+          case 'Hant':
+            return AppLocalizationsZhHant();
+        }
+        break;
+      }
+  }
+
+  // Lookup logic when language+country codes are specified.
   switch (locale.languageCode) {
     case 'en':
+      {
+        switch (locale.countryCode) {
+          case 'GB':
+            return AppLocalizationsEnGb();
+        }
+        break;
+      }
+  }
+
+  // Lookup logic when only language code is specified.
+  switch (locale.languageCode) {
+    case 'de':
+      return AppLocalizationsDe();
+    case 'en':
       return AppLocalizationsEn();
+    case 'es':
+      return AppLocalizationsEs();
+    case 'fr':
+      return AppLocalizationsFr();
+    case 'ja':
+      return AppLocalizationsJa();
+    case 'ko':
+      return AppLocalizationsKo();
+    case 'ru':
+      return AppLocalizationsRu();
     case 'zh':
       return AppLocalizationsZh();
   }

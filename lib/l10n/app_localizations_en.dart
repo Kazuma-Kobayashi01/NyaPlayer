@@ -55,9 +55,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get moreOptions => 'More options';
 
   @override
-  String get sortBy => 'Sort by';
-
-  @override
   String get sortTitle => 'Title';
 
   @override
@@ -281,13 +278,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get eqPresetCustom => 'Custom';
 
   @override
-  String get eqNotWired =>
-      'This is a UI preview. Audio effects take effect once the playback engine is connected.';
-
-  @override
-  String get settingsTitle => 'Settings';
-
-  @override
   String get settingsAppearance => 'Appearance';
 
   @override
@@ -303,16 +293,16 @@ class AppLocalizationsEn extends AppLocalizations {
   String get themeSystem => 'System';
 
   @override
-  String get settingsColorSource => 'Colour source';
+  String get settingsColorSource => 'Color source';
 
   @override
   String get colorSourceWallpaper => 'System';
 
   @override
-  String get colorSourceFixed => 'Fixed colour';
+  String get colorSourceFixed => 'Fixed color';
 
   @override
-  String get settingsSeedColor => 'Theme colour';
+  String get settingsSeedColor => 'Theme color';
 
   @override
   String get settingsLanguage => 'Language';
@@ -321,25 +311,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get langSystem => 'System';
 
   @override
-  String get langZh => '简体中文';
-
-  @override
-  String get langEn => 'English';
-
-  @override
   String get settingsLibrary => 'Library';
-
-  @override
-  String get settingsFolders => 'Music folders';
-
-  @override
-  String get settingsAddFolder => 'Add folder';
-
-  @override
-  String get settingsRescan => 'Rescan everything';
-
-  @override
-  String get rescanStarted => 'Library scan started';
 
   @override
   String get settingsAbout => 'About';
@@ -370,7 +342,8 @@ class AppLocalizationsEn extends AppLocalizations {
   String get playlistsEmptyTitle => 'No playlists yet';
 
   @override
-  String get playlistsEmptyBody => 'Playlists are coming soon.';
+  String get playlistsEmptyBody =>
+      'Tap the button to create one, then add songs from any song\'s menu.';
 
   @override
   String get loadFailed => 'Failed to load';
@@ -379,10 +352,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get emptyLibrary => 'Your library is empty';
 
   @override
-  String get unknownArtist => 'Unknown artist';
-
-  @override
-  String get variousArtists => 'Various Artists';
+  String get variousArtists => 'Various artists';
 
   @override
   String get navFavorites => 'Favorites';
@@ -411,7 +381,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get colorSourceHint =>
-      'Use system colours or a fixed theme colour. Player backgrounds are configured separately.';
+      'Use system colors or a fixed theme color. Player backgrounds are configured separately.';
 
   @override
   String get settingsEqualizerSubtitle => '10-band equalizer and presets';
@@ -522,5 +492,209 @@ class AppLocalizationsEn extends AppLocalizations {
   String get lyricsLineHeightInvalid => 'Enter a value between 1 and 2';
 
   @override
-  String get toggleSidebar => 'Show or hide sidebar';
+  String get newPlaylist => 'New playlist';
+
+  @override
+  String get playlistName => 'Playlist name';
+
+  @override
+  String get playlistNameHint => 'e.g. Commute';
+
+  @override
+  String get create => 'Create';
+
+  @override
+  String get save => 'Save';
+
+  @override
+  String get cancel => 'Cancel';
+
+  @override
+  String get rename => 'Rename';
+
+  @override
+  String get delete => 'Delete';
+
+  @override
+  String get remove => 'Remove';
+
+  @override
+  String get removeFromPlaylist => 'Remove from this playlist';
+
+  @override
+  String get addToPlaylist => 'Add to playlist';
+
+  @override
+  String addedToPlaylist(String name) {
+    return 'Added to “$name”';
+  }
+
+  @override
+  String get deletePlaylistTitle => 'Delete playlist?';
+
+  @override
+  String deletePlaylistBody(String name) {
+    return '“$name” will be deleted. Your song files are not touched.';
+  }
+
+  @override
+  String get playlistEmpty => 'This playlist is empty';
+
+  @override
+  String get playlistEmptyBody =>
+      'Choose “Add to playlist” in any song\'s menu.';
+
+  @override
+  String playlistTracks(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count songs',
+      one: '1 song',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get reorder => 'Drag to reorder';
+
+  @override
+  String get libraryFolders => 'Music folders';
+
+  @override
+  String get libraryFoldersHint =>
+      'FLAC and MP3 files in these folders are scanned recursively.';
+
+  @override
+  String get libraryNoFolders => 'No music folders yet';
+
+  @override
+  String get addFolder => 'Add folder';
+
+  @override
+  String get excludeFolder => 'Exclude folder';
+
+  @override
+  String get excludedTag => 'Excluded';
+
+  @override
+  String get removeFolder => 'Remove this folder';
+
+  @override
+  String get folderAlreadyAdded => 'That folder is already in the list';
+
+  @override
+  String get rescan => 'Rescan';
+
+  @override
+  String get scanWalking => 'Looking for music files…';
+
+  @override
+  String scanReading(int done, int total) {
+    return 'Reading tags $done / $total';
+  }
+
+  @override
+  String get scanFinishing => 'Tidying up the library…';
+
+  @override
+  String get scanDone => 'Scan finished';
+
+  @override
+  String scanDoneWithErrors(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count files',
+      one: '1 file',
+    );
+    return 'Scan finished; tags of $_temp0 could not be read';
+  }
+
+  @override
+  String get scanFailed => 'Scan failed';
+
+  @override
+  String get emptyLibraryBody =>
+      'Add a music folder and your songs will show up here.';
+
+  @override
+  String get useBundledFonts => 'Use built-in fonts';
+
+  @override
+  String get useBundledFontsHint =>
+      'Sans uses HarmonyOS Sans; serif uses EB Garamond and Noto Serif SC. Turn off to use the system fonts.';
+
+  @override
+  String get aboutFonts => 'Fonts';
+
+  @override
+  String get aboutFontsCredit =>
+      'HarmonyOS Sans (© Huawei Device Co., Ltd.), EB Garamond and Noto Serif SC (SIL OFL)';
+
+  @override
+  String get pickFolderMessage =>
+      'Choose folders that contain music (FLAC, MP3). You can pick several.';
+
+  @override
+  String get pickExcludeMessage => 'Choose folders to skip when scanning.';
+
+  @override
+  String get folderNotUsable =>
+      'That folder cannot be read. Please choose another location.';
+
+  @override
+  String get folderPickFailed => 'Could not open the folder chooser';
+
+  @override
+  String get musicPermissionTitle => 'Permission to read music';
+
+  @override
+  String get musicPermissionBody =>
+      'NyaPlayer only reads audio files in the folders you choose, on this device, and never goes online. Allow access to music and audio, or the library cannot be scanned.';
+
+  @override
+  String get musicPermissionSettings => 'Open system settings';
+}
+
+/// The translations for English, as used in the United Kingdom (`en_GB`).
+class AppLocalizationsEnGb extends AppLocalizationsEn {
+  AppLocalizationsEnGb() : super('en_GB');
+
+  @override
+  String get eqTitle => 'Equaliser';
+
+  @override
+  String get eqEnabled => 'Enable equaliser';
+
+  @override
+  String get settingsColorSource => 'Colour source';
+
+  @override
+  String get colorSourceFixed => 'Fixed colour';
+
+  @override
+  String get settingsSeedColor => 'Theme colour';
+
+  @override
+  String get navFavorites => 'Favourites';
+
+  @override
+  String get favorite => 'Favourite';
+
+  @override
+  String get unfavorite => 'Remove from favourites';
+
+  @override
+  String get favoritesEmptyTitle => 'No favourites yet';
+
+  @override
+  String get colorSourceHint =>
+      'Use system colours or a fixed theme colour. Player backgrounds are configured separately.';
+
+  @override
+  String get settingsEqualizerSubtitle => '10-band equaliser and presets';
+
+  @override
+  String get lyricsCentered => 'Centre lines';
 }

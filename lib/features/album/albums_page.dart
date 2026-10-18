@@ -5,6 +5,7 @@ import 'package:nyaplayer/domain/models.dart';
 import 'package:nyaplayer/features/search/library_app_bar.dart';
 import 'package:nyaplayer/features/shared/cover_art.dart';
 import 'package:nyaplayer/features/shared/library_builder.dart';
+import 'package:nyaplayer/features/shared/album_artist_label.dart';
 import 'package:nyaplayer/l10n/app_localizations.dart';
 
 class AlbumsPage extends StatelessWidget {
@@ -108,7 +109,7 @@ class AlbumCard extends StatelessWidget {
               style: theme.textTheme.titleSmall,
             ),
             Text(
-              album.artist,
+              albumArtistLabel(AppLocalizations.of(context), album),
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
               style: theme.textTheme.bodySmall?.copyWith(

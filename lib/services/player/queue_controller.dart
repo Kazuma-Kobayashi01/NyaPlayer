@@ -4,6 +4,7 @@ import 'dart:math';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:nyaplayer/data/repositories/playback_repository.dart';
 import 'package:nyaplayer/domain/models.dart';
 import 'package:nyaplayer/services/player/player_engine.dart';
 
@@ -78,6 +79,65 @@ class QueueController extends Notifier<QueueState> {
   Stream<Duration> get seekEvents => _seekEvents.stream;
 
   static const previousRestartThreshold = Duration(seconds: 3);
+
+  /// The queue in the order the user built it (before shuffling).
+  List<Track> get originalQueue => List.unmodifiable(_original);
+
+  /// Latest playback position reported by the engine.
+  Duration get position => _position;
+
+  /// Brings back the queue of a previous run, paused (PLAY-05, TECH_SPEC
+  /// §4.4). [lookup] resolves track ids; tracks that no longer exist are
+  /// dropped. Does nothing if something is already queued.
+  Future<void> restore(
+    SavedPlayback saved,
+    Track? Function(int id) lookup,
+  ) async {
+    if (state.queue.isNotEmpty) return;
+    final original = [for (final id in saved.queue) ?lookup(id)];
+    if (original.isEmpty) return;
+
+    var shuffle = saved.shuffle && saved.shuffled.isNotEmpty;
+    final playOrder = shuffle ? saved.shuffled : saved.queue;
+    final active = shuffle
+        ? [for (final id in playOrder) ?lookup(id)]
+        : original;
+    if (active.isEmpty) return;
+
+    // Survivors before the saved position keep it in line; if the saved
+    // track itself is gone the next surviving one takes its place.
+    var index = 0;
+    var currentSurvived = false;
+    for (var i = 0; i < playOrder.length; i++) {
+      final exists = lookup(playOrder[i]) != null;
+      if (i == saved.currentIndex) {
+        currentSurvived = exists;
+        break;
+      }
+      if (exists) index++;
+    }
+    index = index.clamp(0, active.length - 1);
+    shuffle = shuffle && active.length == original.length;
+
+    final loop =
+        LoopMode.values[saved.loopMode.clamp(0, LoopMode.values.length - 1)];
+    _original = List.of(original);
+    state = state.copyWith(
+      queue: List.unmodifiable(shuffle ? active : original),
+      currentIndex: index,
+      loopMode: loop,
+      shuffle: shuffle,
+    );
+    await _engine.setLoopMode(loop);
+    await _engine.openQueue(
+      _paths(state.queue),
+      startIndex: index,
+      autoplay: false,
+    );
+    if (currentSurvived && saved.positionMs > 0) {
+      await seek(Duration(milliseconds: saved.positionMs));
+    }
+  }
 
   @override
   QueueState build() {

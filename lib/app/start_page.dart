@@ -1,3 +1,4 @@
+import 'package:nyaplayer/data/repositories/settings_repository.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 /// Library page shown when the app starts (SET-07).
@@ -20,7 +21,17 @@ final startPageProvider = NotifierProvider<StartPageController, StartPage>(
 
 class StartPageController extends Notifier<StartPage> {
   @override
-  StartPage build() => StartPage.songs;
+  StartPage build() {
+    final store = ref.read(settingsStoreProvider);
+    listenSelf(
+      skipInitial<StartPage>((_, next) => store.put('ui.startPage', next.name)),
+    );
+    return enumByName(
+      StartPage.values,
+      store.get('ui.startPage'),
+      StartPage.songs,
+    );
+  }
 
   void set(StartPage page) => state = page;
 }

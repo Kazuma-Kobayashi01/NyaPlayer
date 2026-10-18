@@ -24,6 +24,7 @@ class Track {
     this.year,
     this.genre,
     this.lyrics,
+    this.hasEmbeddedLyrics = false,
     this.cover,
   });
 
@@ -46,6 +47,9 @@ class Track {
 
   /// Raw embedded lyrics text (LRC or plain), if any.
   final String? lyrics;
+
+  /// Lyrics exist in the file but are read on demand (not in [lyrics]).
+  final bool hasEmbeddedLyrics;
   final DateTime addedAt;
 
   /// ARGB seed used for the generated placeholder cover / cover theme.
@@ -105,6 +109,36 @@ class FolderSummary {
   final int trackCount;
 
   String get name => p.posix.basename(path);
+}
+
+/// A folder the user added to the library, or a sub-folder to leave out.
+@immutable
+class LibraryRoot {
+  const LibraryRoot({
+    required this.id,
+    required this.path,
+    required this.excluded,
+  });
+
+  final int id;
+  final String path;
+  final bool excluded;
+}
+
+/// A user-made playlist (LIB-13). Its tracks are stored in order.
+@immutable
+class Playlist {
+  const Playlist({
+    required this.id,
+    required this.name,
+    required this.trackCount,
+    required this.updatedAt,
+  });
+
+  final int id;
+  final String name;
+  final int trackCount;
+  final DateTime updatedAt;
 }
 
 @immutable

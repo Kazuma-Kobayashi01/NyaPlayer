@@ -15,7 +15,6 @@
   "sectionAlbums": "专辑",
   "sectionArtists": "艺术家",
   "moreOptions": "更多选项",
-  "sortBy": "排序方式",
   "sortTitle": "标题",
   "sortArtist": "艺术家",
   "sortAlbum": "专辑",
@@ -118,8 +117,6 @@
   "eqPresetBassBoost": "低音增强",
   "eqPresetTrebleBoost": "高音增强",
   "eqPresetCustom": "自定义",
-  "eqNotWired": "当前为界面预览，音频效果将在接入播放引擎后生效。",
-  "settingsTitle": "设置",
   "settingsAppearance": "外观",
   "settingsThemeMode": "主题模式",
   "themeLight": "浅色",
@@ -131,13 +128,7 @@
   "settingsSeedColor": "主题色",
   "settingsLanguage": "语言",
   "langSystem": "跟随系统",
-  "langZh": "简体中文",
-  "langEn": "English",
-  "settingsLibrary": "曲库",
-  "settingsFolders": "音乐文件夹",
-  "settingsAddFolder": "添加文件夹",
-  "settingsRescan": "重新扫描全部",
-  "rescanStarted": "已开始扫描曲库",
+  "settingsLibrary": "音乐库",
   "settingsAbout": "关于",
   "aboutVersion": "版本",
   "aboutLicenses": "开放源代码许可",
@@ -147,11 +138,10 @@
   "onboardingChoose": "选择音乐文件夹",
   "onboardingSkip": "稍后再说",
   "playlistsEmptyTitle": "还没有播放列表",
-  "playlistsEmptyBody": "播放列表功能即将推出。",
+  "playlistsEmptyBody": "点右下角的按钮新建一个，再从歌曲菜单把歌加进去。",
   "loadFailed": "加载失败",
   "emptyLibrary": "曲库是空的",
-  "unknownArtist": "未知艺术家",
-  "variousArtists": "群星",
+  "variousArtists": "多位艺术家",
   "navFavorites": "收藏",
   "navSettings": "设置",
   "openNavigation": "打开导航菜单",
@@ -206,5 +196,87 @@
   "shortcutWindow": "进入 / 退出全屏",
   "lyricsLineHeight": "行距",
   "lyricsLineHeightInvalid": "请输入 1–2 之间的行距倍数",
-  "toggleSidebar": "显示或隐藏侧边栏"
+  "newPlaylist": "新建播放列表",
+  "playlistName": "播放列表名称",
+  "playlistNameHint": "例如：通勤路上",
+  "create": "新建",
+  "save": "保存",
+  "cancel": "取消",
+  "rename": "重命名",
+  "delete": "删除",
+  "remove": "移除",
+  "removeFromPlaylist": "从此播放列表移除",
+  "addToPlaylist": "加入播放列表",
+  "addedToPlaylist": "已加入“{name}”",
+  "@addedToPlaylist": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "deletePlaylistTitle": "删除播放列表？",
+  "deletePlaylistBody": "将删除“{name}”，歌曲文件不受影响。",
+  "@deletePlaylistBody": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "playlistEmpty": "这个播放列表还是空的",
+  "playlistEmptyBody": "在任意歌曲的菜单里选择“加入播放列表”。",
+  "playlistTracks": "{count} 首",
+  "@playlistTracks": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "reorder": "拖动排序",
+  "libraryFolders": "音乐文件夹",
+  "libraryFoldersHint": "应用会递归扫描这些文件夹里的 FLAC 和 MP3。",
+  "libraryNoFolders": "还没有添加音乐文件夹",
+  "addFolder": "添加文件夹",
+  "excludeFolder": "排除文件夹",
+  "excludedTag": "已排除",
+  "removeFolder": "移除此文件夹",
+  "folderAlreadyAdded": "这个文件夹已经在列表里了",
+  "rescan": "重新扫描",
+  "scanWalking": "正在查找音乐文件…",
+  "scanReading": "正在读取标签 {done} / {total}",
+  "@scanReading": {
+    "placeholders": {
+      "done": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "scanFinishing": "正在整理曲库…",
+  "scanDone": "扫描完成",
+  "scanDoneWithErrors": "扫描完成，{count} 个文件无法读取标签",
+  "@scanDoneWithErrors": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "scanFailed": "扫描失败",
+  "emptyLibraryBody": "添加一个音乐文件夹，歌曲会出现在这里。",
+  "useBundledFonts": "使用内置字体",
+  "useBundledFontsHint": "无衬线用 HarmonyOS Sans，衬线用 EB Garamond 与思源宋体。关闭后使用系统字体。",
+  "aboutFonts": "字体",
+  "aboutFontsCredit": "HarmonyOS Sans（© 华为终端有限公司）、EB Garamond、Noto Serif SC（思源宋体，SIL OFL）",
+  "pickFolderMessage": "选择包含音乐（FLAC、MP3）的文件夹，可多选。",
+  "pickExcludeMessage": "选择扫描时要跳过的文件夹。",
+  "folderNotUsable": "无法读取这个文件夹，请换一个位置",
+  "folderPickFailed": "无法打开文件夹选择窗口",
+  "musicPermissionTitle": "需要读取音乐的权限",
+  "musicPermissionBody": "NyaPlayer 只在本机读取你选择的文件夹里的音频文件，不会联网。请允许访问音乐和音频，否则无法扫描曲库。",
+  "musicPermissionSettings": "打开系统设置"
 }

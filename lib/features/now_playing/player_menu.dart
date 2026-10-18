@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:nyaplayer/features/now_playing/player_palette.dart';
 import 'package:nyaplayer/domain/models.dart';
 import 'package:nyaplayer/features/lyrics/lyrics_settings.dart';
 import 'package:nyaplayer/features/now_playing/playback_controls.dart';
@@ -67,6 +68,7 @@ class PlayerMenuButton extends ConsumerWidget {
         ),
       ],
       builder: (context, controller, _) => IconButton(
+        style: PlayerPalette.of(context).iconStyle(dimWhenOff: true),
         tooltip: l10n.playerMenu,
         icon: const Icon(Icons.menu),
         onPressed: () =>
@@ -351,7 +353,8 @@ class LyricsQueueToggle extends StatelessWidget {
             .withValues(alpha: 0),
         selectedBackgroundColor: Theme.of(context).colorScheme.surface
             .withValues(alpha: 0),
-        selectedForegroundColor: Theme.of(context).colorScheme.primary,
+        foregroundColor: PlayerPalette.of(context).soft,
+        selectedForegroundColor: PlayerPalette.of(context).strong,
         side: BorderSide.none,
       ),
       onSelectionChanged: (s) => onChanged(s.isEmpty ? null : s.first),

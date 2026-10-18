@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:nyaplayer/data/db/database_providers.dart';
 import 'package:nyaplayer/data/library.dart';
 import 'package:nyaplayer/features/search/library_app_bar.dart';
+import 'package:nyaplayer/features/settings/library_folders.dart';
 import 'package:nyaplayer/features/shared/library_builder.dart';
 import 'package:nyaplayer/features/shared/track_tile.dart';
 import 'package:nyaplayer/l10n/app_localizations.dart';
@@ -40,9 +42,18 @@ class _SongsPageState extends ConsumerState<SongsPage> {
             ascending: _ascending,
           );
           if (tracks.isEmpty) {
+            final scanning = ref.watch(scanProvider).running;
             return EmptyState(
               icon: Icons.music_off_outlined,
-              title: l10n.emptyLibrary,
+              title: scanning ? l10n.scanWalking : l10n.emptyLibrary,
+              body: scanning ? null : l10n.emptyLibraryBody,
+              action: scanning
+                  ? null
+                  : FilledButton.icon(
+                      onPressed: () => addLibraryFolder(context, ref),
+                      icon: const Icon(Icons.create_new_folder_outlined),
+                      label: Text(l10n.addFolder),
+                    ),
             );
           }
           return Column(

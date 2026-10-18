@@ -7,6 +7,7 @@ import 'package:nyaplayer/app/layout/adaptive_shell.dart';
 import 'package:nyaplayer/app/router.dart';
 import 'package:nyaplayer/app/theme/theme_settings.dart';
 import 'package:nyaplayer/data/library_providers.dart';
+import 'package:nyaplayer/data/repositories/settings_repository.dart';
 import 'package:nyaplayer/features/lyrics/lyrics_settings.dart';
 import 'package:nyaplayer/features/now_playing/now_playing_page.dart';
 import 'package:nyaplayer/features/now_playing/player_artwork.dart';
@@ -26,6 +27,11 @@ import 'package:nyaplayer/services/player/queue_controller.dart';
 ///   NYA_LYRICS=center,large,notrans   lyrics display options
 void applyPreviewEnv(ProviderContainer container) {
   final env = Platform.environment;
+  // Forced preview settings must not overwrite the developer's saved ones.
+  const settingKeys = ['NYA_SHAPE', 'NYA_FONT', 'NYA_THEME', 'NYA_LYRICS'];
+  if (settingKeys.any(env.containsKey)) {
+    container.read(settingsStoreProvider).persist = false;
+  }
   if (env['NYA_SHAPE'] == 'disc') {
     container.read(coverShapeProvider.notifier).set(CoverShape.disc);
   }
@@ -55,8 +61,13 @@ void applyPreviewEnv(ProviderContainer container) {
   if (mode != 'player' && mode != 'panel') return;
   final index = int.tryParse(env['NYA_TRACK'] ?? '') ?? 0;
   Future<void>.delayed(const Duration(milliseconds: 800), () async {
-    // Sample data, or the real folder when NYA_MUSIC_DIR is set.
-    final tracks = (await container.read(libraryProvider.future)).tracks;
+    // Sample data, or the scanned library (wait for the first scan results).
+    var tracks = (await container.read(libraryProvider.future)).tracks;
+    for (var i = 0; tracks.isEmpty && i < 60; i++) {
+      await Future<void>.delayed(const Duration(milliseconds: 500));
+      tracks = container.read(libraryProvider).value?.tracks ?? const [];
+    }
+    if (tracks.isEmpty) return;
     await container
         .read(queueProvider.notifier)
         .playTracks(tracks, startIndex: index % tracks.length);

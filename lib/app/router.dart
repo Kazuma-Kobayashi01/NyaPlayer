@@ -10,6 +10,7 @@ import 'package:nyaplayer/features/equalizer/equalizer_page.dart';
 import 'package:nyaplayer/features/folder/folders_page.dart';
 import 'package:nyaplayer/features/library/favorites_page.dart';
 import 'package:nyaplayer/features/library/playlists_page.dart';
+import 'package:nyaplayer/features/library/playlist_detail_page.dart';
 import 'package:nyaplayer/features/library/songs_page.dart';
 import 'package:nyaplayer/features/now_playing/now_playing_page.dart';
 import 'package:nyaplayer/features/queue/queue_list.dart';
@@ -54,11 +55,16 @@ final rootNavigatorKeyProvider = Provider<GlobalKey<NavigatorState>>(
   (ref) => GlobalKey<NavigatorState>(),
 );
 
+/// True on first launch, before any scan location exists (LIB-01).
+final needsOnboardingProvider = Provider<bool>((ref) => false);
+
 final routerProvider = Provider<GoRouter>((ref) {
   return GoRouter(
     navigatorKey: ref.watch(rootNavigatorKeyProvider),
     // Read once: changing the setting applies from the next launch.
-    initialLocation: ref.read(startPageProvider).path,
+    initialLocation: ref.read(needsOnboardingProvider)
+        ? '/onboarding'
+        : ref.read(startPageProvider).path,
     routes: [
       StatefulShellRoute.indexedStack(
         builder: (context, state, shell) =>
@@ -129,6 +135,14 @@ final routerProvider = Provider<GoRouter>((ref) {
               GoRoute(
                 path: '/playlists',
                 builder: (_, _) => const PlaylistsPage(),
+                routes: [
+                  GoRoute(
+                    path: ':id',
+                    builder: (_, state) => PlaylistDetailPage(
+                      playlistId: int.parse(state.pathParameters['id']!),
+                    ),
+                  ),
+                ],
               ),
             ],
           ),

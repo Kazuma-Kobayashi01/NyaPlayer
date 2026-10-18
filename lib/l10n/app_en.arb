@@ -15,7 +15,6 @@
   "sectionAlbums": "Albums",
   "sectionArtists": "Artists",
   "moreOptions": "More options",
-  "sortBy": "Sort by",
   "sortTitle": "Title",
   "sortArtist": "Artist",
   "sortAlbum": "Album",
@@ -83,26 +82,18 @@
   "eqPresetBassBoost": "Bass boost",
   "eqPresetTrebleBoost": "Treble boost",
   "eqPresetCustom": "Custom",
-  "eqNotWired": "This is a UI preview. Audio effects take effect once the playback engine is connected.",
-  "settingsTitle": "Settings",
   "settingsAppearance": "Appearance",
   "settingsThemeMode": "Theme mode",
   "themeLight": "Light",
   "themeDark": "Dark",
   "themeSystem": "System",
-  "settingsColorSource": "Colour source",
+  "settingsColorSource": "Color source",
   "colorSourceWallpaper": "System",
-  "colorSourceFixed": "Fixed colour",
-  "settingsSeedColor": "Theme colour",
+  "colorSourceFixed": "Fixed color",
+  "settingsSeedColor": "Theme color",
   "settingsLanguage": "Language",
   "langSystem": "System",
-  "langZh": "简体中文",
-  "langEn": "English",
   "settingsLibrary": "Library",
-  "settingsFolders": "Music folders",
-  "settingsAddFolder": "Add folder",
-  "settingsRescan": "Rescan everything",
-  "rescanStarted": "Library scan started",
   "settingsAbout": "About",
   "aboutVersion": "Version",
   "aboutLicenses": "Open-source licenses",
@@ -112,11 +103,10 @@
   "onboardingChoose": "Choose music folders",
   "onboardingSkip": "Not now",
   "playlistsEmptyTitle": "No playlists yet",
-  "playlistsEmptyBody": "Playlists are coming soon.",
+  "playlistsEmptyBody": "Tap the button to create one, then add songs from any song's menu.",
   "loadFailed": "Failed to load",
   "emptyLibrary": "Your library is empty",
-  "unknownArtist": "Unknown artist",
-  "variousArtists": "Various Artists",
+  "variousArtists": "Various artists",
   "navFavorites": "Favorites",
   "navSettings": "Settings",
   "openNavigation": "Open navigation menu",
@@ -125,7 +115,7 @@
   "favoritesEmptyTitle": "No favorites yet",
   "favoritesEmptyBody": "Tap ♡ in a song's menu or in the player to add it here.",
   "settingsPlayback": "Playback",
-  "colorSourceHint": "Use system colours or a fixed theme colour. Player backgrounds are configured separately.",
+  "colorSourceHint": "Use system colors or a fixed theme color. Player backgrounds are configured separately.",
   "settingsEqualizerSubtitle": "10-band equalizer and presets",
   "coverShape": "Cover style",
   "coverShapeSquare": "Square",
@@ -161,5 +151,87 @@
   "shortcutWindow": "Enter / exit full screen",
   "lyricsLineHeight": "Line spacing",
   "lyricsLineHeightInvalid": "Enter a value between 1 and 2",
-  "toggleSidebar": "Show or hide sidebar"
+  "newPlaylist": "New playlist",
+  "playlistName": "Playlist name",
+  "playlistNameHint": "e.g. Commute",
+  "create": "Create",
+  "save": "Save",
+  "cancel": "Cancel",
+  "rename": "Rename",
+  "delete": "Delete",
+  "remove": "Remove",
+  "removeFromPlaylist": "Remove from this playlist",
+  "addToPlaylist": "Add to playlist",
+  "addedToPlaylist": "Added to “{name}”",
+  "@addedToPlaylist": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "deletePlaylistTitle": "Delete playlist?",
+  "deletePlaylistBody": "“{name}” will be deleted. Your song files are not touched.",
+  "@deletePlaylistBody": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "playlistEmpty": "This playlist is empty",
+  "playlistEmptyBody": "Choose “Add to playlist” in any song's menu.",
+  "playlistTracks": "{count, plural, =1{1 song} other{{count} songs}}",
+  "@playlistTracks": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "reorder": "Drag to reorder",
+  "libraryFolders": "Music folders",
+  "libraryFoldersHint": "FLAC and MP3 files in these folders are scanned recursively.",
+  "libraryNoFolders": "No music folders yet",
+  "addFolder": "Add folder",
+  "excludeFolder": "Exclude folder",
+  "excludedTag": "Excluded",
+  "removeFolder": "Remove this folder",
+  "folderAlreadyAdded": "That folder is already in the list",
+  "rescan": "Rescan",
+  "scanWalking": "Looking for music files…",
+  "scanReading": "Reading tags {done} / {total}",
+  "@scanReading": {
+    "placeholders": {
+      "done": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "scanFinishing": "Tidying up the library…",
+  "scanDone": "Scan finished",
+  "scanDoneWithErrors": "Scan finished; tags of {count, plural, =1{1 file} other{{count} files}} could not be read",
+  "@scanDoneWithErrors": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "scanFailed": "Scan failed",
+  "emptyLibraryBody": "Add a music folder and your songs will show up here.",
+  "useBundledFonts": "Use built-in fonts",
+  "useBundledFontsHint": "Sans uses HarmonyOS Sans; serif uses EB Garamond and Noto Serif SC. Turn off to use the system fonts.",
+  "aboutFonts": "Fonts",
+  "aboutFontsCredit": "HarmonyOS Sans (© Huawei Device Co., Ltd.), EB Garamond and Noto Serif SC (SIL OFL)",
+  "pickFolderMessage": "Choose folders that contain music (FLAC, MP3). You can pick several.",
+  "pickExcludeMessage": "Choose folders to skip when scanning.",
+  "folderNotUsable": "That folder cannot be read. Please choose another location.",
+  "folderPickFailed": "Could not open the folder chooser",
+  "musicPermissionTitle": "Permission to read music",
+  "musicPermissionBody": "NyaPlayer only reads audio files in the folders you choose, on this device, and never goes online. Allow access to music and audio, or the library cannot be scanned.",
+  "musicPermissionSettings": "Open system settings"
 }

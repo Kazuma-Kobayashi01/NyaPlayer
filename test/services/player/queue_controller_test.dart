@@ -55,6 +55,47 @@ void main() {
 
   List<int> ids() => st().queue.map((t) => t.id).toList();
 
+  group('play context', () {
+    // Song 3 lives in the whole library and in a custom playlist. What plays
+    // after it depends on the list it was started from.
+    test('starting from the library continues through the library', () async {
+      final library = [for (var i = 1; i <= 5; i++) _t(i)];
+      await ctl().playTracks(library, startIndex: 2);
+      expect(ids(), [1, 2, 3, 4, 5]);
+      await ctl().skipNext();
+      await pump();
+      expect(st().current!.id, 4);
+    });
+
+    test('starting from a playlist continues through that playlist', () async {
+      final playlist = [_t(5), _t(3), _t(1)];
+      await ctl().playTracks(playlist, startIndex: 1);
+      expect(ids(), [5, 3, 1]);
+      expect(st().current!.id, 3);
+      await ctl().skipNext();
+      await pump();
+      expect(st().current!.id, 1);
+      await ctl().skipPrevious();
+      await ctl().skipPrevious();
+      await pump();
+      expect(st().current!.id, 5, reason: 'previous follows the playlist too');
+    });
+
+    test('switching list replaces the queue', () async {
+      await ctl().playTracks([
+        for (var i = 1; i <= 5; i++) _t(i),
+      ], startIndex: 2);
+      await ctl().playTracks([_t(3), _t(9)]);
+      expect(ids(), [3, 9]);
+      expect(st().currentIndex, 0);
+    });
+
+    test('shuffle stays inside the chosen list', () async {
+      await ctl().shufflePlay([_t(7), _t(3), _t(8)]);
+      expect(ids().toSet(), {7, 3, 8});
+    });
+  });
+
   test('playTracks opens the queue at the chosen index and plays', () async {
     await ctl().playTracks(tracks, startIndex: 2);
     await pump();

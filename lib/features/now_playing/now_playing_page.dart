@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:nyaplayer/features/now_playing/player_palette.dart';
 import 'package:nyaplayer/domain/models.dart';
 import 'package:nyaplayer/features/lyrics/lyrics_lines.dart';
 import 'package:nyaplayer/features/lyrics/lyrics_settings.dart';
@@ -308,7 +309,7 @@ class _PageDots extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
+    final palette = PlayerPalette.of(context);
     return SizedBox(
       height: 20,
       child: Row(
@@ -326,7 +327,7 @@ class _PageDots extends StatelessWidget {
                   width: i == index ? 18 : 6,
                   height: 6,
                   decoration: BoxDecoration(
-                    color: i == index ? scheme.primary : scheme.outlineVariant,
+                    color: i == index ? palette.strong : palette.track,
                     borderRadius: BorderRadius.circular(3),
                   ),
                 ),
@@ -558,7 +559,8 @@ class _ImmersiveLyrics extends StatelessWidget {
           ),
           child: Align(
             child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 560),
+              // The stage already caps the pane width.
+              constraints: const BoxConstraints(maxWidth: 840),
               child: const FadedEdges(child: LyricsView()),
             ),
           ),
@@ -581,9 +583,38 @@ class _StageLayout extends MultiChildLayoutDelegate {
   final double titleGap;
   final bool extendLyrics;
 
+  /// Column width cap = stage height minus this inset, kept in this range.
+  static const _columnHeightInset = 96.0;
+  static const _columnMinCap = 320.0;
+  static const _columnMaxCap = 560.0;
+  static const _referenceHeight = 750.0;
+  static const _maxScale = 1.5;
+  static const _gapGrowthThreshold = 160.0;
+  static const _gapGrowthRate = 0.3;
+  static const _gapGrowthMax = 200.0;
+
   @override
   void performLayout(Size size) {
-    final columnWidth = math.max(0.0, (size.width - gap) / 2);
+    // Sizes are tuned for a normal window (stage about 1300x750). Beyond
+    // that the columns and cover grow with the height, and the spare width
+    // also opens up the space between cover and lyrics, so a big display is
+    // not cramped; the whole group stays centred, so extra width never ends
+    // up pushing the two apart. At or below the reference size nothing
+    // changes.
+    final scale = (size.height / _referenceHeight).clamp(1.0, _maxScale);
+    final columnWidth = math.min(
+      math.max(0.0, (size.width - gap) / 2),
+      (size.height - _columnHeightInset).clamp(_columnMinCap, _columnMaxCap) *
+          scale,
+    );
+    final spare = size.width - (2 * columnWidth + gap);
+    final gap_ =
+        gap +
+        ((spare - _gapGrowthThreshold) * _gapGrowthRate).clamp(
+          0.0,
+          _gapGrowthMax,
+        );
+    final groupLeft = (size.width - (2 * columnWidth + gap_)) / 2;
     final caption = layoutChild(
       _StagePart.caption,
       BoxConstraints(
@@ -599,15 +630,21 @@ class _StageLayout extends MultiChildLayoutDelegate {
     final coverSize = math.max(
       0.0,
       math.min(
-        math.min(columnWidth, 520.0),
+        math.min(columnWidth, 520.0 * scale),
         size.height - spacing - caption.height,
       ),
     );
     final height = coverSize + spacing + caption.height;
     final top = (size.height - height) / 2;
     layoutChild(_StagePart.cover, BoxConstraints.tight(Size.square(coverSize)));
-    positionChild(_StagePart.cover, Offset((columnWidth - coverSize) / 2, top));
-    positionChild(_StagePart.caption, Offset(0, top + coverSize + spacing));
+    positionChild(
+      _StagePart.cover,
+      Offset(groupLeft + (columnWidth - coverSize) / 2, top),
+    );
+    positionChild(
+      _StagePart.caption,
+      Offset(groupLeft, top + coverSize + spacing),
+    );
     layoutChild(
       _StagePart.pane,
       BoxConstraints.tight(
@@ -619,7 +656,7 @@ class _StageLayout extends MultiChildLayoutDelegate {
     );
     positionChild(
       _StagePart.pane,
-      Offset(columnWidth + gap - (extendLyrics ? 48 : 0), top),
+      Offset(groupLeft + columnWidth + gap_ - (extendLyrics ? 48 : 0), top),
     );
   }
 

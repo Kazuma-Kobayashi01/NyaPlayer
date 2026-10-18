@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:nyaplayer/features/now_playing/player_palette.dart';
 import 'package:nyaplayer/core/format.dart';
 import 'package:nyaplayer/data/library_providers.dart';
 import 'package:nyaplayer/domain/models.dart';
@@ -75,6 +76,7 @@ class FavoriteButton extends ConsumerWidget {
       favoritesProvider.select((f) => f.contains(track.id)),
     );
     return IconButton(
+      style: PlayerPalette.of(context).iconStyle(dimWhenOff: true),
       tooltip: isFavorite ? l10n.unfavorite : l10n.favorite,
       isSelected: isFavorite,
       icon: const Icon(Icons.favorite_outline),
@@ -182,7 +184,9 @@ class TransportControls extends ConsumerWidget {
     final skipSize = large ? 48.0 : 42.0;
 
     Widget skip(IconData icon, String tooltip, VoidCallback onPressed) {
-      final style = IconButton.styleFrom(minimumSize: Size.square(skipSize));
+      final style = PlayerPalette.of(context)
+          .iconStyle()
+          .merge(IconButton.styleFrom(minimumSize: Size.square(skipSize)));
       return IconButton(
         iconSize: 30,
         style: style,
@@ -223,6 +227,7 @@ class ShuffleButton extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context);
     return IconButton(
+      style: PlayerPalette.of(context).iconStyle(dimWhenOff: true),
       iconSize: 22,
       isSelected: state.shuffle,
       tooltip: state.shuffle ? l10n.shuffleOn : l10n.shuffleOff,
@@ -247,6 +252,7 @@ class RepeatButton extends ConsumerWidget {
       LoopMode.one => (Icons.repeat_one, l10n.repeatOne),
     };
     return IconButton(
+      style: PlayerPalette.of(context).iconStyle(dimWhenOff: true),
       iconSize: 22,
       isSelected: state.loopMode != LoopMode.none,
       tooltip: tip,
@@ -280,10 +286,9 @@ class _PlayPauseButton extends StatelessWidget {
       child: IconButton(
         tooltip: tooltip,
         onPressed: onPressed,
-        style: IconButton.styleFrom(
-          padding: EdgeInsets.zero,
-          foregroundColor: Theme.of(context).colorScheme.primary,
-        ),
+        style: PlayerPalette.of(context)
+            .iconStyle()
+            .merge(IconButton.styleFrom(padding: EdgeInsets.zero)),
         icon: AnimatedSwitcher(
           duration: Durations.short4,
           child: Icon(

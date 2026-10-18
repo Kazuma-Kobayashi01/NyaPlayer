@@ -1,3 +1,7 @@
+import 'package:nyaplayer/data/repositories/settings_repository.dart';
+
+import 'dart:convert';
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -53,6 +57,37 @@ class EqState {
   final List<double> gains;
   final double preamp;
   final bool autoPreventClipping;
+
+  Map<String, Object> toJson() => {
+    'enabled': enabled,
+    'presetId': presetId,
+    'gains': gains,
+    'preamp': preamp,
+    'autoPreventClipping': autoPreventClipping,
+  };
+
+  /// Tolerant of missing or damaged data: anything unusable gives defaults.
+  factory EqState.fromJson(String? raw) {
+    const defaults = EqState();
+    if (raw == null) return defaults;
+    try {
+      final map = jsonDecode(raw) as Map<String, dynamic>;
+      final gains = [
+        for (final g in map['gains'] as List) (g as num).toDouble(),
+      ];
+      if (gains.length != eqBandFrequencies.length) return defaults;
+      return EqState(
+        enabled: map['enabled'] as bool? ?? defaults.enabled,
+        presetId: map['presetId'] as String? ?? customPresetId,
+        gains: [for (final g in gains) g.clamp(-eqMaxGain, eqMaxGain)],
+        preamp: (map['preamp'] as num?)?.toDouble() ?? 0,
+        autoPreventClipping:
+            map['autoPreventClipping'] as bool? ?? defaults.autoPreventClipping,
+      );
+    } catch (_) {
+      return defaults;
+    }
+  }
 
   EqState copyWith({
     bool? enabled,
@@ -113,10 +148,21 @@ class EqParams {
 
 final eqProvider = NotifierProvider<EqController, EqState>(EqController.new);
 
-/// UI-side EQ state. Not yet connected to the audio filter chain (M6).
+/// EQ state. The current state is persisted as JSON; named custom presets
+/// and the preset UI follow in M6.
 class EqController extends Notifier<EqState> {
+  static const _key = 'eq.state';
+
   @override
-  EqState build() => const EqState();
+  EqState build() {
+    final store = ref.read(settingsStoreProvider);
+    listenSelf(
+      skipInitial<EqState>(
+        (_, next) => store.put(_key, jsonEncode(next.toJson())),
+      ),
+    );
+    return EqState.fromJson(store.get(_key));
+  }
 
   void setEnabled(bool value) => state = state.copyWith(enabled: value);
 

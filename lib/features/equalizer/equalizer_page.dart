@@ -111,15 +111,6 @@ class EqualizerPage extends ConsumerWidget {
             value: eq.autoPreventClipping,
             onChanged: eq.enabled ? controller.setAutoPreventClipping : null,
           ),
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
-            child: Text(
-              l10n.eqNotWired,
-              style: theme.textTheme.bodySmall?.copyWith(
-                color: theme.colorScheme.onSurfaceVariant,
-              ),
-            ),
-          ),
         ],
       ),
     );
