@@ -95,24 +95,19 @@ class PlayerBackground extends ConsumerWidget {
                               fit: StackFit.expand,
                               children: [
                                 gradient,
-                                Transform.scale(
+                                PreBlurredCover(
+                                  path: cover.thumbnail,
                                   scale: 1.3,
-                                  child: PreBlurredCover(
-                                    path: cover.thumbnail,
-                                    fallback: gradient,
-                                  ),
+                                  overlays: [
+                                    scheme.surface.withValues(
+                                      alpha: theme.brightness == Brightness.dark
+                                          ? 0.48
+                                          : 0.50,
+                                    ),
+                                    if (theme.brightness == Brightness.dark)
+                                      scheme.scrim.withValues(alpha: 0.10),
+                                  ],
                                 ),
-                                ColoredBox(
-                                  color: scheme.surface.withValues(
-                                    alpha: theme.brightness == Brightness.dark
-                                        ? 0.48
-                                        : 0.50,
-                                  ),
-                                ),
-                                if (theme.brightness == Brightness.dark)
-                                  ColoredBox(
-                                    color: scheme.scrim.withValues(alpha: 0.10),
-                                  ),
                               ],
                             ),
                     ),

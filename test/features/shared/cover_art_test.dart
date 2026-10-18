@@ -235,7 +235,14 @@ void main() {
       await tester.pump();
       expect(find.byType(PreBlurredCover), findsOneWidget);
       // The cover is blurred once off the frame path; wait for the bitmap.
-      for (var i = 0; i < 40 && find.byType(RawImage).evaluate().isEmpty; i++) {
+      final backdrop = find.descendant(
+        of: find.byType(PreBlurredCover),
+        matching: find.byType(CustomPaint),
+      );
+      PreBlurredBackdropPainter painter() =>
+          tester.widget<CustomPaint>(backdrop).painter!
+              as PreBlurredBackdropPainter;
+      for (var i = 0; i < 40 && painter().image == null; i++) {
         await tester.runAsync(
           () => Future<void>.delayed(const Duration(milliseconds: 50)),
         );
@@ -243,21 +250,16 @@ void main() {
       }
       await tester.pumpAndSettle();
       expect(find.byType(ImageFiltered), findsNothing);
-      expect(find.byType(RawImage), findsOneWidget);
+      expect(painter().image, isNotNull);
+      // One painter draws the cover and the tints, and asks to be cached.
+      expect(tester.widget<CustomPaint>(backdrop).isComplex, isTrue);
       expect(
-        tester.getSize(find.byType(RawImage)),
+        tester.getSize(backdrop),
         tester.getSize(find.byType(PlayerBackground)),
       );
       expect(find.text('Controls'), findsOneWidget);
-      List<Color> overlayColors() => tester
-          .widgetList<ColoredBox>(
-            find.descendant(
-              of: find.byType(PlayerBackground),
-              matching: find.byType(ColoredBox),
-            ),
-          )
-          .map((box) => box.color)
-          .toList();
+      List<Color> overlayColors() =>
+          tester.widget<PreBlurredCover>(find.byType(PreBlurredCover)).overlays;
       var scheme = Theme.of(tester.element(find.byType(PlayerBackground)))
           .colorScheme;
       expect(overlayColors(), contains(scheme.surface.withValues(alpha: 0.50)));

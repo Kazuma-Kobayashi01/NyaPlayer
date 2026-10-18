@@ -211,9 +211,13 @@ class _LyricTile extends StatelessWidget {
       fontSize: synced && active ? size * 1.15 + 3 : size,
       height: settings.lineHeight,
     );
-    final color = active || !synced
-        ? scheme.onSurface
-        : scheme.onSurfaceVariant;
+    // Lines other than the one being sung are dimmed through the text colour.
+    // An opacity layer per line (the old AnimatedOpacity) meant dozens of
+    // offscreen layers on every frame of a scroll.
+    final dimmed = synced && !active;
+    final alpha = dimmed ? 0.55 : 1.0;
+    final color = (dimmed ? scheme.onSurfaceVariant : scheme.onSurface)
+        .withValues(alpha: alpha);
     final text = line.isInterlude ? '•••' : line.text;
     final align = settings.centered ? TextAlign.center : TextAlign.start;
     final translation = settings.showTranslation ? line.translation : null;
@@ -225,45 +229,41 @@ class _LyricTile extends StatelessWidget {
     return InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(16),
-      child: AnimatedOpacity(
-        opacity: active || !synced ? 1 : 0.55,
-        duration: Durations.medium2,
-        child: Padding(
-          padding: EdgeInsets.symmetric(
-            horizontal: 24,
-            vertical:
-                6 * settings.lineHeight / LyricsSettings.defaultLineHeight,
-          ),
-          child: Column(
-            crossAxisAlignment: settings.centered
-                ? CrossAxisAlignment.center
-                : CrossAxisAlignment.start,
-            children: [
+      child: Padding(
+        padding: EdgeInsets.symmetric(
+          horizontal: 24,
+          vertical: 6 * settings.lineHeight / LyricsSettings.defaultLineHeight,
+        ),
+        child: Column(
+          crossAxisAlignment: settings.centered
+              ? CrossAxisAlignment.center
+              : CrossAxisAlignment.start,
+          children: [
+            AnimatedDefaultTextStyle(
+              // Settings edits apply their new geometry before recentering;
+              // playback highlighting still animates between lyric lines.
+              key: ValueKey((settings.fontSize, settings.lineHeight)),
+              style: (base ?? const TextStyle()).copyWith(
+                color: color,
+                fontWeight: active ? FontWeight.w700 : FontWeight.w500,
+              ),
+              textAlign: align,
+              duration: Durations.medium2,
+              curve: Easing.emphasizedDecelerate,
+              child: Text(text),
+            ),
+            if (translation != null) ...[
+              const SizedBox(height: 4),
               AnimatedDefaultTextStyle(
-                // Settings edits apply their new geometry before recentering;
-                // playback highlighting still animates between lyric lines.
-                key: ValueKey((settings.fontSize, settings.lineHeight)),
-                style: (base ?? const TextStyle()).copyWith(
-                  color: color,
-                  fontWeight: active ? FontWeight.w700 : FontWeight.w500,
+                style: (translationStyle ?? const TextStyle()).copyWith(
+                  color: scheme.onSurfaceVariant.withValues(alpha: alpha),
                 ),
                 textAlign: align,
                 duration: Durations.medium2,
-                curve: Easing.emphasizedDecelerate,
-                child: Text(text),
+                child: Text(translation),
               ),
-              if (translation != null) ...[
-                const SizedBox(height: 4),
-                Text(
-                  translation,
-                  textAlign: align,
-                  style: translationStyle?.copyWith(
-                    color: scheme.onSurfaceVariant,
-                  ),
-                ),
-              ],
             ],
-          ),
+          ],
         ),
       ),
     );

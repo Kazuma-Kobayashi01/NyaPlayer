@@ -443,3 +443,65 @@
 - 修复：`lyrics_view.dart` 新增 `_revealIn`，用 `RenderAbstractViewport.getOffsetToReveal` 只滚动歌词自己的 `ScrollController`；`adaptive_shell_test.dart` 新增回归测试（手机尺寸，歌词行推进后 `PageView` 仍在第 0 页）。撤掉修复后该测试会失败（`Expected 0, Actual 1.0`），有修复时通过。
 - 真机复测：冷启动→播放页在封面页；播放 14 秒歌词推进数行仍在封面页；切到下一首仍在封面页。343 项测试通过。
 - 教训：给页面加“提前构建/保活”时，要检查里面是否有会影响外层滚动的调用（`Scrollable.ensureVisible`、`ScrollController` 共享等）。
+
+
+### 2026-10-18 M10-6：macOS 改用系统播放内核；两端 EQ 默认关闭
+
+- macOS 新增 `MacPlayerCore.swift`（AVAudioEngine：播放节点 → `AVAudioUnitEQ` 10 段 → 主混音；无缝播放靠在剩余约 6 秒时把下一首排在同一个节点后面，采样率或声道数不同的文件在边界重建图，会有短暂间隙；输出设备变化时重建并从原位置继续）和 `MacPlayerEngine.swift`（通道转接，协议与 Android 相同）。Dart 侧 `AndroidPlayerEngine` 改名 `PlatformPlayerEngine`，Android 与 macOS 共用；设置里的“播放内核”选项在 macOS 也显示（系统 / Rust），切换后重启生效。
+- 验证：Swift 核心单独编译成命令行脚本（静音），真实音频文件 20 项断言全过（播放、暂停保持位置、跳转、拖动含暂停时拖动、预排后准点自动切歌、队列移动/插入/删除/重排、跳过坏文件、单曲循环、播完事件、播完后重播）；再启动调试版 App，窗口里播放中、进度 0:19→0:26、歌词同步推进。
+- 两端 EQ 默认关闭：`EqState.enabled` 默认改为 `false`（`settings_persistence_test.dart` 相应更新）。已保存的设置不受影响。
+- **事故（我的失误，需开发者决定怎么清理）**：上面启动调试版时我想用临时 `HOME` 隔离数据，但没有生效，调试钩子对**真实的 macOS 数据库** `~/Library/Application Support/com.kazuma.nyaplayer/nyaplayer.sqlite` 做了改动：① `library_roots` 多了 id 4 = `.../NyaPlayer/test_music`；② 曲库从 151 首变成 157 首（多出的 6 首都在 test_music）；③ `playback_state` 里已保存的播放队列被替换成整个曲库（当前曲目和进度丢失；此前恢复的队列也是 151 首，估计同样是整库）。设置表（含 `eq.state`）没有迹象被改动。我准备只删除 id 4 那一行（应用自己的“移除目录”也只是这一步，下次启动扫描会连同孤立的专辑、艺术家一并清掉那 6 首），该操作被权限拦截，我没有绕开，等开发者决定：可以在应用设置的“音乐文件夹”里自己移除 test_music，或授权我执行这条 DELETE。当时数据库的副本在会话 scratchpad 的 `dbcopy/nyaplayer.sqlite`。
+- 教训：调试钩子（`NYA_MUSIC_DIR`、`NYA_PREVIEW`）会写真实数据，不要在真实 HOME 上运行；需要隔离时给调试版加专用的数据目录开关，而不是依赖环境变量 `HOME`。
+
+#### 歌词页上下滑动偶发卡顿的排查（同日，三星 S9180，release）
+
+- 开发者反馈：上下快速滑动歌词页有时流畅有时卡，怀疑发热；开发者自己用 GPU 面板做“持续疯狂滑动”：模糊封面与流光都开 GPU 约 90%，只开任意一个约 80%，全关也约 80%。
+- 我的测量（`adb input swipe` 150ms 快速上下甩动，SurfaceFlinger 帧时间戳）：测试时手机热状态为 3（severe，AP 约 48–51°C，且在充电）。同样的手势：**设置页稳定 8.3ms（120fps）**，歌词页均值 10–18ms、最长 25–33ms，且各轮在“流畅/较卡”之间交替。设置页较轻，不能单独证明“不是发热”（热限频时重页面更容易掉）；但歌词页明显比同样条件下的普通长列表重。
+- 已试：① 去掉每行歌词的 `AnimatedOpacity`（50 多个离屏图层），改为文字颜色透明度，译文也用 `AnimatedDefaultTextStyle` 做颜色动画：超过 20ms 的帧略减（每轮 3–6 → 2–4），均值变化不大；② 临时去掉 `FadedEdges` 的 `ShaderMask`：帧间隔几乎没变。①保留，②已撤销。
+- 结论：背景效果（模糊封面、流光）在歌词页只多占约 10 个百分点 GPU；歌词页自身滚动加 120Hz 的开销是底数。热限频、GPU 面板自身开销都会放大波动。
+- **结案（开发者确认）**：手机本身没问题，卡顿是测试时持续抓包过多、手机发热造成的；不再改歌词列表。已保留的改动：歌词行不再用 `AnimatedOpacity`，改用文字颜色透明度。
+
+
+### 2026-10-18 收尾：徽章扫光 1.5 秒、清理 Mac 记录、重建并安装
+
+- Hi-Res 徽章的扫光整段时长由 6 秒改为 **1.5 秒**（边缘高光走一圈，光带在前 0.75 秒扫过徽章主体），仍然是出现或换歌时播放一次后停下。
+- 清理 Mac 上多出的记录（开发者授权）：已备份数据库后，只删除 `library_roots` 里 `id=4`（`.../NyaPlayer/test_music`）。曲库里那 6 首会在应用下次启动的扫描中被清掉；已保存的播放队列在之前那次调试运行中已被替换成整个曲库，无法恢复原顺序和当前进度。
+- 重建三个平台的 release，并把 macOS（Apple Silicon）版复制到 `/Applications`（旧版本先备份到会话临时目录，再覆盖）。
+
+
+### 2026-10-18 歌词页 GPU 占用高的真正原因：Impeller（已换 Skia）
+
+- 起因：开发者用 GPU 面板对比——同样“疯狂拖动歌词和界面”，SaltPlayer 约 30%，我们约 80%。此前我把卡顿归因于“发热/抓包”，这个对比推翻了它。
+- 方法：手机的 GPU 忙碌度可直接读 `/sys/class/kgsl/kgsl-3d0/gpu_busy_percentage` 和 `devfreq/cur_freq`（adb shell 可读）；设备端循环 `input swipe` 连续上下滑，每 0.1 秒采样一次。真实工作量 ≈ 忙碌度 × 当前频率（忙碌度是相对当前频率的百分比，频率不同不能直接比）。脚本在会话 scratchpad 的 `gpu.py`。
+- 结果（同一手机，连续滑动 10 秒）：
+
+| 场景 | GPU 忙碌度 | 频率 | 工作量 |
+|---|---|---|---|
+| SaltPlayer 歌词页 | 52% | 220MHz | 约 114 |
+| 我们的设置页（Impeller，普通长列表对照） | 67% | 288MHz | 约 193 |
+| 我们的歌词页（Impeller） | 80% | 679MHz | 约 543 |
+| 歌词页去掉渐隐遮罩 | 85% | 629MHz | 约 527 |
+| 歌词页去掉页面预构建 | 96% | 548MHz | 约 523 |
+| **歌词页（Skia）** | **63%** | **293MHz** | **约 184** |
+| **正式构建（Skia）** | **64%** | **283MHz** | **约 182** |
+
+- Skia 版帧间隔：歌词页快速上下甩动 8 轮每轮都是 8.3ms，翻页与上划播放列表也是 8.3ms，0 掉帧；外观与 Impeller 一致，截图对照未见差异。
+- 结论与改动：问题在 Impeller 后端本身（遮罩、预构建都不是原因）。`AndroidManifest.xml` 加 `io.flutter.embedding.android.EnableImpeller=false`，Android 改用 Skia；已重建并安装到手机，GPU 工作量约为原来的三分之一。风险：Flutter 以后可能移除 Skia，升级时需重新核对；macOS 暂未改。
+- 之前“手机没问题、是抓包发热”的结案不准确，应以本节为准；Impeller 在歌词页的开销也部分解释了此前的发热。
+
+
+### 2026-10-18 Skia 之后的进一步优化：让静态背景被光栅缓存
+
+- 基线（Skia，连续滑动 10 秒，工作量 = 忙碌度 × 频率）：设置页 46、歌曲列表 33、歌词页 191。歌词页是唯一的异类。冷启动只有约 1 秒的忙碌；播放稳态进程 CPU 约 1–6%；封面页静置播放 GPU 为 0。这些不需要动。
+- 拆分：背景换成普通渐变且关掉流光时歌词页只有 56，歌词列表本身很轻；只开流光是 144；两者都开是 183。**开销在背景上**，而流光和模糊封面在播放期间根本不变，却被每帧重新绘制。
+- 无效的尝试（已撤销）：给每行歌词加 `RepaintBoundary`（183）、去掉渐隐遮罩（176）。
+- 有效的修改：Skia 的光栅缓存只会缓存被提示为“复杂”的画布。① `FlowingLight` 的 `CustomPaint` 加 `isComplex: true`（只开流光 144 → 31）；② 模糊封面背景原来由 `Transform.scale` + 图片 + 两层 `ColoredBox` 拼成，改成 `PreBlurredCover` 的一个 `CustomPaint`（`PreBlurredBackdropPainter` 一次画完放大的封面和遮罩色，同样 `isComplex: true`）。`cover_art_test.dart` 相应改为读画布和 `overlays`。
+- 最终（模糊封面 + 流光都开，也是默认配置）：歌词页连续滑动工作量 **183 → 65**（Impeller 时是 543，SaltPlayer 是 114）；GPU 忙碌度 30%、频率 220MHz（最低档）；歌词快速上下甩动 5 轮帧间隔都是 8.3ms；换歌后背景、光斑配色和位置都正确更新；外观与之前一致。
+- 这些优化依赖 Skia 的光栅缓存；Impeller 没有这套机制，`isComplex` 提示在 Impeller 下不起作用。
+
+### 2026-10-18 普通 FLAC 的银黑徽章
+
+- 需求：普通 FLAC（无损但不是 Hi-Res，例如 16bit/44.1kHz）也要有 Hi-Res 同款特效，配色用银黑，处理逻辑相同。
+- 实现：`quality_badge.dart` 里把金色徽章泛化成 `_SweepBadge(silver: bool)`；`isPlainFlac(track)`（codec 为 FLAC 且不是 Hi-Res）走银黑版，Hi-Res 走金色版，MP3 仍是原来的普通小标签。银黑配色放在 `hires_colors.dart` 的 `HiResColors.silver`（近黑底、银色边、浅银高光），图标用 `Icons.graphic_eq`（Hi-Res 才用金色 Hi-Res Audio 标志）。
+- 动画逻辑与 Hi-Res 完全一致：徽章出现或换歌时播放一次（总长 1.5 秒：边缘高光走一圈，光带在前 0.75 秒扫过主体），之后停下，没有常驻 Ticker；系统“减少动画”时直接静止。同一个组件在 Hi-Res 与普通 FLAC 之间切歌时也会重播。
+- 验证：344 项测试通过（新增“普通 FLAC 用银黑徽章、不是小标签”“银色与金色徽章尺寸和圆角一致”，并把原来以 FLAC 16/44.1 代表普通小标签的几个用例改为用 MP3）；真机屏幕录像抽帧确认扫光按“光带划过主体 → 银色高光绕边一圈 → 停下”进行。

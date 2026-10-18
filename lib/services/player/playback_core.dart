@@ -1,10 +1,11 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:nyaplayer/data/repositories/settings_repository.dart';
 
-/// Which playback core Android uses (TECH_SPEC §4.7). The engine is created
+/// Which playback core Android and macOS use (TECH_SPEC §4.7). The engine is created
 /// once at startup, so a change takes effect after the app restarts.
 enum PlaybackCore {
-  /// Platform decoders via Media3 ExoPlayer (M10-2). Default.
+  /// The platform's decoders: Media3 ExoPlayer on Android (M10-2),
+  /// AVAudioEngine on macOS (M10-6). Default.
   system,
 
   /// The Rust core (symphonia + rodio), kept as a fallback until M10-9.

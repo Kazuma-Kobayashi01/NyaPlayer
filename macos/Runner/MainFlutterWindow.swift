@@ -9,6 +9,7 @@ class MainFlutterWindow: NSWindow {
   private var lifecycleChannel: FlutterMethodChannel?
   private var widgetChannel: FlutterMethodChannel?
   private var widgetBridge: AnyObject?
+  private var playerEngine: MacPlayerEngine?
 
   func sendPlaybackCommand(_ command: String) {
     commandsChannel?.invokeMethod(command, arguments: nil)
@@ -48,6 +49,10 @@ class MainFlutterWindow: NSWindow {
         forName: name, object: self, queue: .main
       ) { [weak self] _ in self?.positionTrafficLights() }
     }
+
+    // Playback runs on AVAudioEngine; Dart drives it over the same channel
+    // protocol the Android engine uses (TECH_SPEC §4.7).
+    playerEngine = MacPlayerEngine(messenger: flutterViewController.engine.binaryMessenger)
 
     commandsChannel = FlutterMethodChannel(
       name: "nyaplayer/commands",

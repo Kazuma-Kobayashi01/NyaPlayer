@@ -1235,7 +1235,7 @@ void main() {
       greaterThan(tester.getRect(original).bottom),
     );
     expect(
-      tester.widget<Text>(translated).style!.fontSize,
+      DefaultTextStyle.of(tester.element(translated)).style.fontSize,
       lessThan(DefaultTextStyle.of(tester.element(original)).style.fontSize!),
     );
     container.read(lyricsSettingsProvider.notifier).setShowTranslation(false);

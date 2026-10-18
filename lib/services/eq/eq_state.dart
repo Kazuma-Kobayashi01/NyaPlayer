@@ -13,7 +13,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 @immutable
 class EqState {
   const EqState({
-    this.enabled = true,
+    this.enabled = false,
     this.presetId = 'flat',
     this.gains = const [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
     this.preamp = 0,

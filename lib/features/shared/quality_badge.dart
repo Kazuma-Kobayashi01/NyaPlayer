@@ -15,6 +15,11 @@ bool isHiRes(Track track) =>
     _losslessCodecs.contains(track.codec.toUpperCase()) &&
     (track.bitDepth > 16 || track.sampleRate > 44100);
 
+/// Plain FLAC: lossless but not Hi-Res (CD quality). It wears the silver-black
+/// variant of the Hi-Res badge.
+bool isPlainFlac(Track track) =>
+    track.codec.toUpperCase() == 'FLAC' && !isHiRes(track);
+
 /// "FLAC · 24-bit / 48 kHz", or "Hi-Res · 24-bit / 96 kHz" for Hi-Res tracks.
 String trackQualityLabel(Track track) =>
     '${isHiRes(track) ? 'Hi-Res' : track.codec} · '
@@ -39,8 +44,9 @@ class HiResLogo extends StatelessWidget {
 }
 
 /// Tappable audio-format label that opens the song info sheet; the same on
-/// phone and desktop. Hi-Res tracks get the dark-gold [_HiResBadge] with its
-/// flowing light in place of the plain chip.
+/// phone and desktop. Hi-Res tracks get the dark-gold [_SweepBadge] and plain
+/// FLAC tracks its silver-black twin, each with a one-off sweep of light, in
+/// place of the plain chip (which MP3 keeps).
 class QualityBadge extends StatelessWidget {
   const QualityBadge({super.key, required this.track});
 
@@ -52,7 +58,8 @@ class QualityBadge extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    if (isHiRes(track)) return _HiResBadge(track: track);
+    if (isHiRes(track)) return _SweepBadge(track: track, silver: false);
+    if (isPlainFlac(track)) return _SweepBadge(track: track, silver: true);
     return ActionChip(
       avatar: const Icon(Icons.graphic_eq, size: 18),
       label: Text(trackQualityLabel(track)),
@@ -62,30 +69,35 @@ class QualityBadge extends StatelessWidget {
   }
 }
 
-/// The Hi-Res badge: black with a gold hairline edge, in the same shape as
+/// The Hi-Res badge (black with a gold hairline edge) and, with [silver], the
+/// plain-FLAC one (black with a silver edge), in the same shape as
 /// the plain chip. When it appears, or the song changes, a short, dim
 /// highlight travels once round the edge and a faint band of light crosses
 /// the body; then it rests with no ticker running. (A badge that animated
 /// forever kept the whole player page redrawing on every vsync.) Standing
 /// still from the start when the system asks for reduced motion.
-class _HiResBadge extends StatefulWidget {
-  const _HiResBadge({required this.track});
+class _SweepBadge extends StatefulWidget {
+  const _SweepBadge({required this.track, required this.silver});
 
   final Track track;
 
+  /// Silver-black (plain FLAC) instead of black-gold (Hi-Res).
+  final bool silver;
+
   @override
-  State<_HiResBadge> createState() => _HiResBadgeState();
+  State<_SweepBadge> createState() => _SweepBadgeState();
 }
 
-class _HiResBadgeState extends State<_HiResBadge>
+class _SweepBadgeState extends State<_SweepBadge>
     with SingleTickerProviderStateMixin {
   static const _height = QualityBadge.height;
 
   /// The corners of the plain chip (the Material 3 chip shape).
   static const _radius = 8.0;
 
-  /// One lap of the edge highlight; the band crosses in the first half.
-  static const _lap = Duration(milliseconds: 6000);
+  /// The whole sweep: the edge highlight goes once round and the band
+  /// crosses the body in the first half (0.75 s).
+  static const _lap = Duration(milliseconds: 1500);
 
   bool _played = false;
 
@@ -109,9 +121,9 @@ class _HiResBadgeState extends State<_HiResBadge>
   }
 
   @override
-  void didUpdateWidget(_HiResBadge old) {
+  void didUpdateWidget(_SweepBadge old) {
     super.didUpdateWidget(old);
-    if (old.track.id != widget.track.id &&
+    if ((old.track.id != widget.track.id || old.silver != widget.silver) &&
         !MediaQuery.disableAnimationsOf(context)) {
       _flow.forward(from: 0);
     }
@@ -125,7 +137,7 @@ class _HiResBadgeState extends State<_HiResBadge>
 
   @override
   Widget build(BuildContext context) {
-    final colors = HiResColors.of(context);
+    final colors = widget.silver ? HiResColors.silver : HiResColors.of(context);
     final style = Theme.of(context).textTheme.labelLarge?.copyWith(
       color: colors.text,
       fontWeight: FontWeight.w600,
@@ -138,7 +150,7 @@ class _HiResBadgeState extends State<_HiResBadge>
       excludeSemantics: true,
       child: RepaintBoundary(
         child: CustomPaint(
-          painter: _HiResFlowPainter(colors: colors, flow: _flow),
+          painter: _SweepFlowPainter(colors: colors, flow: _flow),
           child: Material(
             type: MaterialType.transparency,
             borderRadius: radius,
@@ -152,7 +164,10 @@ class _HiResBadgeState extends State<_HiResBadge>
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      const HiResLogo(size: 18),
+                      if (widget.silver)
+                        Icon(Icons.graphic_eq, size: 18, color: colors.shine)
+                      else
+                        const HiResLogo(size: 18),
                       const SizedBox(width: 8),
                       // Squeezed (a huge system font, a tiny window) the
                       // text gives way instead of overflowing.
@@ -176,8 +191,8 @@ class _HiResBadgeState extends State<_HiResBadge>
   }
 }
 
-class _HiResFlowPainter extends CustomPainter {
-  _HiResFlowPainter({required this.colors, required this.flow})
+class _SweepFlowPainter extends CustomPainter {
+  _SweepFlowPainter({required this.colors, required this.flow})
     : super(repaint: flow);
 
   final HiResColors colors;
@@ -192,7 +207,7 @@ class _HiResFlowPainter extends CustomPainter {
     final rect = Offset.zero & size;
     final shape = RRect.fromRectAndRadius(
       rect,
-      const Radius.circular(_HiResBadgeState._radius),
+      const Radius.circular(_SweepBadgeState._radius),
     );
 
     // Body: black, a hint of bronze in the middle.
@@ -245,5 +260,5 @@ class _HiResFlowPainter extends CustomPainter {
   }
 
   @override
-  bool shouldRepaint(_HiResFlowPainter old) => old.colors != colors;
+  bool shouldRepaint(_SweepFlowPainter old) => old.colors != colors;
 }

@@ -51,7 +51,8 @@ class SettingsPage extends ConsumerWidget {
               _Group(
                 children: [
                   const _StartPageTile(),
-                  if (defaultTargetPlatform == TargetPlatform.android)
+                  if (defaultTargetPlatform == TargetPlatform.android ||
+                      defaultTargetPlatform == TargetPlatform.macOS)
                     const _PlaybackCoreTile(),
                 ],
               ),
@@ -371,7 +372,7 @@ class _StartPageTile extends ConsumerWidget {
   }
 }
 
-/// Chooses the Android playback core (TECH_SPEC §4.7). Takes effect after a
+/// Chooses the playback core on Android and macOS (TECH_SPEC §4.7). Takes effect after a
 /// restart because the engine is created at startup.
 class _PlaybackCoreTile extends ConsumerWidget {
   const _PlaybackCoreTile();

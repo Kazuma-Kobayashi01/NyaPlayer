@@ -1,9 +1,11 @@
 import 'dart:io';
 import 'dart:ui' as ui;
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
 
-/// A cover blurred once and then drawn as a plain bitmap.
+/// A cover blurred once and then drawn as a plain bitmap, with the tint
+/// layers on top, all in one painter.
 ///
 /// A live full-screen `ImageFilter.blur` (sigma 48) is re-evaluated by the GPU
 /// whenever anything above it animates or the page scrolls, which halved the
@@ -11,18 +13,28 @@ import 'package:flutter/widgets.dart';
 /// to a small decode of the cover (cheap, and done off the frame path), and
 /// the result is shown stretched with bilinear filtering, which is smooth
 /// enough to look the same.
+///
+/// The picture is marked complex so the raster cache keeps it as a texture:
+/// the backdrop never changes while a song plays, and redrawing the scaled
+/// bitmap plus tints every frame was a large part of the GPU cost of
+/// scrolling the lyrics on top of it.
 class PreBlurredCover extends StatefulWidget {
   const PreBlurredCover({
     super.key,
     required this.path,
-    required this.fallback,
+    this.overlays = const [],
+    this.scale = 1.0,
   });
 
   /// Cover thumbnail file.
   final String path;
 
-  /// Shown until the blur is ready and if the file cannot be decoded.
-  final Widget fallback;
+  /// Translucent colours painted over the cover, bottom first. They are also
+  /// painted while the blur is not ready, so the tint never pops in.
+  final List<Color> overlays;
+
+  /// Enlargement around the centre, to hide the blurred edges.
+  final double scale;
 
   /// Decode width in pixels. Small on purpose: the result is upscaled.
   static const decodeWidth = 160;
@@ -110,14 +122,58 @@ class _PreBlurredCoverState extends State<PreBlurredCover> {
 
   @override
   Widget build(BuildContext context) {
-    final image = _image;
-    if (image == null) return widget.fallback;
-    return RawImage(
-      image: image,
-      fit: BoxFit.cover,
-      width: double.infinity,
-      height: double.infinity,
-      filterQuality: FilterQuality.medium,
+    return CustomPaint(
+      size: Size.infinite,
+      isComplex: true,
+      painter: PreBlurredBackdropPainter(
+        image: _image,
+        scale: widget.scale,
+        overlays: widget.overlays,
+      ),
     );
   }
+}
+
+/// Draws the blurred cover (cover-fitted, enlarged around the centre) and the
+/// tint colours over it.
+@visibleForTesting
+class PreBlurredBackdropPainter extends CustomPainter {
+  const PreBlurredBackdropPainter({
+    required this.image,
+    required this.scale,
+    required this.overlays,
+  });
+
+  final ui.Image? image;
+  final double scale;
+  final List<Color> overlays;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final rect = Offset.zero & size;
+    final image = this.image;
+    if (image != null) {
+      canvas.save();
+      canvas.translate(size.width / 2, size.height / 2);
+      canvas.scale(scale);
+      canvas.translate(-size.width / 2, -size.height / 2);
+      paintImage(
+        canvas: canvas,
+        rect: rect,
+        image: image,
+        fit: BoxFit.cover,
+        filterQuality: FilterQuality.medium,
+      );
+      canvas.restore();
+    }
+    for (final color in overlays) {
+      canvas.drawRect(rect, Paint()..color = color);
+    }
+  }
+
+  @override
+  bool shouldRepaint(PreBlurredBackdropPainter old) =>
+      old.image != image ||
+      old.scale != scale ||
+      !listEquals(old.overlays, overlays);
 }

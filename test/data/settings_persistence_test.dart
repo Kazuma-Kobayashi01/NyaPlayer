@@ -216,7 +216,11 @@ void main() {
       expect(c.read(themeSettingsProvider).mode, ThemeMode.system);
       expect(c.read(startPageProvider), StartPage.songs);
       expect(c.read(lyricsSettingsProvider).fontSize, 20);
-      expect(c.read(eqProvider).enabled, isTrue);
+      expect(
+        c.read(eqProvider).enabled,
+        isFalse,
+        reason: 'the equaliser is off until the user turns it on',
+      );
       expect(store.get('theme.mode'), isNull, reason: 'nothing written yet');
     });
 

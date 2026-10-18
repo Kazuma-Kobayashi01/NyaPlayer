@@ -31,6 +31,18 @@ class HiResColors extends ThemeExtension<HiResColors> {
 
   static const standard = HiResColors();
 
+  /// The silver-black variant worn by plain (CD-quality or lossy-sized) FLAC
+  /// files: the same badge and sweep as Hi-Res, in cool near-black with
+  /// brushed silver. Here [gold] is the silver of the border, and [shine] the
+  /// brightest highlight.
+  static const silver = HiResColors(
+    deep: Color(0xFF0D0E10),
+    mid: Color(0xFF24272C),
+    gold: Color(0xFF9EA4AC),
+    shine: Color(0xFFE8EBEF),
+    text: Color(0xFFCDD2D9),
+  );
+
   static HiResColors of(BuildContext context) =>
       Theme.of(context).extension<HiResColors>() ?? standard;
 

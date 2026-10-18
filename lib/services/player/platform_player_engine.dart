@@ -4,15 +4,16 @@ import 'package:flutter/services.dart';
 import 'package:nyaplayer/services/eq/eq_state.dart';
 import 'package:nyaplayer/services/player/player_engine.dart';
 
-/// [PlayerEngine] backed by Media3 ExoPlayer on Android (TECH_SPEC §4.7,
-/// M10-2). The native side is `AndroidPlayerEngine.kt`; this class only
-/// translates calls and events. Position is polled while playing, as in
-/// `RustPlayerEngine`.
+/// [PlayerEngine] backed by the platform's own audio stack (TECH_SPEC §4.7):
+/// Media3 ExoPlayer on Android (`AndroidPlayerEngine.kt`, M10-2) and
+/// AVAudioEngine on macOS (`MacPlayerEngine.swift`, M10-6). Both native sides
+/// speak the same channel protocol, so this class only translates calls and
+/// events. Position is polled while playing, as in `RustPlayerEngine`.
 ///
-/// The equalizer is not wired yet (M10-4): [setEqualizer] is accepted and
-/// ignored natively, so Android plays without EQ until then.
-class AndroidPlayerEngine implements PlayerEngine {
-  AndroidPlayerEngine({
+/// The equalizer is wired on macOS; on Android [setEqualizer] is accepted and
+/// ignored natively until M10-4.
+class PlatformPlayerEngine implements PlayerEngine {
+  PlatformPlayerEngine({
     this.positionInterval = const Duration(milliseconds: 200),
   }) {
     _method.setMethodCallHandler(_onNativeCall);

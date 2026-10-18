@@ -36,6 +36,8 @@
 		78A318202AECB46A00862997 /* FlutterGeneratedPluginSwiftPackage in Frameworks */ = {isa = PBXBuildFile; productRef = 78A3181F2AECB46A00862997 /* FlutterGeneratedPluginSwiftPackage */; };
 		7B0E779F1A0BAC4C72990456 /* NyaPlayerIcon.icon in Resources */ = {isa = PBXBuildFile; fileRef = 8F761C63AC4495B36F04979C /* NyaPlayerIcon.icon */; };
 		925B670E0AB5F2463984B419 /* PlayerWidgetBridge.swift in Sources */ = {isa = PBXBuildFile; fileRef = CDC3ECAE6BC00E60D0667A27 /* PlayerWidgetBridge.swift */; };
+		A1B2C3D4E5F60718293A4B04 /* MacPlayerEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F60718293A4B03 /* MacPlayerEngine.swift */; };
+		A1B2C3D4E5F60718293A4B02 /* MacPlayerCore.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F60718293A4B01 /* MacPlayerCore.swift */; };
 		9934EF155D93402EAF6881DC /* Pods_RunnerTests.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 86729652CF7144414DBB4CA8 /* Pods_RunnerTests.framework */; };
 		A5BDC140BBC4B6B13D48D7AD /* Cocoa.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 60B29EE842D8F6CE9897A1EB /* Cocoa.framework */; };
 		C0DCD72E2D9B981D0C9AB094 /* WidgetPlaybackIntent.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0DEEDAEF96377BCC335EA032 /* WidgetPlaybackIntent.swift */; };
@@ -128,6 +130,8 @@
 		9740EEB21CF90195004384FC /* Debug.xcconfig */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.xcconfig; path = Debug.xcconfig; sourceTree = "<group>"; };
 		C61BAC0B4CC3F1F3B3A7D1A1 /* zh-Hans */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.plist.strings; name = "zh-Hans"; path = "zh-Hans.lproj/Localizable.strings"; sourceTree = "<group>"; };
 		CDC3ECAE6BC00E60D0667A27 /* PlayerWidgetBridge.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = PlayerWidgetBridge.swift; sourceTree = "<group>"; };
+		A1B2C3D4E5F60718293A4B03 /* MacPlayerEngine.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = MacPlayerEngine.swift; sourceTree = "<group>"; };
+		A1B2C3D4E5F60718293A4B01 /* MacPlayerCore.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = MacPlayerCore.swift; sourceTree = "<group>"; };
 		E38185A32BEF99B872B31915 /* NowPlayingWidget.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = NowPlayingWidget.swift; sourceTree = "<group>"; };
 		F0854664BEC9A4D4488B1F8F /* en */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.plist.strings; name = en; path = en.lproj/Localizable.strings; sourceTree = "<group>"; };
 		FF05A19B1F5C6C769B5A137A /* WidgetSnapshot.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = WidgetSnapshot.swift; sourceTree = "<group>"; };
@@ -238,6 +242,8 @@
 				33CC11242044D66E0003C045 /* Resources */,
 				33BA886A226E78AF003329D5 /* Configs */,
 				CDC3ECAE6BC00E60D0667A27 /* PlayerWidgetBridge.swift */,
+				A1B2C3D4E5F60718293A4B03 /* MacPlayerEngine.swift */,
+				A1B2C3D4E5F60718293A4B01 /* MacPlayerCore.swift */,
 				8F761C63AC4495B36F04979C /* NyaPlayerIcon.icon */,
 			);
 			path = Runner;
@@ -579,6 +585,8 @@
 				F385E463062A8CF5193B9BFD /* WidgetSnapshot.swift in Sources */,
 				47FA0017FAF4582E873D5668 /* WidgetPlaybackIntent.swift in Sources */,
 				925B670E0AB5F2463984B419 /* PlayerWidgetBridge.swift in Sources */,
+				A1B2C3D4E5F60718293A4B04 /* MacPlayerEngine.swift in Sources */,
+				A1B2C3D4E5F60718293A4B02 /* MacPlayerCore.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

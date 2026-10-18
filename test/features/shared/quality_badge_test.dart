@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:nyaplayer/app/theme/hires_colors.dart';
 import 'package:nyaplayer/domain/models.dart';
 import 'package:nyaplayer/features/shared/quality_badge.dart';
 
@@ -40,20 +41,75 @@ Future<void> _pump(WidgetTester tester, Track track, {double width = 400}) =>
     );
 
 void main() {
-  testWidgets('a plain track gets the chip with the wave icon', (tester) async {
-    await _pump(tester, _track());
+  testWidgets('a lossy track gets the plain chip with the wave icon', (
+    tester,
+  ) async {
+    await _pump(tester, _track(codec: 'MP3'));
     expect(find.byType(ActionChip), findsOneWidget);
     expect(find.byIcon(Icons.graphic_eq), findsOneWidget);
-    expect(find.text('FLAC · 16-bit / 44.1 kHz'), findsOneWidget);
+    expect(find.text('MP3 · 16-bit / 44.1 kHz'), findsOneWidget);
     expect(find.byType(HiResLogo), findsNothing);
+  });
+
+  testWidgets('plain FLAC gets the silver-black badge, not the chip', (
+    tester,
+  ) async {
+    tester.platformDispatcher.accessibilityFeaturesTestValue =
+        const FakeAccessibilityFeatures();
+    expect(isPlainFlac(_track()), isTrue);
+    expect(
+      isPlainFlac(_track(bitDepth: 24)),
+      isFalse,
+      reason: 'that is Hi-Res',
+    );
+    expect(isPlainFlac(_track(codec: 'MP3')), isFalse);
+    await _pump(tester, _track(), width: 600);
+    expect(find.byType(ActionChip), findsNothing);
+    expect(
+      find.byType(HiResLogo),
+      findsNothing,
+      reason: 'the gold mark is Hi-Res only',
+    );
+    expect(find.text('FLAC · 16-bit / 44.1 kHz'), findsOneWidget);
+    final icon = tester.widget<Icon>(find.byIcon(Icons.graphic_eq));
+    expect(icon.color, HiResColors.silver.shine);
+    final painters = tester.widgetList<CustomPaint>(
+      find.descendant(
+        of: find.byType(QualityBadge),
+        matching: find.byType(CustomPaint),
+      ),
+    );
+    expect(
+      painters.any((p) => p.painter.toString().contains('_SweepFlowPainter')),
+      isTrue,
+    );
+    // The sweep is a one-off, like the Hi-Res one: it ends and nothing ticks.
+    await tester.pump(const Duration(milliseconds: 500));
+    expect(tester.binding.hasScheduledFrame, isTrue);
+    await tester.pump(const Duration(seconds: 2));
+    expect(tester.binding.hasScheduledFrame, isFalse);
+  });
+
+  testWidgets('silver and gold badges share size and shape', (tester) async {
+    await _pump(tester, _track(), width: 600);
+    final silverSize = tester.getSize(find.byType(InkWell));
+    final silverShape = tester
+        .widget<InkWell>(find.byType(InkWell))
+        .borderRadius;
+    await _pump(tester, _track(bitDepth: 24, sampleRate: 96000), width: 600);
+    expect(
+      tester.widget<InkWell>(find.byType(InkWell)).borderRadius,
+      silverShape,
+    );
+    expect(tester.getSize(find.byType(InkWell)).height, silverSize.height);
   });
 
   testWidgets('phone and desktop widths show the very same badge', (
     tester,
   ) async {
-    await _pump(tester, _track(), width: 500);
+    await _pump(tester, _track(codec: 'MP3'), width: 500);
     final narrow = tester.getSize(find.byType(ActionChip));
-    await _pump(tester, _track(), width: 1200);
+    await _pump(tester, _track(codec: 'MP3'), width: 1200);
     expect(tester.getSize(find.byType(ActionChip)), narrow);
   });
 
@@ -103,15 +159,15 @@ void main() {
       width: 600,
     );
     await hiRes(1);
-    await tester.pump(const Duration(seconds: 1));
+    await tester.pump(const Duration(milliseconds: 500));
     expect(tester.binding.hasScheduledFrame, isTrue);
-    await tester.pump(const Duration(seconds: 7)); // past the 6 s lap
+    await tester.pump(const Duration(seconds: 2)); // past the 1.5 s sweep
     expect(tester.binding.hasScheduledFrame, isFalse);
 
     await hiRes(2);
-    await tester.pump(const Duration(seconds: 1));
+    await tester.pump(const Duration(milliseconds: 500));
     expect(tester.binding.hasScheduledFrame, isTrue, reason: 'new song');
-    await tester.pump(const Duration(seconds: 7));
+    await tester.pump(const Duration(seconds: 2));
     expect(tester.binding.hasScheduledFrame, isFalse);
   });
 
@@ -127,7 +183,7 @@ void main() {
   testWidgets('the Hi-Res badge has the corners and height of the chip', (
     tester,
   ) async {
-    await _pump(tester, _track());
+    await _pump(tester, _track(codec: 'MP3'));
     final chip = find.descendant(
       of: find.byType(RawChip),
       matching: find.byType(Material),

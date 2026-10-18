@@ -54,6 +54,14 @@
         </receiver>
         <!-- Don't delete the meta-data below.
              This is used by the Flutter tool to generate GeneratedPluginRegistrant.java -->
+        <!-- Skia instead of Impeller. Measured on a Galaxy S23-class phone
+             (Adreno 740), frantic lyric scrolling used about a third of the
+             GPU work (busy % x clock: 184 vs 543) and held 8.3 ms frames where
+             Impeller dropped to 10-18 ms. See docs/PROGRESS.md. Remove this
+             once Impeller is cheap enough on this hardware. -->
+        <meta-data
+            android:name="io.flutter.embedding.android.EnableImpeller"
+            android:value="false" />
         <meta-data
             android:name="flutterEmbedding"
             android:value="2" />

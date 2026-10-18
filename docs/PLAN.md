@@ -257,7 +257,7 @@ flutter build macos --release
 - [ ] M10-3 队列与无缝：`openQueue / add / insert / remove / move / reorder / jumpTo / setLoopMode` 映射到 ExoPlayer 播放列表；FLAC 与 MP3 gapless 用连续专辑与自制测试曲实测；解码失败跳下一首、连续失败 5 首停止（`FMT-07`）。
 - [ ] M10-4 Android EQ：Media3 自定义 `AudioProcessor` 移植 10 段 biquad，和 Rust 实现用同一组测试向量对拍；`setEqualizer` 拖动时不卡顿。
 - [ ] M10-5 Android 焦点与设备变化：ExoPlayer 接管音频焦点与拔耳机暂停，删除 `AudioFocusCoordinator` 中重复的部分，保留 ducking 语义（`setVolume`）。
-- [ ] M10-6 macOS `MacPlayerEngine`：Swift + `AVAudioEngine`，`AVAudioUnitEQ` 10 段，gapless 连续调度，设备变化后续播。
+- [x] M10-6（2026-10-18 完成：`macos/Runner/MacPlayerCore.swift` + `MacPlayerEngine.swift`，Dart 侧与 Android 共用 `PlatformPlayerEngine`；Swift 核心用命令行脚本逐项验证 20 项，真实窗口里播放、进度、歌词推进正常）macOS `MacPlayerEngine`：Swift + `AVAudioEngine`，`AVAudioUnitEQ` 10 段，gapless 连续调度，设备变化后续播。
 - [ ] M10-7 macOS 退出流程：为 `onExit` 各步加耗时日志，定位退出慢；引擎提供显式关闭，不再依赖进程结束。
 - [ ] M10-8 平台切换开关：按平台选择 `AndroidPlayerEngine` / `MacPlayerEngine` / `RustPlayerEngine`，便于对照与回退。
 - [ ] M10-9 验收：连续切歌压测（500 次不崩）、30 分钟播放的 CPU / 温度对比 M10-1、格式矩阵（FLAC 16/24bit、96k、MP3 CBR/VBR）、gapless 与 EQ 实听；通过后删除 Rust 的 rodio / symphonia 与 Android 的 `jni` / `ndk-context`，更新 TECH_SPEC。

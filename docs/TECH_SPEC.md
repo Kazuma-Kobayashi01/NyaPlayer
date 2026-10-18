@@ -260,7 +260,7 @@ Rust 内核（cpal）不负责系统音频会话，必须自己用 `audio_sessio
 
 | 项 | Android | macOS |
 |---|---|---|
-| 内核 | `androidx.media3` ExoPlayer，Kotlin 实现 `AndroidPlayerEngine`，经 `MethodChannel` / `EventChannel` 暴露 | Swift 实现 `MacPlayerEngine`，`AVAudioEngine` + `AVAudioPlayerNode` |
+| 内核 | `androidx.media3` ExoPlayer，Kotlin 实现 `AndroidPlayerEngine`，经 `MethodChannel` / `EventChannel` 暴露 | Swift 实现：`MacPlayerCore`（`AVAudioEngine` + `AVAudioPlayerNode` + `AVAudioUnitEQ`，不依赖 Flutter）加 `MacPlayerEngine`（通道转接）。两个平台的通道协议相同，Dart 侧共用 `PlatformPlayerEngine`（已落地，M10-6） |
 | 无缝播放 | ExoPlayer 播放列表，FLAC / MP3（LAME / Xing 头）gapless，🔍 实测 | 在同一 `AVAudioPlayerNode` 上连续 `scheduleFile`，🔍 实测 |
 | EQ（10 段，§5 频点与预设不变） | Media3 自定义 `AudioProcessor`，Kotlin 移植现有 biquad 系数（RBJ peaking），与 Rust 实现用同一组测试向量对拍 | `AVAudioUnitEQ`，10 个 parametric 频段 |
 | 焦点 / 变噪 | `setAudioAttributes(..., handleAudioFocus = true)` 与 `setHandleAudioBecomingNoisy(true)`；去掉 Dart 侧重复的焦点处理，避免两处各管一次 | 系统路由变化通知 |
@@ -272,6 +272,8 @@ Rust 内核（cpal）不负责系统音频会话，必须自己用 `audio_sessio
 - 音频解码器全部是软件解码：Google 的 `c2.android.flac/mp3/aac/opus/vorbis.decoder`（及旧的 `OMX.google.*`），加三星自带的 `c2.sec.flac/mp3/ape/ima/amrnb/amrwb.decoder`，以及 Dolby 的 `ac4/eac3`。
 - 高通（`c2.qti.*`、`OMX.qcom.*`）只提供视频硬件解码器：avc、hevc、vp9、av1。**没有任何音频硬件解码器**，进一步证实 FLAC / MP3 不存在专用硬件解码。
 - 厂商（`c2.sec.*`）与 Google（`c2.android.*`）解码器同时存在，所以选择哪个必须显式控制。`MediaCodecInfo.isHardwareAccelerated` 对厂商音频解码器不可靠（厂商编解码器常被默认标成硬件加速），只能当作“系统声明”，不能当作真的走了硬件的证据。因此排序用它，但是否真的省电要靠 M10-1 / M10-9 在真机上分别测 `c2.sec.*` 与 `c2.android.*` 的 CPU 占用来验证，结果不理想就调整排序。
+
+**均衡器默认关闭（2026-10-18，开发者决定）**：`EqState.enabled` 默认 `false`，两个平台一致；只影响没有保存过设置的情况，已保存的设置照旧。Android 的系统内核暂时没有 EQ（M10-4），macOS 的 EQ 由 `AVAudioUnitEQ` 提供（10 个 parametric 频段，带宽 1 倍频程，预增益用 `globalGain`）。
 
 **保留在 Rust 的部分**：`lofty` 读标签 / 封面 / 歌词、`encoding_rs` 修编码、EQ 的 Dart 侧参数模型。**退路**：`RustPlayerEngine` 在 M10-9 通过前保留（按平台开关切换），验收通过后再删除 rodio / symphonia、Android 的 `jni` / `ndk-context` / `android_context.rs`。
 
@@ -364,6 +366,8 @@ Android 11+ 的分区存储下，`READ_MEDIA_AUDIO` 只能读音频文件，**�
 - 🔍 M0 验证方案 A 在一台 Android 13+ 真机上能读到 `.lrc`。
 
 **`androidStopForegroundOnPause`**：2026-10-18 开发者指定服从系统电源调度，改为 `true`。播放期间使用 mediaPlayback 前台服务，暂停后退出前台并释放插件的播放唤醒锁；划掉最近任务不主动停止正在播放的队列，由系统电池设置、系统版本及厂商策略决定服务存活时间，不保证“无限制”绝不被回收。保持插件 START_NOT_STICKY，不请求电池优化豁免、不使用守护进程/定时拉起/重启保活、不实现自定义生存时限。后台恢复仍须满足系统前台服务启动限制，蓝牙恢复/系统停止等行为待 Android 真机实测；不得绕过系统限制强行恢复。
+
+**渲染后端：Android 关闭 Impeller，使用 Skia（2026-10-18，实测后决定）**：`AndroidManifest.xml` 里 `io.flutter.embedding.android.EnableImpeller=false`。在 Galaxy S23 级别的机器（骁龙 8 Gen 2，Adreno 740）上，同样的“持续疯狂滑动歌词页”，Impeller 的 GPU 工作量（忙碌度 × 频率）约 543，Skia 约 184（SaltPlayer 约 114）；帧间隔 Impeller 为 10–18ms 且忽好忽坏，Skia 稳定 8.3ms。去掉渐隐遮罩、去掉页面预构建都没有影响，问题在后端本身。外观与 Impeller 一致，Skia 首次着色器编译没有造成可感知的卡顿。风险：Flutter 官方后续可能移除 Skia，升级 Flutter 时要重新核对这一开关是否仍有效。macOS 暂未改动（Metal 版 Impeller 未见问题反馈）。
 
 ### 6.2 macOS
 

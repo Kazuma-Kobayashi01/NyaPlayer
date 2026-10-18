@@ -183,6 +183,11 @@ class _FlowingLightState extends State<FlowingLight>
         child: RepaintBoundary(
           child: CustomPaint(
             size: Size.infinite,
+            // The lights only move on a song change, so let the raster cache
+            // keep this layer as a texture instead of redrawing the large
+            // gradients on every frame (they cost ~90 GPU work units while
+            // the lyrics scrolled).
+            isComplex: true,
             painter: _FlowPainter(
               flow: _flow,
               fade: _fade,
