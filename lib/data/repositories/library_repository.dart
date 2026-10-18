@@ -4,7 +4,7 @@ import 'package:drift/drift.dart';
 import 'package:nyaplayer/core/library_keys.dart';
 import 'package:nyaplayer/core/sort_key.dart';
 import 'package:nyaplayer/data/db/app_database.dart'
-    show AppDatabase, LibraryRootsCompanion;
+    show AlbumsCompanion, AppDatabase, LibraryRootsCompanion;
 import 'package:nyaplayer/data/library.dart';
 import 'package:nyaplayer/domain/cover_source.dart';
 import 'package:nyaplayer/domain/models.dart';
@@ -62,6 +62,7 @@ class LibraryRepository {
               path: coverRow.path,
               size: coverRow.size,
               modifiedMs: coverRow.mtime,
+              coverState: a.coverState,
             );
       if (cover != null) covers[a.id] = cover;
       albums.add(
@@ -104,6 +105,65 @@ class LibraryRepository {
         ),
     ];
     return Library(tracks: tracks, albums: albums);
+  }
+
+  /// Current representative files used by the album cover cache.
+  Future<List<CoverSource>> coverSources() async {
+    final rows = await _db
+        .customSelect(
+          '''
+          SELECT albums.album_key, tracks.path, tracks.size, tracks.mtime,
+                 albums.cover_state
+          FROM albums
+          JOIN tracks ON tracks.id = albums.cover_track_id
+          ''',
+          readsFrom: {_db.albums, _db.tracks},
+        )
+        .get();
+    return [
+      for (final row in rows)
+        CoverSource(
+          albumKey: row.read<String>('album_key'),
+          path: row.read<String>('path'),
+          size: row.read<int>('size'),
+          modifiedMs: row.read<int>('mtime'),
+          coverState: row.read<int>('cover_state'),
+        ),
+    ];
+  }
+
+  /// Stores the extraction result only if this source is still the album's
+  /// current representative; a late result from an older scan is ignored.
+  Future<void> setCoverState(
+    CoverSource source, {
+    required bool hasCover,
+  }) async {
+    final rows = await _db
+        .customSelect(
+          '''
+          SELECT albums.id, albums.cover_state
+          FROM albums
+          JOIN tracks ON tracks.id = albums.cover_track_id
+          WHERE albums.album_key = ? AND tracks.path = ?
+            AND tracks.size = ? AND tracks.mtime = ?
+          ''',
+          variables: [
+            Variable.withString(source.albumKey),
+            Variable.withString(source.path),
+            Variable.withInt(source.size),
+            Variable.withInt(source.modifiedMs),
+          ],
+          readsFrom: {_db.albums, _db.tracks},
+        )
+        .get();
+    if (rows.isEmpty) return;
+    final row = rows.first;
+    final value = hasCover ? 1 : 2;
+    if (row.read<int>('cover_state') == value) return;
+    final albumId = row.read<int>('id');
+    await (_db.update(_db.albums)..where((a) => a.id.equals(albumId))).write(
+      AlbumsCompanion(coverState: Value(value)),
+    );
   }
 
   // --- scan locations -------------------------------------------------

@@ -1,8 +1,11 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:nyaplayer/data/db/database_providers.dart'
+    show coverCacheProvider;
 import 'package:nyaplayer/domain/cover_source.dart';
 import 'package:nyaplayer/services/library/cover_cache.dart';
 
-final coverCacheProvider = Provider<CoverCache>((ref) => CoverCache());
+export 'package:nyaplayer/data/db/database_providers.dart'
+    show coverCacheProvider;
 
 final coverProvider = FutureProvider.autoDispose
     .family<CachedCover?, CoverSource>(

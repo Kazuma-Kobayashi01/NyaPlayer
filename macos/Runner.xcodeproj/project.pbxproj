@@ -21,15 +21,26 @@
 /* End PBXAggregateTarget section */
 
 /* Begin PBXBuildFile section */
+		0524A5556E65D8F99BD723D9 /* WidgetSnapshot.swift in Sources */ = {isa = PBXBuildFile; fileRef = FF05A19B1F5C6C769B5A137A /* WidgetSnapshot.swift */; };
+		18A6FA7122CF4BF01A9722C1 /* PlayerWidgetView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0116FDB605555C6833E977F7 /* PlayerWidgetView.swift */; };
 		331C80D8294CF71000263BE5 /* RunnerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 331C80D7294CF71000263BE5 /* RunnerTests.swift */; };
 		335BBD1B22A9A15E00E9071D /* GeneratedPluginRegistrant.swift in Sources */ = {isa = PBXBuildFile; fileRef = 335BBD1A22A9A15E00E9071D /* GeneratedPluginRegistrant.swift */; };
 		33CC10F12044A3C60003C045 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 33CC10F02044A3C60003C045 /* AppDelegate.swift */; };
 		33CC10F32044A3C60003C045 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 33CC10F22044A3C60003C045 /* Assets.xcassets */; };
 		33CC10F62044A3C60003C045 /* MainMenu.xib in Resources */ = {isa = PBXBuildFile; fileRef = 33CC10F42044A3C60003C045 /* MainMenu.xib */; };
 		33CC11132044BFA00003C045 /* MainFlutterWindow.swift in Sources */ = {isa = PBXBuildFile; fileRef = 33CC11122044BFA00003C045 /* MainFlutterWindow.swift */; };
+		47FA0017FAF4582E873D5668 /* WidgetPlaybackIntent.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0DEEDAEF96377BCC335EA032 /* WidgetPlaybackIntent.swift */; };
+		65C28C5A22CF80EA44391EF5 /* NyaPlayerWidget.appex in Embed App Extensions */ = {isa = PBXBuildFile; fileRef = 4A5F6EF7412C2D36FE9FA7F4 /* NyaPlayerWidget.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		6993D48B693FA25159EDBDD4 /* Localizable.strings in Resources */ = {isa = PBXBuildFile; fileRef = A07DEA3A859FF8F3B8A11E64 /* Localizable.strings */; };
+		6DEA7053D4AC971D86F1663E /* NowPlayingWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = E38185A32BEF99B872B31915 /* NowPlayingWidget.swift */; };
 		78A318202AECB46A00862997 /* FlutterGeneratedPluginSwiftPackage in Frameworks */ = {isa = PBXBuildFile; productRef = 78A3181F2AECB46A00862997 /* FlutterGeneratedPluginSwiftPackage */; };
+		7B0E779F1A0BAC4C72990456 /* NyaPlayerIcon.icon in Resources */ = {isa = PBXBuildFile; fileRef = 8F761C63AC4495B36F04979C /* NyaPlayerIcon.icon */; };
+		925B670E0AB5F2463984B419 /* PlayerWidgetBridge.swift in Sources */ = {isa = PBXBuildFile; fileRef = CDC3ECAE6BC00E60D0667A27 /* PlayerWidgetBridge.swift */; };
 		9934EF155D93402EAF6881DC /* Pods_RunnerTests.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 86729652CF7144414DBB4CA8 /* Pods_RunnerTests.framework */; };
+		A5BDC140BBC4B6B13D48D7AD /* Cocoa.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 60B29EE842D8F6CE9897A1EB /* Cocoa.framework */; };
+		C0DCD72E2D9B981D0C9AB094 /* WidgetPlaybackIntent.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0DEEDAEF96377BCC335EA032 /* WidgetPlaybackIntent.swift */; };
 		CE8A08F1AA9EFEBD853D49BA /* Pods_Runner.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 56E0F32E48506F01D8474ECF /* Pods_Runner.framework */; };
+		F385E463062A8CF5193B9BFD /* WidgetSnapshot.swift in Sources */ = {isa = PBXBuildFile; fileRef = FF05A19B1F5C6C769B5A137A /* WidgetSnapshot.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -47,6 +58,13 @@
 			remoteGlobalIDString = 33CC111A2044C6BA0003C045;
 			remoteInfo = FLX;
 		};
+		814C696C8EA4E1BE58DBDD95 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 33CC10E52044A3C60003C045 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 9231147403CE9D6BDF0E96C9;
+			remoteInfo = NyaPlayerWidget;
+		};
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXCopyFilesBuildPhase section */
@@ -60,18 +78,31 @@
 			name = "Bundle Framework";
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		E8CB70B95547E477A41E457F /* Embed App Extensions */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 13;
+			files = (
+				65C28C5A22CF80EA44391EF5 /* NyaPlayerWidget.appex in Embed App Extensions */,
+			);
+			name = "Embed App Extensions";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		0116FDB605555C6833E977F7 /* PlayerWidgetView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = PlayerWidgetView.swift; sourceTree = "<group>"; };
 		02DA57029EA5B12C5B4BF560 /* Pods-RunnerTests.profile.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-RunnerTests.profile.xcconfig"; path = "Target Support Files/Pods-RunnerTests/Pods-RunnerTests.profile.xcconfig"; sourceTree = "<group>"; };
 		0AB0E1D6FF552240BAE82836 /* Pods-RunnerTests.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-RunnerTests.release.xcconfig"; path = "Target Support Files/Pods-RunnerTests/Pods-RunnerTests.release.xcconfig"; sourceTree = "<group>"; };
+		0DEEDAEF96377BCC335EA032 /* WidgetPlaybackIntent.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = WidgetPlaybackIntent.swift; sourceTree = "<group>"; };
 		14B7596D5C30E3E3A362E6DE /* Pods-RunnerTests.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-RunnerTests.debug.xcconfig"; path = "Target Support Files/Pods-RunnerTests/Pods-RunnerTests.debug.xcconfig"; sourceTree = "<group>"; };
 		22B09645D785A64DF4FDB2A2 /* Pods-Runner.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-Runner.debug.xcconfig"; path = "Target Support Files/Pods-Runner/Pods-Runner.debug.xcconfig"; sourceTree = "<group>"; };
 		331C80D5294CF71000263BE5 /* RunnerTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = RunnerTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		331C80D7294CF71000263BE5 /* RunnerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RunnerTests.swift; sourceTree = "<group>"; };
 		333000ED22D3DE5D00554162 /* Warnings.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Warnings.xcconfig; sourceTree = "<group>"; };
 		335BBD1A22A9A15E00E9071D /* GeneratedPluginRegistrant.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = GeneratedPluginRegistrant.swift; sourceTree = "<group>"; };
-		33CC10ED2044A3C60003C045 /* nyaplayer.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = nyaplayer.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		33CC10ED2044A3C60003C045 /* NyaPlayer.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = NyaPlayer.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		33CC10F02044A3C60003C045 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
 		33CC10F22044A3C60003C045 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; name = Assets.xcassets; path = Runner/Assets.xcassets; sourceTree = "<group>"; };
 		33CC10F52044A3C60003C045 /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.xib; name = Base; path = Base.lproj/MainMenu.xib; sourceTree = "<group>"; };
@@ -83,13 +114,23 @@
 		33E51913231747F40026EE4D /* DebugProfile.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = DebugProfile.entitlements; sourceTree = "<group>"; };
 		33E51914231749380026EE4D /* Release.entitlements */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.entitlements; path = Release.entitlements; sourceTree = "<group>"; };
 		33E5194F232828860026EE4D /* AppInfo.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = AppInfo.xcconfig; sourceTree = "<group>"; };
+		4A5F6EF7412C2D36FE9FA7F4 /* NyaPlayerWidget.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = NyaPlayerWidget.appex; sourceTree = BUILT_PRODUCTS_DIR; };
+		4E0F3829FA0694EC3AF2A7A2 /* Info.plist */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		56E0F32E48506F01D8474ECF /* Pods_Runner.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_Runner.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		5A85F1D1A98A1772EE8BB774 /* Pods-Runner.profile.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-Runner.profile.xcconfig"; path = "Target Support Files/Pods-Runner/Pods-Runner.profile.xcconfig"; sourceTree = "<group>"; };
+		60B29EE842D8F6CE9897A1EB /* Cocoa.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Cocoa.framework; path = Platforms/MacOSX.platform/Developer/SDKs/MacOSX26.0.sdk/System/Library/Frameworks/Cocoa.framework; sourceTree = DEVELOPER_DIR; };
+		6DD5CF06599A1AD3AE8D2740 /* NyaPlayerWidget.entitlements */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.plist.entitlements; path = NyaPlayerWidget.entitlements; sourceTree = "<group>"; };
 		78E0A7A72DC9AD7400C4905E /* FlutterGeneratedPluginSwiftPackage */ = {isa = PBXFileReference; lastKnownFileType = wrapper; name = FlutterGeneratedPluginSwiftPackage; path = ephemeral/Packages/FlutterGeneratedPluginSwiftPackage; sourceTree = "<group>"; };
 		7AFA3C8E1D35360C0083082E /* Release.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Release.xcconfig; sourceTree = "<group>"; };
 		86729652CF7144414DBB4CA8 /* Pods_RunnerTests.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_RunnerTests.framework; sourceTree = BUILT_PRODUCTS_DIR; };
+		8F761C63AC4495B36F04979C /* NyaPlayerIcon.icon */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = wrapper.icon; path = NyaPlayerIcon.icon; sourceTree = "<group>"; };
 		94F6FCA901556B6410A7031D /* Pods-Runner.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-Runner.release.xcconfig"; path = "Target Support Files/Pods-Runner/Pods-Runner.release.xcconfig"; sourceTree = "<group>"; };
 		9740EEB21CF90195004384FC /* Debug.xcconfig */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.xcconfig; path = Debug.xcconfig; sourceTree = "<group>"; };
+		C61BAC0B4CC3F1F3B3A7D1A1 /* zh-Hans */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.plist.strings; name = "zh-Hans"; path = "zh-Hans.lproj/Localizable.strings"; sourceTree = "<group>"; };
+		CDC3ECAE6BC00E60D0667A27 /* PlayerWidgetBridge.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = PlayerWidgetBridge.swift; sourceTree = "<group>"; };
+		E38185A32BEF99B872B31915 /* NowPlayingWidget.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = NowPlayingWidget.swift; sourceTree = "<group>"; };
+		F0854664BEC9A4D4488B1F8F /* en */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.plist.strings; name = en; path = en.lproj/Localizable.strings; sourceTree = "<group>"; };
+		FF05A19B1F5C6C769B5A137A /* WidgetSnapshot.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = WidgetSnapshot.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -107,6 +148,14 @@
 			files = (
 				78A318202AECB46A00862997 /* FlutterGeneratedPluginSwiftPackage in Frameworks */,
 				CE8A08F1AA9EFEBD853D49BA /* Pods_Runner.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		ADE7322F3F5641DF8B60DE78 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				A5BDC140BBC4B6B13D48D7AD /* Cocoa.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -141,14 +190,17 @@
 				33CC10EE2044A3C60003C045 /* Products */,
 				D73912EC22F37F3D000D13A0 /* Frameworks */,
 				B7F308F3646D4DA0A5982FC9 /* Pods */,
+				AE8166F4777DA147495CAA22 /* WidgetShared */,
+				9FB6C852C4E269DD4674CE02 /* NyaPlayerWidget */,
 			);
 			sourceTree = "<group>";
 		};
 		33CC10EE2044A3C60003C045 /* Products */ = {
 			isa = PBXGroup;
 			children = (
-				33CC10ED2044A3C60003C045 /* nyaplayer.app */,
+				33CC10ED2044A3C60003C045 /* NyaPlayer.app */,
 				331C80D5294CF71000263BE5 /* RunnerTests.xctest */,
+				4A5F6EF7412C2D36FE9FA7F4 /* NyaPlayerWidget.appex */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -185,8 +237,41 @@
 				33E51914231749380026EE4D /* Release.entitlements */,
 				33CC11242044D66E0003C045 /* Resources */,
 				33BA886A226E78AF003329D5 /* Configs */,
+				CDC3ECAE6BC00E60D0667A27 /* PlayerWidgetBridge.swift */,
+				8F761C63AC4495B36F04979C /* NyaPlayerIcon.icon */,
 			);
 			path = Runner;
+			sourceTree = "<group>";
+		};
+		4F965322C19C09236A3DA4E5 /* OS X */ = {
+			isa = PBXGroup;
+			children = (
+				60B29EE842D8F6CE9897A1EB /* Cocoa.framework */,
+			);
+			name = "OS X";
+			sourceTree = "<group>";
+		};
+		9FB6C852C4E269DD4674CE02 /* NyaPlayerWidget */ = {
+			isa = PBXGroup;
+			children = (
+				0116FDB605555C6833E977F7 /* PlayerWidgetView.swift */,
+				E38185A32BEF99B872B31915 /* NowPlayingWidget.swift */,
+				4E0F3829FA0694EC3AF2A7A2 /* Info.plist */,
+				6DD5CF06599A1AD3AE8D2740 /* NyaPlayerWidget.entitlements */,
+				A07DEA3A859FF8F3B8A11E64 /* Localizable.strings */,
+			);
+			name = NyaPlayerWidget;
+			path = NyaPlayerWidget;
+			sourceTree = "<group>";
+		};
+		AE8166F4777DA147495CAA22 /* WidgetShared */ = {
+			isa = PBXGroup;
+			children = (
+				FF05A19B1F5C6C769B5A137A /* WidgetSnapshot.swift */,
+				0DEEDAEF96377BCC335EA032 /* WidgetPlaybackIntent.swift */,
+			);
+			name = WidgetShared;
+			path = WidgetShared;
 			sourceTree = "<group>";
 		};
 		B7F308F3646D4DA0A5982FC9 /* Pods */ = {
@@ -208,6 +293,7 @@
 			children = (
 				56E0F32E48506F01D8474ECF /* Pods_Runner.framework */,
 				86729652CF7144414DBB4CA8 /* Pods_RunnerTests.framework */,
+				4F965322C19C09236A3DA4E5 /* OS X */,
 			);
 			name = Frameworks;
 			sourceTree = "<group>";
@@ -245,19 +331,38 @@
 				33CC110E2044A8840003C045 /* Bundle Framework */,
 				3399D490228B24CF009A79C7 /* ShellScript */,
 				F5DD0EF45C1F486EEF515295 /* [CP] Embed Pods Frameworks */,
+				E8CB70B95547E477A41E457F /* Embed App Extensions */,
 			);
 			buildRules = (
 			);
 			dependencies = (
 				33CC11202044C79F0003C045 /* PBXTargetDependency */,
+				1C97996C4053FE00AC0E7C14 /* PBXTargetDependency */,
 			);
 			name = Runner;
 			packageProductDependencies = (
 				78A3181F2AECB46A00862997 /* FlutterGeneratedPluginSwiftPackage */,
 			);
 			productName = Runner;
-			productReference = 33CC10ED2044A3C60003C045 /* nyaplayer.app */;
+			productReference = 33CC10ED2044A3C60003C045 /* NyaPlayer.app */;
 			productType = "com.apple.product-type.application";
+		};
+		9231147403CE9D6BDF0E96C9 /* NyaPlayerWidget */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 2446F1B2AAB06FC6B0A7D26A /* Build configuration list for PBXNativeTarget "NyaPlayerWidget" */;
+			buildPhases = (
+				349DC21C538AF82D8D284B74 /* Sources */,
+				ADE7322F3F5641DF8B60DE78 /* Frameworks */,
+				099A2F0C1E889A4DE92E2C4C /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = NyaPlayerWidget;
+			productName = NyaPlayerWidget;
+			productReference = 4A5F6EF7412C2D36FE9FA7F4 /* NyaPlayerWidget.appex */;
+			productType = "com.apple.product-type.app-extension";
 		};
 /* End PBXNativeTarget section */
 
@@ -279,6 +384,9 @@
 						LastSwiftMigration = 1100;
 						ProvisioningStyle = Automatic;
 						SystemCapabilities = {
+							com.apple.ApplicationGroups.Mac = {
+								enabled = 1;
+							};
 							com.apple.Sandbox = {
 								enabled = 1;
 							};
@@ -287,6 +395,13 @@
 					33CC111A2044C6BA0003C045 = {
 						CreatedOnToolsVersion = 9.2;
 						ProvisioningStyle = Manual;
+					};
+					9231147403CE9D6BDF0E96C9 = {
+						SystemCapabilities = {
+							com.apple.ApplicationGroups.Mac = {
+								enabled = 1;
+							};
+						};
 					};
 				};
 			};
@@ -297,6 +412,7 @@
 			knownRegions = (
 				en,
 				Base,
+				"zh-Hans",
 			);
 			mainGroup = 33CC10E42044A3C60003C045;
 			packageReferences = (
@@ -309,11 +425,20 @@
 				33CC10EC2044A3C60003C045 /* Runner */,
 				331C80D4294CF70F00263BE5 /* RunnerTests */,
 				33CC111A2044C6BA0003C045 /* Flutter Assemble */,
+				9231147403CE9D6BDF0E96C9 /* NyaPlayerWidget */,
 			);
 		};
 /* End PBXProject section */
 
 /* Begin PBXResourcesBuildPhase section */
+		099A2F0C1E889A4DE92E2C4C /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				6993D48B693FA25159EDBDD4 /* Localizable.strings in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		331C80D3294CF70F00263BE5 /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -327,6 +452,7 @@
 			files = (
 				33CC10F32044A3C60003C045 /* Assets.xcassets in Resources */,
 				33CC10F62044A3C60003C045 /* MainMenu.xib in Resources */,
+				7B0E779F1A0BAC4C72990456 /* NyaPlayerIcon.icon in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -450,12 +576,32 @@
 				33CC11132044BFA00003C045 /* MainFlutterWindow.swift in Sources */,
 				33CC10F12044A3C60003C045 /* AppDelegate.swift in Sources */,
 				335BBD1B22A9A15E00E9071D /* GeneratedPluginRegistrant.swift in Sources */,
+				F385E463062A8CF5193B9BFD /* WidgetSnapshot.swift in Sources */,
+				47FA0017FAF4582E873D5668 /* WidgetPlaybackIntent.swift in Sources */,
+				925B670E0AB5F2463984B419 /* PlayerWidgetBridge.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		349DC21C538AF82D8D284B74 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				0524A5556E65D8F99BD723D9 /* WidgetSnapshot.swift in Sources */,
+				C0DCD72E2D9B981D0C9AB094 /* WidgetPlaybackIntent.swift in Sources */,
+				18A6FA7122CF4BF01A9722C1 /* PlayerWidgetView.swift in Sources */,
+				6DEA7053D4AC971D86F1663E /* NowPlayingWidget.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXSourcesBuildPhase section */
 
 /* Begin PBXTargetDependency section */
+		1C97996C4053FE00AC0E7C14 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			name = NyaPlayerWidget;
+			target = 9231147403CE9D6BDF0E96C9 /* NyaPlayerWidget */;
+			targetProxy = 814C696C8EA4E1BE58DBDD95 /* PBXContainerItemProxy */;
+		};
 		331C80DA294CF71000263BE5 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
 			target = 33CC10EC2044A3C60003C045 /* Runner */;
@@ -478,9 +624,44 @@
 			path = Runner;
 			sourceTree = "<group>";
 		};
+		A07DEA3A859FF8F3B8A11E64 /* Localizable.strings */ = {
+			isa = PBXVariantGroup;
+			children = (
+				F0854664BEC9A4D4488B1F8F /* en */,
+				C61BAC0B4CC3F1F3B3A7D1A1 /* zh-Hans */,
+			);
+			name = Localizable.strings;
+			sourceTree = "<group>";
+		};
 /* End PBXVariantGroup section */
 
 /* Begin XCBuildConfiguration section */
+		1DB3CB4307BC6E475DA093A2 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = 33E5194F232828860026EE4D /* AppInfo.xcconfig */;
+			buildSettings = {
+				APPLICATION_EXTENSION_API_ONLY = YES;
+				CODE_SIGN_ENTITLEMENTS = NyaPlayerWidget/NyaPlayerWidget.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = "$(FLUTTER_BUILD_NUMBER)";
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = NyaPlayerWidget/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+					"@executable_path/../../../../Frameworks",
+				);
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				MARKETING_VERSION = "$(FLUTTER_BUILD_NAME)";
+				PRODUCT_BUNDLE_IDENTIFIER = com.kazuma.nyaplayer.NowPlayingWidget;
+				PRODUCT_NAME = NyaPlayerWidget;
+				SDKROOT = macosx;
+				SKIP_INSTALL = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+			};
+			name = Debug;
+		};
 		331C80DB294CF71000263BE5 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = 14B7596D5C30E3E3A362E6DE /* Pods-RunnerTests.debug.xcconfig */;
@@ -492,7 +673,7 @@
 				PRODUCT_BUNDLE_IDENTIFIER = com.kazuma.nyaplayer.RunnerTests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_VERSION = 5.0;
-				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/nyaplayer.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/nyaplayer";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/NyaPlayer.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/NyaPlayer";
 			};
 			name = Debug;
 		};
@@ -507,7 +688,7 @@
 				PRODUCT_BUNDLE_IDENTIFIER = com.kazuma.nyaplayer.RunnerTests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_VERSION = 5.0;
-				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/nyaplayer.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/nyaplayer";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/NyaPlayer.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/NyaPlayer";
 			};
 			name = Release;
 		};
@@ -522,7 +703,7 @@
 				PRODUCT_BUNDLE_IDENTIFIER = com.kazuma.nyaplayer.RunnerTests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_VERSION = 5.0;
-				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/nyaplayer.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/nyaplayer";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/NyaPlayer.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/NyaPlayer";
 			};
 			name = Profile;
 		};
@@ -579,7 +760,7 @@
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = 33E5194F232828860026EE4D /* AppInfo.xcconfig */;
 			buildSettings = {
-				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_APPICON_NAME = NyaPlayerIcon;
 				CLANG_ENABLE_MODULES = YES;
 				CODE_SIGN_ENTITLEMENTS = Runner/DebugProfile.entitlements;
 				CODE_SIGN_STYLE = Automatic;
@@ -711,7 +892,7 @@
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = 33E5194F232828860026EE4D /* AppInfo.xcconfig */;
 			buildSettings = {
-				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_APPICON_NAME = NyaPlayerIcon;
 				CLANG_ENABLE_MODULES = YES;
 				CODE_SIGN_ENTITLEMENTS = Runner/DebugProfile.entitlements;
 				CODE_SIGN_STYLE = Automatic;
@@ -731,7 +912,7 @@
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = 33E5194F232828860026EE4D /* AppInfo.xcconfig */;
 			buildSettings = {
-				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_APPICON_NAME = NyaPlayerIcon;
 				CLANG_ENABLE_MODULES = YES;
 				CODE_SIGN_ENTITLEMENTS = Runner/Release.entitlements;
 				CODE_SIGN_STYLE = Automatic;
@@ -762,9 +943,71 @@
 			};
 			name = Release;
 		};
+		6BA36EF07ABF8DEC8893CC7F /* Profile */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = 33E5194F232828860026EE4D /* AppInfo.xcconfig */;
+			buildSettings = {
+				APPLICATION_EXTENSION_API_ONLY = YES;
+				CODE_SIGN_ENTITLEMENTS = NyaPlayerWidget/NyaPlayerWidget.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = "$(FLUTTER_BUILD_NUMBER)";
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = NyaPlayerWidget/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+					"@executable_path/../../../../Frameworks",
+				);
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				MARKETING_VERSION = "$(FLUTTER_BUILD_NAME)";
+				PRODUCT_BUNDLE_IDENTIFIER = com.kazuma.nyaplayer.NowPlayingWidget;
+				PRODUCT_NAME = NyaPlayerWidget;
+				SDKROOT = macosx;
+				SKIP_INSTALL = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+			};
+			name = Profile;
+		};
+		F423977E36E3C88F93869781 /* Release */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = 33E5194F232828860026EE4D /* AppInfo.xcconfig */;
+			buildSettings = {
+				APPLICATION_EXTENSION_API_ONLY = YES;
+				CODE_SIGN_ENTITLEMENTS = NyaPlayerWidget/NyaPlayerWidget.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = "$(FLUTTER_BUILD_NUMBER)";
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = NyaPlayerWidget/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+					"@executable_path/../../../../Frameworks",
+				);
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				MARKETING_VERSION = "$(FLUTTER_BUILD_NAME)";
+				PRODUCT_BUNDLE_IDENTIFIER = com.kazuma.nyaplayer.NowPlayingWidget;
+				PRODUCT_NAME = NyaPlayerWidget;
+				SDKROOT = macosx;
+				SKIP_INSTALL = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+			};
+			name = Release;
+		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
+		2446F1B2AAB06FC6B0A7D26A /* Build configuration list for PBXNativeTarget "NyaPlayerWidget" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				F423977E36E3C88F93869781 /* Release */,
+				1DB3CB4307BC6E475DA093A2 /* Debug */,
+				6BA36EF07ABF8DEC8893CC7F /* Profile */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
 		331C80DE294CF71000263BE5 /* Build configuration list for PBXNativeTarget "RunnerTests" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (

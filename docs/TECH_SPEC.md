@@ -358,6 +358,22 @@ Android 11+ 的分区存储下，`READ_MEDIA_AUDIO` 只能读音频文件，**�
   - 设置中的快捷键说明按实际支持的平台显示：当前仅 macOS 展示；Android 不展示，Windows 待后续适配后再提供自己的按键说明，不显示 macOS 的 ⌘ 文案。
 - 分发：本地 `flutter build macos --release`，ad-hoc 签名即可，首次运行右键"打开"。
 
+### 6.3 macOS 桌面卡片（SYS-11）
+
+- `NyaPlayerWidget` 原生 WidgetKit extension，最低 macOS 14，提供 `systemSmall / systemMedium / systemLarge`。Runner 的 macOS 12 目标保留，旧系统通过 `isSupported` 跳过桥接。
+- 小号：圆角专辑封面、专辑名与播放控制；中号（2×1）：加计时进度、随机和循环模式；大号（2×2）：加每页 5 首的当前队列与点播。具体实现和添加方法见 `DESKTOP_WIDGETS.md`。
+- `MacOSWidgetBridge` 监听现有 Riverpod 队列、位置、显式 seek 与语言，经 `nyaplayer/widget` MethodChannel 发布原子快照；Swift 复制 256px 封面到 App Group。extension 只读快照，不直接读数据库或调用音频内核。
+- `AudioPlaybackIntent` 在主应用进程执行，等待恢复队列完成后调用现有 `QueueController`。请求串行处理；点播携带队列 revision，过期点播拒绝。系统 `ProgressView(timerInterval:)` 驱动进度，不按播放器的 200ms 频率刷新 timeline。
+- 默认 App Group 为 `group.com.kazuma.nyaplayer.widgets`，由 AppInfo.xcconfig 统一配置，host 与 extension 的 entitlements 都声明此组。常规退出写入暂停快照。主应用的原有 sandbox 策略保留，extension 开启 App Sandbox。
+
+### 6.4 品牌图标与应用名称（UI-21）
+
+- 正式显示名称 `NyaPlayer`，macOS 产品名与可执行文件名同名。保留已有 bundle identifier/applicationId 与小写 Dart package 身份。
+- 直接使用 Flutter `Icons.music_note` 标准矢量轮廓（U+E415），由本地 Material 字体通过 CoreText 提取，保持比例并按可见边界居中，不含猫耳；几何源 `assets/branding/icon_geometry.json`；系统 Swift 工具 `tool/generate_app_icons.swift` 同时生成 SVG、PNG、Android XML 和 macOS `.icon`，无新增依赖。
+- macOS 原生 Icon Composer 包由 Xcode 编译，支持默认、深色与系统着色外观，图形层不添加玻璃/高光/投影；系统负责图标外壳。旧系统有 ICNS 和全尺寸传统资产。
+- Android adaptive icon 使用 108dp 画布与 66dp 圆形安全区；API 33+ 单色图层供主题启动器着色；保留 mdpi–xxxhdpi PNG，图形不自行裁切 adaptive 前景。
+- 素材、尺寸、系统支持边界与参考生成记录见 [`assets/branding/README.md`](../assets/branding/README.md)。
+
 ## 7. 曲库、元数据、封面
 
 ### 7.1 扫描（LibraryScanner）
@@ -388,7 +404,7 @@ Android 11+ 的分区存储下，`READ_MEDIA_AUDIO` 只能读音频文件，**�
   - `<albumKeyHash>_1024.jpg`（播放页、通知栏 `artUri` 用）
 - 文件名用专辑键的 SHA-1；数据库 `albums.coverState` 记录：`unknown / none / cached`，避免重复尝试。
 - **2026-10-18 接入进度（M2-6）**：`CoverCache` 已复用 Rust `read_cover`，在 Dart isolate 中完成 EXIF 方向校正、等比缩放和 JPEG 编码；尺寸是长边上限，不放大低分辨率封面。文件放在 `covers/<源文件版本哈希>/<albumKeyHash>_256.jpg` 与 `_1024.jpg`，版本由文件路径、size、mtime 和缓存格式版本决定，避免标签更新后命中 Flutter 的旧图片内存缓存。完成标记最后写入；同一源并发请求去重，提取/解码串行执行，限制大图内存峰值。
-- Drift 尚未落地，**数据库 `coverState` 与孤立缓存清理待 M1-5 / M2 扫描器接入**；当前缺图结果按源版本在内存记忆，正向磁盘缓存可跨启动复用。按范围调整，本轮只读内嵌封面，文件夹封面仍为 P2。通过 `CoverSource` 给模型传递代表曲目的信息，UI 仅通过服务 provider 获取缓存文件，不直接调用 Rust API。
+- Drift `coverState` 现在记录 `unknown / cached / none`，提取结果只写回仍指向同一代表文件版本的专辑；代表曲目或文件版本变化时重置。每次扫描结束后，`CoverCache.cleanup()` 按现有专辑代表曲目保留对应源版本目录，删除已移除专辑、旧修订和孤立文件。清理与封面写入共用串行队列，避免移除正在生成的文件。按范围只读内嵌封面，文件夹封面仍为 P2。通过 `CoverSource` 给模型传递代表曲目信息，UI 仅通过服务 provider 获取缓存文件，不直接调用 Rust API。
 - 列表中用 `Image.file(..., cacheWidth: 实际像素宽度)` 解码，严格控制内存（`NFR-04`）。
 - 专辑内歌曲封面不同的情况（少见）：P2 再考虑按曲目缓存。
 

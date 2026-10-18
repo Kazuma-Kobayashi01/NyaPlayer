@@ -20,6 +20,11 @@ class AppDelegate: FlutterAppDelegate {
     return true
   }
 
+  override func application(_ application: NSApplication, open urls: [URL]) {
+    guard urls.contains(where: { $0.scheme == "nyaplayer" && $0.host == "player" }) else { return }
+    showMainWindow(nil)
+  }
+
   @objc func showMainWindow(_ sender: Any?) {
     guard let window = mainFlutterWindow else { return }
     if window.isMiniaturized { window.deminiaturize(nil) }

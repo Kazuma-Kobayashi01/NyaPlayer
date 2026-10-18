@@ -2,6 +2,17 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
+	<key>NyaWidgetAppGroup</key>
+	<string>$(NYA_WIDGET_APP_GROUP)</string>
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleURLName</key>
+			<string>com.kazuma.nyaplayer.player</string>
+			<key>CFBundleURLSchemes</key>
+			<array><string>nyaplayer</string></array>
+		</dict>
+	</array>
 	<key>CFBundleDevelopmentRegion</key>
 	<string>$(DEVELOPMENT_LANGUAGE)</string>
 	<key>CFBundleExecutable</key>
@@ -24,6 +35,8 @@
 		<string>zh-Hans</string>
 		<string>zh-Hant</string>
 	</array>
+	<key>CFBundleDisplayName</key>
+	<string>NyaPlayer</string>
 	<key>CFBundleName</key>
 	<string>$(PRODUCT_NAME)</string>
 	<key>CFBundlePackageType</key>

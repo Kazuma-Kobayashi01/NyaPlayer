@@ -8,12 +8,16 @@ class CoverSource {
     required this.path,
     required this.size,
     required this.modifiedMs,
+    this.coverState = 0,
   });
 
   final String albumKey;
   final String path;
   final int size;
   final int modifiedMs;
+
+  /// 0 unknown, 1 has cover, 2 no cover; persisted per album.
+  final int coverState;
 
   @override
   bool operator ==(Object other) =>

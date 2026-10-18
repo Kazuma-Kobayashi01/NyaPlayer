@@ -22,16 +22,24 @@ class CachedCover {
 }
 
 typedef CoverReader = Future<Uint8List?> Function(String path);
+typedef CoverStateWriter = Future<void> Function(
+  CoverSource source,
+  bool hasCover,
+);
 
 /// Album-level, lazy extraction. Work is deduplicated and serialised so a
 /// fast scroll cannot decode many large embedded pictures simultaneously.
 class CoverCache {
-  CoverCache({Future<Directory> Function()? directory, CoverReader? readCover})
-    : _directory = directory ?? _defaultDirectory,
-      _readCover = readCover ?? ((path) => rust.readCover(path: path));
+  CoverCache({
+    Future<Directory> Function()? directory,
+    CoverReader? readCover,
+    this._writeState,
+  }) : _directory = directory ?? _defaultDirectory,
+       _readCover = readCover ?? ((path) => rust.readCover(path: path));
 
   final Future<Directory> Function() _directory;
   final CoverReader _readCover;
+  final CoverStateWriter? _writeState;
   final _pending = <CoverSource, Future<CachedCover?>>{};
   final _withoutCover = <CoverSource>{};
   // Paths only, bounded by recently requested source revisions. A responsive
@@ -47,6 +55,50 @@ class CoverCache {
 
   Future<CachedCover?> load(CoverSource source) =>
       _pending.putIfAbsent(source, () => _enqueue(source));
+
+  /// Removes cache revisions no longer referenced by the current library.
+  /// Cleanup is serialized with extraction so it cannot remove an in-flight
+  /// write. It runs after scans, when the active source list is authoritative.
+  Future<void> cleanup(Iterable<CoverSource> activeSources) async {
+    final activeFiles = <String, Set<String>>{};
+    for (final source in activeSources) {
+      if (source.coverState == 2) continue;
+      final revision = _revisionFor(source);
+      final albumHash = sha1.convert(utf8.encode(source.albumKey)).toString();
+      activeFiles.putIfAbsent(revision, () => <String>{}).addAll([
+        '$albumHash.ready',
+        '${albumHash}_256.jpg',
+        '${albumHash}_1024.jpg',
+      ]);
+    }
+    final previous = _tail;
+    final done = Completer<void>();
+    _tail = done.future;
+    try {
+      await previous;
+      final root = await _directory();
+      if (!await root.exists()) return;
+      await for (final entry in root.list(followLinks: false)) {
+        if (entry is Directory &&
+            !activeFiles.containsKey(p.basename(entry.path))) {
+          await entry.delete(recursive: true);
+        } else if (entry is File) {
+          await entry.delete();
+        } else if (entry is Directory) {
+          final keep = activeFiles[p.basename(entry.path)]!;
+          await for (final child in entry.list(followLinks: false)) {
+            if (child is File && !keep.contains(p.basename(child.path))) {
+              await child.delete();
+            } else if (child is Directory) {
+              await child.delete(recursive: true);
+            }
+          }
+        }
+      }
+    } finally {
+      done.complete();
+    }
+  }
 
   Future<CachedCover?> _enqueue(CoverSource source) async {
     final previous = _tail;
@@ -73,24 +125,14 @@ class CoverCache {
   }
 
   Future<CachedCover?> _load(CoverSource source) async {
+    if (source.coverState == 2) return null;
     if (_withoutCover.contains(source)) return null;
     final directory = await _directory();
     await directory.create(recursive: true);
     final hash = sha1.convert(utf8.encode(source.albumKey)).toString();
     // Revision in the directory keeps old Image.file cache keys distinct
     // after a tag edit. JPEG names remain the album-key hashes (§7.3).
-    final revision = sha1
-        .convert(
-          utf8.encode(
-            jsonEncode([
-              'jpeg-v1',
-              source.path,
-              source.size,
-              source.modifiedMs,
-            ]),
-          ),
-        )
-        .toString();
+    final revision = _revisionFor(source);
     final folder = Directory(p.join(directory.path, revision));
     final result = CachedCover(
       thumbnail: p.join(folder.path, '${hash}_256.jpg'),
@@ -102,12 +144,14 @@ class CoverCache {
         await File(result.large).exists() &&
         await File(result.thumbnail).length() > 0 &&
         await File(result.large).length() > 0) {
+      await _saveState(source, true);
       return result;
     }
 
     final bytes = await _readCover(source.path);
     if (bytes == null || bytes.isEmpty) {
       _withoutCover.add(source);
+      await _saveState(source, false);
       return null;
     }
     final written = await compute(_writeCovers, (
@@ -118,10 +162,28 @@ class CoverCache {
     ));
     if (!written) {
       _withoutCover.add(source);
+      await _saveState(source, false);
       return null;
     }
+    await _saveState(source, true);
     return result;
   }
+
+  Future<void> _saveState(CoverSource source, bool hasCover) async {
+    try {
+      await _writeState?.call(source, hasCover);
+    } catch (error) {
+      Log.w('CoverCache', 'Cannot persist cover state: $error');
+    }
+  }
+
+  String _revisionFor(CoverSource source) => sha1
+      .convert(
+        utf8.encode(
+          jsonEncode(['jpeg-v1', source.path, source.size, source.modifiedMs]),
+        ),
+      )
+      .toString();
 }
 
 typedef _CoverJob = ({

@@ -30,6 +30,7 @@ import 'package:nyaplayer/services/player/player_engine.dart';
 import 'package:nyaplayer/services/player/queue_controller.dart';
 import 'package:nyaplayer/services/player/rust_player_engine.dart';
 import 'package:nyaplayer/services/player/lyra_audio_handler.dart';
+import 'package:nyaplayer/services/widgets/macos_widget_bridge.dart';
 import 'package:nyaplayer/src/rust/api/core.dart';
 import 'package:nyaplayer/src/rust/frb_generated.dart';
 
@@ -108,6 +109,7 @@ Future<void> main() async {
   }
 
   final container = ProviderContainer(overrides: overrides);
+  MacOSWidgetBridge? widgets;
   LyraAudioHandler? handler;
   if (Platform.isMacOS || Platform.isAndroid) {
     handler = await AudioService.init(
@@ -127,6 +129,7 @@ Future<void> main() async {
     final lifecycle = DesktopLifecycle(
       onExit: () async {
         try {
+          await widgets?.close();
           await flushStores();
           await handler?.stop();
         } finally {
@@ -153,6 +156,10 @@ Future<void> main() async {
     fireImmediately: true,
   );
   await restorePlayback(container);
+  if (Platform.isMacOS) {
+    widgets = MacOSWidgetBridge(container);
+    await widgets.start();
+  }
   if (!useSample) unawaited(container.read(scanProvider.notifier).scan());
   runApp(
     UncontrolledProviderScope(

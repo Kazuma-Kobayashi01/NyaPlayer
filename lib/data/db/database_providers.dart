@@ -12,6 +12,7 @@ import 'package:nyaplayer/data/repositories/search_repository.dart';
 import 'package:nyaplayer/domain/models.dart';
 import 'package:nyaplayer/services/eq/eq_presets.dart' show SavedEqPreset;
 import 'package:nyaplayer/services/library/library_scanner.dart';
+import 'package:nyaplayer/services/library/cover_cache.dart';
 
 /// `main` overrides this with the on-disk database. The default is an
 /// in-memory one so widget tests need no setup.
@@ -41,6 +42,14 @@ final savedEqPresetsProvider = StreamProvider<List<SavedEqPreset>>(
 final playlistRepositoryProvider = Provider<PlaylistRepository>(
   (ref) => PlaylistRepository(ref.watch(databaseProvider)),
 );
+
+final coverCacheProvider = Provider<CoverCache>((ref) {
+  final repository = ref.watch(libraryRepositoryProvider);
+  return CoverCache(
+    writeState: (source, hasCover) =>
+        repository.setCoverState(source, hasCover: hasCover),
+  );
+});
 
 /// The library as stored in the database; `main` plugs it into
 /// `libraryProvider`.
@@ -109,6 +118,15 @@ class ScanController extends Notifier<ScanState> {
       try {
         await for (final progress in ref.read(libraryScannerProvider).scan()) {
           state = ScanState(progress: progress);
+        }
+        try {
+          await ref
+              .read(coverCacheProvider)
+              .cleanup(
+                await ref.read(libraryRepositoryProvider).coverSources(),
+              );
+        } catch (error) {
+          Log.w('Scanner', 'Cover cache cleanup failed: $error');
         }
       } catch (e) {
         Log.e('Scanner', 'Scan failed', e);

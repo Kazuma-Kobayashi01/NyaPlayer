@@ -260,6 +260,16 @@ class LibraryScanner {
                 year: Value(meta?.year),
               ),
             );
+        // If the file currently supplying the album cover changed, forget its
+        // previous extraction result before replacing the track stamp.
+        await _db.customStatement(
+          '''
+          UPDATE albums SET cover_state = 0
+          WHERE id = ? AND cover_track_id =
+            (SELECT id FROM tracks WHERE path = ?)
+          ''',
+          [albumId, file.path],
+        );
         if (artist.trim().isNotEmpty) {
           await _db
               .into(_db.artists)
@@ -319,6 +329,12 @@ class LibraryScanner {
   /// representative (cover) track.
   Future<void> _tidy() async {
     await _db.transaction(() async {
+      await _db.customStatement('''
+        UPDATE albums SET cover_state = 0
+        WHERE cover_track_id IS NOT (
+          SELECT id FROM tracks WHERE album_id = albums.id
+          ORDER BY COALESCE(disc_no, 1), COALESCE(track_no, 0), id LIMIT 1)
+      ''');
       await _db.customStatement('''
         UPDATE albums SET cover_track_id = (
           SELECT id FROM tracks WHERE album_id = albums.id

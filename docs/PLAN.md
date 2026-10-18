@@ -45,12 +45,12 @@
 - [x] M0-1 新建 `spike/` Flutter 工程验证 media_kit 方案。（2026-10-17：`spike/` 已删除；同日决定改用 Rust 内核，M0 改在主工程 `1.0.0.universal` 分支上验证 Rust 方案，见 TECH_SPEC 附录 B 第 3 条。）
 - [x] M0-R1 安装 Rust 工具链（rustup stable 1.99.1，clippy、rustfmt；macOS 双架构与 Android 三个 ABI 的 target）。
 - [x] M0-R2 **桥接**：在主工程集成 `flutter_rust_bridge` 2.13.0（`rust/` crate `nya_core` + `rust_builder/` Cargokit 插件），Dart 调用一个 Rust 函数成功；macOS debug 与 Android `flutter build apk` 都能编过。
-- [ ] M0-2 **格式**：Rust 引擎在 macOS 和 Android 真机上播放 FLAC（16/24bit，44.1k～192k）、MP3（CBR/VBR），记录结果；确认 192k 被正确重采样到设备采样率。（2026-10-18：macOS 两首真实文件已出声，开发者确认 FLAC 192k/24bit 与 MP3 听感正常、MP3 跳转正常；更多规格和 Android 待测，见 SPIKE_REPORT。）
+- [x] M0-2 **格式专项验证取消**（2026-10-18：开发者决定格式验证不作为本版本目标；播放器当前范围仍以 FLAC/MP3 为主，不扩展格式矩阵。）
 - [ ] M0-3 **EQ**：Rust 10 段 biquad EQ（TECH_SPEC §5.1）。`cargo test` 验证频响；实听确认各预设生效、拖动滑块时无爆音/静音。（2026-10-18：修正为重采样后 EQ；Rust 回归通过，开发者确认单应用复测 EQ 调整正常；完整预设及 Android 待测。）
 - [ ] M0-4 **无缝播放**：连续两轨（现场专辑或自制的切开的正弦波）首尾无缝；`cargo test` 用自制音频验证裁剪后样本连续。（2026-10-18：FLAC 队列在 44.1k/48k 的离线样本边界测试通过；macOS 两段自制 FLAC 实听连续无缝。MP3、真实专辑及 Android 待测。）
 - [ ] M0-5 **后台**：最小 `AudioHandler` 包住 `RustPlayerEngine`，验证 Android 通知栏控制、锁屏后持续播放 10 分钟、蓝牙耳机按键；macOS 媒体键和控制中心显示（检查是否出现重复条目）。
 - [ ] M0-6 **音频焦点**：Android 上播放时打一个电话 / 打开另一个音乐 App，确认 cpal/Oboe 不自行处理焦点，`audio_session` 处理生效。
-- [ ] M0-7 **输出设备切换**：播放中拔插有线耳机、连接/断开蓝牙耳机，Android 与 macOS 上输出流能重建且不崩溃。
+- [x] M0-7 **输出设备切换验证取消**（2026-10-18：开发者确认不需要该功能专项，本版本不安排。）
 - [ ] M0-8 **Android 文件访问**：Android 13+ 真机上**只授予 `READ_MEDIA_AUDIO`**（方案 C），确认 `dart:io` 能递归列出音乐目录，Rust 能按路径打开播放；失败再测方案 A（"所有文件访问权限"）。（2026-10-18：API 37 模拟器上方案 C 通过——授予 `READ_MEDIA_AUDIO` + SAF 选目录后能列目录并由 Rust 播放；仍需真机确认，故暂不勾选。）
 - [ ] M0-9 **标签**（歌词是唯一来源，最关键）：用**开发者真实曲库中的样本**检查 Rust `lofty` 能否读出：中日英标签、内嵌封面、FLAC `LYRICS`/`UNSYNCEDLYRICS`、MP3 `USLT`（并确认有无 `SYLT` 同步歌词）、采样率/位深/码率；归纳出开发者歌词的实际形态；粗测 1000 个文件的读取耗时。
 - [ ] M0-10 **编码**（降为 P2，仅在 M0-9 发现内嵌歌词/标签有乱码时才做）：选定 GBK / Shift-JIS 解码方案（Rust `encoding_rs`）。
@@ -59,7 +59,7 @@
 - [ ] M0-14 **Release 与性能**：Release 包体（各 ABI）、192k/24-bit 播放时的 CPU 占用（Android 中低端机）。
 - [ ] M0-13 写 `docs/SPIKE_REPORT.md`：每项的结论、遇到的坑、需要修改的 TECH_SPEC 条目；更新 `TECH_SPEC.md`，把已验证的 🔍 去掉或改写。（2026-10-18：已建立阶段报告，尚未完成 M0 最终验收及全面回填。）
 
-**验收**：开发者阅读 SPIKE_REPORT，确认没有阻断性问题（尤其 M0-3、M0-4、M0-5、M0-7、M0-8），或对阻断问题选定了替代方案（退路：media_kit）。
+**验收**：开发者阅读 SPIKE_REPORT，确认没有阻断性问题（尤其 M0-3、M0-4、M0-5、M0-8），或对阻断问题选定了替代方案（退路：media_kit）。格式专项与输出设备切换验证已按开发者决定取消。
 
 ---
 
@@ -97,11 +97,11 @@
 - [x] M2-3 `ScanDiff`（纯函数）+ 单元测试。
 - [x] M2-4 `LibraryScanner`：遍历 → diff → isolate 分批读标签 → 事务写库 → 进度流（§7.1）。（2026-10-18：目录遍历在 isolate，标签走 Rust `read_metadata_batch`（每批 50），按路径原位更新所以曲目 id 与歌单引用稳定；只收 FLAC/MP3，跳过隐藏项与 macOS `._` 残留；读取失败的文件按文件名入库并记 `scan_errors`；10 个扫描测试 + macOS 真机 5 首真实文件入库验证，重启后 `+0 ~0 -0`。未做：同名 `.lrc`/文件夹封面探测（P2）。）
 - [x] M2-5 专辑键 `normalize` 与归类（§7.2）+ 单元测试；孤立记录清理。（2026-10-18：`lib/core/library_keys.dart`；`normalize` 用全角折叠+小写+空白折叠近似 NFKC（无 Dart 内置 NFKC，不引入依赖）；扫描末尾清理空专辑/孤立艺术家并重选代表曲目。）
-- [ ] M2-6 `CoverCache`：按需提取、两种尺寸、`cover_state` 状态（§7.3）；占位封面生成。
+- [x] M2-6 `CoverCache`：按需提取、两种尺寸、`cover_state` 状态（§7.3）；占位封面生成与过期缓存清理。
   - [x] 2026-10-18：复用 Rust 内嵌封面读取；按专辑去重、串行提取，isolate 生成 256/1024 长边上限 JPEG，版本化磁盘缓存、缺图与坏图兜底。
   - [x] 歌曲/专辑/艺术家列表、搜索、专辑详情、播放页、唱片、队列、播放条及模糊背景接入；macOS 三首真实文件缓存生成，开发者确认封面正常显示。
   - [x] 6 个缓存测试与 3 个 Widget 测试通过；全量 84 个 Flutter 测试通过，分析零问题，macOS Debug 构建启动成功。
-  - [ ] Drift `coverState` 持久化与扫描器的孤立/旧版本缓存清理（数据库尚未实现，主任务保持未勾选）。
+  - [x] 2026-10-18：Drift 持久化有图/无图状态；扫描后删除已移除专辑、旧源版本和孤立修订目录，状态随代表曲目或文件版本变化重置。
 - [ ] M2-7 `LibraryRepository`：歌曲/专辑/艺术家/文件夹查询与排序（`LIB-06`、`LIB-08`），全部返回 `Stream`，数据库变化自动刷新 UI。（部分完成 2026-10-18：`watchLibrary()` 在库变化时（250ms 去抖）整体重载为内存 `Library`，现有页面的分组/排序仍在内存做；尚无 SQL 层分页查询，万级曲库时再优化。）
 - [ ] M2-8 页面：歌曲列表、专辑网格、专辑详情、艺术家列表与详情、文件夹浏览。
 - [x] M2-9 FTS5 搜索表 + 搜索页（`LIB-09`）。（2026-10-18：schema v3 建 `track_fts` 外部内容表 + 触发器，≥3 字符走索引、更短走 `LIKE`，结果按“标题前缀 > 标题包含 > 艺术家 > 专辑”排序；专辑/艺术家仍在内存里匹配。FTS 不可用时自动降级为 `LIKE`。）
@@ -216,6 +216,7 @@ flutter build macos --release
 
 ## M8 打磨与 P2
 
+- [x] 正式名称与跨平台图标（`UI-21`，2026-10-18 开发者追加）：Material 标准 `music_note` 纯色扁平音符（按开发者最新要求移除猫耳与自绘双音符）；macOS Icon Composer 分层/深色/系统着色与旧系统 ICNS，Android adaptive/monochrome 与各密度 PNG；应用显示名称和 macOS 产物改为 NyaPlayer。素材与重建方式见 `assets/branding/README.md`。
 - [x] Hi-Res 黑金徽章与流光背景、高级玻璃材质（`META-08`、`UI-18`、`UI-19`，2026-10-18，开发者追加；无对应原任务号）：判定改为“无损且高于 CD 音质（位深 > 16 或采样率 > 44.1 kHz）”；徽章与普通标签同形状（圆角 8、高 34）；`FlowingLight` + 封面取色；`GlassSurface` + `AmbientBackdrop`；设置里“流光背景”（默认开）和“材质”（默认标准）。
 - [x] 唱片机封面样式（`UI-20`，2026-10-18，开发者追加；无对应原任务号）：`TurntableCover`——黑胶唱片 + 封面作圆形标签、中心打孔、会随进度移动并在暂停/切歌时抬起的唱臂、唱片旋转与减速；设置里“封面样式”新增“唱片机”。
 - [ ] Material 3 Expressive：波浪进度条、形状变形播放按钮、弹簧动效（先完成 M0-12 的调研结论）
@@ -226,6 +227,19 @@ flutter build macos --release
 - [ ] M3U 导入导出（`LIB-15`）
 - [x] macOS 菜单栏迷你控制（`SYS-09`）：2026-10-18 开发者提前要求实现，已提供常驻图标、当前曲目、显示窗口、播放/暂停、上下首与退出，实测通过。
 - [ ] 流派/年份浏览（`LIB-07`）、DSD（`FMT-06`）
+
+## M9 macOS / Android 桌面卡片
+
+- [ ] macOS WidgetKit（`SYS-11`）：小/中/大三种桌面卡片；代码、构建与桥接回归已完成，系统桌面实际点击和冷启动待验收。
+  - [x] 小号：左上圆角方形专辑封面、专辑名、上一首/播放暂停/下一首。
+  - [x] 中号（2×1）：增加进度条、随机播放与循环模式选择。
+  - [x] 大号（2×2）：增加当前播放队列、歌曲点播与分页。
+  - [x] App Group 原子快照、256px 封面共享、AudioPlaybackIntent → Flutter QueueController；构建、339 项 Flutter 测试、原生渲染、签名完整性、扩展注册及共享目录读写通过。
+  - [ ] 系统桌面卡片实际交互、应用退出后的冷启动、多个卡片实例。
+- [ ] Android 主屏幕 App Widget：提供小/中尺寸卡片与基本播放控制，按系统刷新节奏更新。
+- [ ] 定义跨端快照字段与更新时机；封面复用 `CoverCache` 的 256px 文件；分别验证 widget 扩展/receiver 在应用冷启动、暂停、曲目切换时的状态同步。
+
+设计边界与原生技术路线见 [`DESKTOP_WIDGETS.md`](DESKTOP_WIDGETS.md)。
 
 ---
 

@@ -5,10 +5,13 @@
 // 'flutter create' template.
 
 // The application's name. By default this is also the title of the Flutter window.
-PRODUCT_NAME = nyaplayer
+PRODUCT_NAME = NyaPlayer
 
 // The application's bundle identifier
 PRODUCT_BUNDLE_IDENTIFIER = com.kazuma.nyaplayer
+
+// Both targets must use the same registered App Group and signing team.
+NYA_WIDGET_APP_GROUP = group.com.kazuma.nyaplayer.widgets
 
 // The copyright displayed in application information
 PRODUCT_COPYRIGHT = Copyright © 2026 com.kazuma. All rights reserved.

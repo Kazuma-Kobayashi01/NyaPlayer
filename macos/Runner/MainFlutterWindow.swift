@@ -4,6 +4,8 @@ import FlutterMacOS
 class MainFlutterWindow: NSWindow {
   private var commandsChannel: FlutterMethodChannel?
   private var lifecycleChannel: FlutterMethodChannel?
+  private var widgetChannel: FlutterMethodChannel?
+  private var widgetBridge: AnyObject?
 
   func sendPlaybackCommand(_ command: String) {
     commandsChannel?.invokeMethod(command, arguments: nil)
@@ -54,6 +56,18 @@ class MainFlutterWindow: NSWindow {
         return
       }
       result(FlutterMethodNotImplemented)
+    }
+
+    let widgetChannel = FlutterMethodChannel(
+      name: "nyaplayer/widget",
+      binaryMessenger: flutterViewController.engine.binaryMessenger)
+    self.widgetChannel = widgetChannel
+    if #available(macOS 14.0, *) {
+      widgetBridge = PlayerWidgetBridge(channel: widgetChannel)
+    } else {
+      widgetChannel.setMethodCallHandler { call, result in
+        result(call.method == "isSupported" ? false : FlutterMethodNotImplemented)
+      }
     }
 
     // Native folder chooser (NSOpenPanel) for the library's scan locations.

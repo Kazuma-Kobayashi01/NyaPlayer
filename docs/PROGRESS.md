@@ -5,8 +5,9 @@
 
 ## 0. 一眼看完
 
+- **品牌图标与正式名称（2026-10-18，UI-21）**：当前品牌图形为 Flutter 自带 Material `Icons.music_note` 标准音符，按最新要求替换自绘双音符并移除猫耳；几何源、生成命令、平台尺寸与生成记录见 `assets/branding/README.md`。macOS `.icon` 已接入原生资源构建，支持默认/深色/系统着色，Android adaptive icon 含 API 33+ monochrome 图层。正式应用名与 macOS 可执行文件/产品均为 `NyaPlayer`；包标识保留。两个平台 Debug 构建、静态分析、原生图标渲染与资源检查完成，尚未在实际启动器切换主题图标。
 - **项目**：NyaPlayer（文档代号 Lyra）——本地离线、无广告的 Material 3 音乐播放器，Flutter，Android + macOS。曲库只有 **FLAC + MP3**，歌词和封面**全部内嵌**，双语歌词是 P0。
-- **分支与仓库**：开发成果在 `1.0.1.universal`，2026-10-18 开发者要求合并至 `main` 并推送 `git@github.com:Kazuma-Kobayashi01/NyaPlayer.git`；具体提交与分支状态以 `git log` / `git status` 为准。接手时 HEAD 为 `11abb4d`，工作区干净。
+- **分支与仓库**：当前版本分支 `1.2.0.alpha`，Flutter 版本 `1.2.0-alpha+1`；远程 `git@github.com:Kazuma-Kobayashi01/NyaPlayer.git`。2026-10-18 开发者授权提交并推送本轮缓存清理、macOS 桌面组件、正式名称与 Material 标准音符图标；macOS Release 构建产物位于 `build/macos/Build/Products/Release/NyaPlayer.app`。具体提交与构建状态以 Git 和本次构建输出为准。
 - **README 与许可证（2026-10-18）**：中英文首页增加技术栈徽章及“正在开发中，无法使用”的醒目警告，平台状态标为开发中；许可证采用远程已有的 MIT，合并时保留远程 LICENSE 与双方历史。作者顺序仍为 Kazuma-Kobayashi01、Claude、Codex。本次已明确授权推送 main，覆盖此前未授权推送的限制。
 - **阶段**：前端 UI 基本完成；Rust 内核正在 M0 验证。2026-10-18 已在 macOS 实听 FLAC 192kHz/24bit 与 MP3，开发者确认声音正常、MP3 跳转后正常；EQ 顺序修正后复测正常，自制连续 FLAC 两轨切换无可听缝隙。Android 真机仍待验证，详见 `SPIKE_REPORT.md`。
 - **本轮新增（开发者指定提前做 M2-6）**：内嵌封面按需获取与两种尺寸磁盘缓存已接入所有封面组件；macOS 三首真实文件正常生成缓存，开发者确认界面封面正常。数据库封面状态与缓存清理待后续接入。
@@ -278,3 +279,38 @@
 - **没做/没测**：没在设备上看动起来的样子（只有渲染成图片的静态检查和组件测试里对角度、控制器值的断言）；帧率/耗电没测；唱片转一圈 4.5 秒、唱臂摆幅都是凭感觉定的，可能要调。
 
 - **改动（同日追加）**：中心孔半径 0.026 → 0.034；唱片半径 0.43 → 0.405，外面加一圈黑色封套边框（`frameRadius` 0.43，`_FramePainter`，同样打孔）；唱针外圈落点 0.405 → 0.37 以留在唱片内。阴影改按边框画。
+
+### 2026-10-18 1.2.0.alpha：缓存清理与原生桌面卡片准备
+
+- 新建分支 `1.2.0.alpha`；Flutter package 版本设为 `1.2.0-alpha+1`。
+- 按开发者决定，M0-2 格式专项验证和 M0-7 输出设备切换验证不列入本版本；播放器现有 FLAC/MP3 范围不扩张。
+- 完成封面 `cover_state` 持久化：已缓存/无封面状态存入 Drift；写回前核对专辑仍指向同一代表文件版本，代表曲目或文件版本变化时复位。
+- 每次扫描结束后清理封面缓存：保留当前专辑代表曲目的源版本与文件，移除已删除专辑、旧版本目录和同目录下失效的专辑文件；清理与图片生成共用串行队列。清理失败只记录警告，不中断曲库扫描。
+- 后续卡片只做 macOS 与 Android 主屏幕原生 Widget，不做 Windows，也不做悬浮播放器。技术路线、共享快照和首版功能已记入 [`DESKTOP_WIDGETS.md`](DESKTOP_WIDGETS.md) 与 `PLAN.md` M9。
+- 验证：`dart format` 完成；`flutter analyze` 无问题。本轮未运行测试。
+
+### 2026-10-18 macOS 桌面卡片（SYS-11 / M9，分支 1.2.0.alpha）
+
+- 加入并嵌入 `NyaPlayerWidget.appex`，支持小/中/大：左上圆角封面；小号基本控制，中号进度/随机/循环，大号当前队列（5 首/页、点播、当前项高亮与自动定位）。WidgetKit extension 要求 macOS 14，主应用原部署目标保留。
+- `MacOSWidgetBridge` → 原生 App Group 原子 JSON + 封面文件；`AudioPlaybackIntent` 在 app 进程经 QueueController 控制播放，等待冷启动 ready，串行处理点击，过期队列点播拒绝。歌词/音频不复制到共享组。
+- 修正上一轮缓存状态重置的 raw SQL 参数：`customStatement` 应传原始值，而不是 Drift `Variable` 包装。
+- `flutter analyze` 零问题，Flutter 339 项测试通过；macOS Debug 构建与签名完整性检查通过，PlugInKit 已识别扩展；同权限沙盒应用的共享目录 JSON 读写通过；三种尺寸/明暗/空状态已用原生离屏渲染检查。
+- 系统桌面宿主的实际点击、应用退出后的冷启动与多个卡片实例仍待验收。当前运行的旧 App 需要重启新版后发布组件状态，不能用静态预览代替实测。添加方法见 `DESKTOP_WIDGETS.md`。
+
+### 2026-10-18 NyaPlayer 正式名称与分层图标（UI-21）
+
+- 当时按开发者方向，双音符加顶部猫耳（后被下方 Material 标准音符方案替代），纯色扁平；先用内置 ImageGen 生成参考，再用共用矢量几何生成生产素材，避免参考图的像素明暗进入最终图形。两个 SVG 图层可独立编辑，禁止绘制拟物光影。
+- macOS 接入 `NyaPlayerIcon.icon`，浅色、深色及系统着色原生渲染成功；分别传入两种系统 tint 参数确认颜色确实变化。图形层禁用 glass / specular / shadow / translucency，系统图标外壳由 macOS 决定。兼容 PNG 覆盖 16–1024px。
+- **原生格式的坑**：本机 Xcode 26.3 的 Icon Composer 不接受可选的 `color-space-for-untagged-svg-colors: srgb` 字段，生成器省略该字段。默认 fill 与 dark/tinted 的值统一放入 `fill-specializations`（默认项不写 appearance），否则直接 fill 会遮盖特殊外观。编译与渲染已经核对。
+- Android 图标分离背景、前景与单色图层；108dp 自适应画布，逐像素核对 66dp 圆形安全区，图形约 48.1 × 52.9dp。48/72/96/144/192px PNG 一起重建。
+- macOS Product、CFBundleName、CFBundleDisplayName、CFBundleExecutable、scheme 和测试宿主改为 `NyaPlayer`；Android application label 使用 `@string/app_name`。bundle identifier、applicationId、Dart package 名保留，避免身份变化。
+- `flutter build macos --debug`、`flutter build apk --debug --target-platform android-arm64` 均成功；`flutter analyze` 无问题；最终 `NyaPlayer.app` 签名完整性检查通过，Assets.car 含 21 项新图标资源；APK label 为 NyaPlayer，包内确认 v26/v33 adaptive icon 与 monochrome。Android 另存为 `build/releases/NyaPlayer-1.2.0-alpha-arm64-debug.apk`。
+- 本轮未运行测试，未在系统设置/实际启动器手动切换主题图标；未重启当前正在运行的播放器。系统调色与裁剪依赖平台和启动器支持。
+
+
+### 2026-10-18 图标改为 Material 标准音符（UI-21）
+
+- 开发者否决自绘双音符与猫耳，改用 Flutter 自带 `Icons.music_note`（U+E415）。`tool/import_material_icon.swift` 用系统 CoreText 从 Flutter SDK 的 MaterialIcons-Regular.otf 提取标准轮廓，24px 原始边界 `(6, 3, 12, 18)`；保持原始比例并按可见边界居中，移除旧 SVG 图层与未采用的生成图片。
+- 生产资源统一由 `tool/generate_app_icons.swift` 重建：macOS 分层包为背景 + 标准音符，保留默认/深色/系统着色；Android 前景、monochrome、自适应 XML 与 mdpi–xxxhdpi PNG 同步更新。Android 图形约 36.1 × 54.2dp，符合 66dp 圆形安全区。
+- 保留 Material 字体随附许可及来源说明。重新导入与生成均不新增第三方依赖，不使用图像生成服务。
+- macOS 与 Android arm64 Debug 构建成功，Icon Composer 原生默认/深色/着色导出成功；未运行测试，未重启播放器。保留此前要求：构建目录中的测试 widget 不留系统注册。
