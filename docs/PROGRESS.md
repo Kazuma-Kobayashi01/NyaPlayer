@@ -435,3 +435,11 @@
   3. 设置里 `flowingLightHint` 与 `surfaceMaterialHint` 的中文、英文说明已改成“光斑、换歌换位置”；**日、韩、德、西、法、俄的说明仍是旧的“缓慢流动”，待校对后更新**。
 - 复测（同一首歌、播放中、播放页）：出帧率 ~100–120fps → 4–5fps；进程 CPU 约 62–70% → 约 19%（`raster` 28–40% → 3.9%，解码线程合计约 7%）。
 - 教训：Flutter 页面上的任何“常驻小动画”都会让整页持续重绘，不能靠限制画布重绘频率解决，只能让 Ticker 停下来。
+
+#### 修复：播放页默认停在歌词页（回归，同日）
+
+- 现象：冷启动或切歌后打开播放页，默认停在歌词页；播放中歌词每推进一行也会把页面带过去。
+- 原因：为消除“封面→歌词”滑动突然加速，我让两页保活并提前构建（`allowImplicitScrolling` + `AutomaticKeepAlive`）。歌词页用 `Scrollable.ensureVisible` 滚到当前行，该方法会滚动**所有外层滚动容器**，包括左右翻页的 `PageView`；歌词页提前构建后，每次定位都会把翻页容器带到歌词页。
+- 修复：`lyrics_view.dart` 新增 `_revealIn`，用 `RenderAbstractViewport.getOffsetToReveal` 只滚动歌词自己的 `ScrollController`；`adaptive_shell_test.dart` 新增回归测试（手机尺寸，歌词行推进后 `PageView` 仍在第 0 页）。撤掉修复后该测试会失败（`Expected 0, Actual 1.0`），有修复时通过。
+- 真机复测：冷启动→播放页在封面页；播放 14 秒歌词推进数行仍在封面页；切到下一首仍在封面页。343 项测试通过。
+- 教训：给页面加“提前构建/保活”时，要检查里面是否有会影响外层滚动的调用（`Scrollable.ensureVisible`、`ScrollController` 共享等）。

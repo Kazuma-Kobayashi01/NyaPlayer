@@ -1104,6 +1104,38 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
+  testWidgets('lyrics advancing off screen do not pull the phone player over', (
+    tester,
+  ) async {
+    final engine = await _pumpApp(tester, const Size(400, 900));
+    final container = ProviderScope.containerOf(
+      tester.element(find.byType(NyaPlayerApp)),
+    );
+    final track = sampleLibrary.tracks.firstWhere(
+      (t) => t.title == 'Harbor Lights',
+    );
+    final queue = container.read(queueProvider.notifier);
+    await queue.playTracks([track]);
+    await tester.pump();
+    await engine.pause();
+    unawaited(container.read(routerProvider).push('/now-playing'));
+    await tester.pumpAndSettle();
+
+    final pages = tester.widget<PageView>(find.byType(PageView)).controller!;
+    // The lyrics page is built ahead of the swipe (so it does not jump in
+    // mid-gesture) ...
+    expect(find.byType(LyricsView, skipOffstage: false), findsOneWidget);
+    expect(pages.page, 0);
+    // ... and its "scroll to the current line" must not carry the page view
+    // with it, neither when the song changes nor as the line advances.
+    for (final seconds in [20, 60, 100]) {
+      await queue.seek(Duration(seconds: seconds));
+      await tester.pumpAndSettle();
+      expect(pages.page, 0, reason: 'line at ${seconds}s');
+    }
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets(
     'opening paused lyrics reveals a larger current line and live spacing keeps it centred',
     (tester) async {

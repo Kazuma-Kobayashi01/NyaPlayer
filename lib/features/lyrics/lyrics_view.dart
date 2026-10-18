@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart' show RenderAbstractViewport, RenderBox;
 import 'package:nyaplayer/app/theme/app_theme.dart' show FontTuning;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:nyaplayer/data/library_providers.dart';
@@ -47,7 +48,7 @@ class _LyricsViewState extends ConsumerState<LyricsView> {
           ? _keys[_active].currentContext
           : null;
       if (activeContext != null) {
-        Scrollable.ensureVisible(activeContext, alignment: 0.5);
+        _revealIn(activeContext);
         return;
       }
       final position = _scroll.position;
@@ -73,13 +74,39 @@ class _LyricsViewState extends ConsumerState<LyricsView> {
       if (!mounted || index < 0 || index >= _keys.length) return;
       final context = _keys[index].currentContext;
       if (context == null) return;
-      Scrollable.ensureVisible(
+      _revealIn(
         context,
-        alignment: 0.5,
         duration: Durations.medium2,
         curve: Curves.easeOutCubic,
       );
     });
+  }
+
+  /// Centres [target] in this view's own scrollable.
+  ///
+  /// `Scrollable.ensureVisible` would also scroll every scrollable around the
+  /// lyrics, including the player's horizontal page view: with the lyrics
+  /// page built off screen, each new line pulled the player over to it.
+  void _revealIn(
+    BuildContext target, {
+    Duration? duration,
+    Curve curve = Curves.ease,
+  }) {
+    final render = target.findRenderObject();
+    if (render is! RenderBox || !render.attached || !render.hasSize) return;
+    if (!_scroll.hasClients) return;
+    final viewport = RenderAbstractViewport.maybeOf(render);
+    if (viewport == null) return;
+    final position = _scroll.position;
+    final offset = viewport
+        .getOffsetToReveal(render, 0.5)
+        .offset
+        .clamp(position.minScrollExtent, position.maxScrollExtent);
+    if (duration == null) {
+      position.jumpTo(offset);
+    } else {
+      position.animateTo(offset, duration: duration, curve: curve);
+    }
   }
 
   @override
