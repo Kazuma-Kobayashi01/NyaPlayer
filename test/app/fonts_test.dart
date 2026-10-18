@@ -186,14 +186,9 @@ void main() {
   group('bundled files', () {
     const fontFiles = [
       'HarmonyOS_Sans_SC_Regular.ttf',
-      'HarmonyOS_Sans_SC_Medium.ttf',
       'HarmonyOS_Sans_SC_Bold.ttf',
-      'EBGaramond-400.ttf',
-      'EBGaramond-500.ttf',
-      'EBGaramond-600.ttf',
-      'EBGaramond-700.ttf',
+      'EBGaramond-Variable.ttf',
       'NotoSerifSC-500.ttf',
-      'NotoSerifSC-700.ttf',
     ];
 
     test('every font file is in the asset bundle and non-trivial', () async {

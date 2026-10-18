@@ -5,9 +5,10 @@
 
 ## 0. 一眼看完
 
+- **字体精简（2026-10-18，SET-06）**：内置字体 9 份 → 4 份，56.3MB → 32.1MB（−43.0%），三款字符覆盖保留。EB Garamond 使用 400–700 可变字体，HarmonyOS Sans 保留 Regular/Bold，Noto Serif SC 保留 Medium，中文衬线粗体使用合成。`output/` 三份 Release 已更新：arm64 Mac 72.2MB、Intel Mac 73.2MB、Android APK 47.9MB。细节见 `assets/fonts/README.md`。
 - **品牌图标与正式名称（2026-10-18，UI-21）**：当前品牌图形为 Flutter 自带 Material `Icons.music_note` 标准音符，按最新要求替换自绘双音符并移除猫耳；几何源、生成命令、平台尺寸与生成记录见 `assets/branding/README.md`。macOS `.icon` 已接入原生资源构建，支持默认/深色/系统着色，Android adaptive icon 含 API 33+ monochrome 图层。正式应用名与 macOS 可执行文件/产品均为 `NyaPlayer`；包标识保留。两个平台 Debug 构建、静态分析、原生图标渲染与资源检查完成，尚未在实际启动器切换主题图标。
 - **项目**：NyaPlayer（文档代号 Lyra）——本地离线、无广告的 Material 3 音乐播放器，Flutter，Android + macOS。曲库只有 **FLAC + MP3**，歌词和封面**全部内嵌**，双语歌词是 P0。
-- **分支与仓库**：当前版本分支 `1.2.0.alpha`，Flutter 版本 `1.2.0-alpha+1`；远程 `git@github.com:Kazuma-Kobayashi01/NyaPlayer.git`。2026-10-18 开发者授权提交并推送本轮缓存清理、macOS 桌面组件、正式名称与 Material 标准音符图标；macOS Release 构建产物位于 `build/macos/Build/Products/Release/NyaPlayer.app`。具体提交与构建状态以 Git 和本次构建输出为准。
+- **分支与仓库**：当前版本分支 `1.2.0.alpha`，Flutter 版本 `1.2.0-alpha+1`；远程 `git@github.com:Kazuma-Kobayashi01/NyaPlayer.git`。2026-10-18 开发者授权提交并推送本轮缓存清理、macOS 桌面组件、正式名称与 Material 标准音符图标；Release 分发产物统一位于根目录 `output/`，按系统和架构分目录，详见 `BUILD_OUTPUTS.md`。具体提交与构建状态以 Git 和本次构建输出为准。
 - **README 与许可证（2026-10-18）**：中英文首页增加技术栈徽章及“正在开发中，无法使用”的醒目警告，平台状态标为开发中；许可证采用远程已有的 MIT，合并时保留远程 LICENSE 与双方历史。作者顺序仍为 Kazuma-Kobayashi01、Claude、Codex。本次已明确授权推送 main，覆盖此前未授权推送的限制。
 - **阶段**：前端 UI 基本完成；Rust 内核正在 M0 验证。2026-10-18 已在 macOS 实听 FLAC 192kHz/24bit 与 MP3，开发者确认声音正常、MP3 跳转后正常；EQ 顺序修正后复测正常，自制连续 FLAC 两轨切换无可听缝隙。Android 真机仍待验证，详见 `SPIKE_REPORT.md`。
 - **本轮新增（开发者指定提前做 M2-6）**：内嵌封面按需获取与两种尺寸磁盘缓存已接入所有封面组件；macOS 三首真实文件正常生成缓存，开发者确认界面封面正常。数据库封面状态与缓存清理待后续接入。
@@ -35,7 +36,7 @@
 - **大屏全屏间距 + 歌词默认 18pt + 播放页灰白控件（2026-10-18，开发者反馈 16:9 显示器“太拥挤”）**：①`_StageLayout` 以普通窗口（舞台约 1300×750）为基准、此尺寸及以下完全不变；更大时封面和栏宽随舞台高度放大（最多 1.5 倍，封面实测 1400×900:520 → 2200×1200:666 → 3200×1400:780），多出来的宽度还会拉开封面与歌词的间距（随空余宽度增长，上限多 200px；实测 1400×900:34 → 2200×1200:180 → 3200×1400:246），整组始终水平居中；歌词栏不再固定 560 上限（由舞台封顶，≤840）。回归测试覆盖 1400×900 / 1920×1080 / 2200×1200 / 3200×1400。②歌词默认字号 20 → 18pt（只影响没改过的用户；已保存的值不变），测试里写死 20 的断言已更新。③播放页（全屏页、右侧面板、手机页）的控件改用灰白：`player_palette.dart` 取 `ColorScheme.onSurface` 去掉色相（深色下近白，浅色下深灰，仍来自 ColorScheme，无硬编码），用于进度条（四种样式全部）、播放/暂停、上下首、随机/循环/收藏（开=亮、关=60% 透明度，仍可区分）、歌词/队列切换、播放菜单按钮、手机翻页小圆点；不再跟主题色。迷你播放条、列表页和设置页未改。Flutter 212 个测试通过（新增 1 个灰白控件测试，重写 1 个自适应布局测试），分析零问题。
 - **歌词字号、内置字体、选择文件夹接系统接口（2026-10-18，开发者指定）**：
   - **歌词**：默认字号改回 20pt；高亮行再加大 2pt（`字号×1.15+3`，手机三行预览同样 +3）。
-  - **内置字体**：非衬线 = HarmonyOS Sans SC（官方包，三字重，**未修改**——协议禁止修改，所以不能裁剪子集；协议要求的显著声明在“关于”页和 README，协议文本进了许可页）；衬线 = 开发者电脑上的 EB Garamond 变量字体切出 400/500/600/700 静态字重（拉丁）+ Noto Serif SC 500/700（中文，思源宋体，OFL）。macOS 自带的 Songti SC 是专有字体不能打包，所以宋体用思源宋体——**如果你想要别的宋体请告诉我**。衬线整体放大 1.08 倍并加重一档（歌词通过 `FontTuning` 一并放大）。设置里新增“使用内置字体”开关（默认开；关＝回到打包字体之前的系统字体配置，已有测试锁定）。内置字体家族名加 `Nya ` 前缀，避免与同名系统字体互相遮蔽——这一点是测试暴露的真实隐患：Android 系统衬线回退列表里本来就有 “Noto Serif SC”，不加前缀的话“关闭内置字体”时也会解析到打包的那份。字体共约 54MB，macOS Debug 包约 257MB；字符覆盖已用 fonttools 验证（简/繁/假名/日文汉字齐全，仅 〜 ♪ ♡ 三个符号在 HarmonyOS 中缺，回退系统字体）。
+  - **内置字体（历史记录，当前精简方案见文末）**：非衬线 = HarmonyOS Sans SC（官方包，三字重，**未修改**——协议禁止修改，所以不能裁剪子集；协议要求的显著声明在“关于”页和 README，协议文本进了许可页）；衬线 = 开发者电脑上的 EB Garamond 变量字体切出 400/500/600/700 静态字重（拉丁）+ Noto Serif SC 500/700（中文，思源宋体，OFL）。macOS 自带的 Songti SC 是专有字体不能打包，所以宋体用思源宋体——**如果你想要别的宋体请告诉我**。衬线整体放大 1.08 倍并加重一档（歌词通过 `FontTuning` 一并放大）。设置里新增“使用内置字体”开关（默认开；关＝回到打包字体之前的系统字体配置，已有测试锁定）。内置字体家族名加 `Nya ` 前缀，避免与同名系统字体互相遮蔽——这一点是测试暴露的真实隐患：Android 系统衬线回退列表里本来就有 “Noto Serif SC”，不加前缀的话“关闭内置字体”时也会解析到打包的那份。字体共约 54MB，macOS Debug 包约 257MB；字符覆盖已用 fonttools 验证（简/繁/假名/日文汉字齐全，仅 〜 ♪ ♡ 三个符号在 HarmonyOS 中缺，回退系统字体）。
   - **选择文件夹**：macOS 用原生 `NSOpenPanel`（挂在窗口上的 sheet、可多选、默认 ~/Music、文案跟随应用语言；App 未沙盒，直接用路径，无需安全作用域书签），`Info.plist` 补了桌面/文档/下载/可移动卷/网络卷用途说明；Android 先申请权限再弹系统目录选择器——Android 13+ 申请 `READ_MEDIA_AUDIO`，Android 12 申请 `READ_EXTERNAL_STORAGE`（permission_handler 在 12 上把音频权限当作空操作、在 13+ 拒绝存储权限，所以用 `MainActivity.kt` 里一个返回 `SDK_INT` 的小通道选权限）；被拒时说明原因，永久拒绝时给“打开系统设置”；选择器返回的不是真实路径时报错而不是静默失败；“排除文件夹”不需要权限。**Android 部分按要求未编译、未真机验证**，包括 `file_picker` 在 Android 上返回的路径是否可被 dart:io 递归列出（M0-8）。
   - **验证**：Flutter 239 个测试通过（新增 27：字体方案/解析主题/打包文件与协议存在/设置开关/权限选择/macOS 通道/多选、被拒、出错、取消等流程），分析零问题，macOS Debug 构建与启动成功，截图确认播放页灰白控件与高亮歌词。未手工点验：macOS 原生文件夹面板的实际交互、衬线字体的实际观感（默认是非衬线）。
   - **注意到的一件事**：本次启动时 `test_music/` 里《十年》和《缭花绚烂》两个文件已不在（目录修改时间 13:54），库按磁盘如实移除了这两首（库里现为 3 首）。不是我的操作；保存的上次队列在扫描前就已恢复，所以队列里可能还留着这两首的条目，播放到会被引擎当作无法解码而跳过。
@@ -314,3 +315,22 @@
 - 生产资源统一由 `tool/generate_app_icons.swift` 重建：macOS 分层包为背景 + 标准音符，保留默认/深色/系统着色；Android 前景、monochrome、自适应 XML 与 mdpi–xxxhdpi PNG 同步更新。Android 图形约 36.1 × 54.2dp，符合 66dp 圆形安全区。
 - 保留 Material 字体随附许可及来源说明。重新导入与生成均不新增第三方依赖，不使用图像生成服务。
 - macOS 与 Android arm64 Debug 构建成功，Icon Composer 原生默认/深色/着色导出成功；未运行测试，未重启播放器。保留此前要求：构建目录中的测试 widget 不留系统注册。
+
+
+### 2026-10-18 Release 按系统 / 架构输出
+
+- 按开发者要求先删除上一轮 Universal `build/macos/Build/Products/Release/NyaPlayer.app`，重新独立构建 arm64 / x86_64，不复用旧 Universal App；Android 也重新构建当前 1.2.0-alpha Release。
+- 新增 `tool/build_release.py`，默认依次生成 `output/darwin-arm64/NyaPlayer.app`、`output/darwin-x86_64/NyaPlayer.app`、`output/android-armv8a/NyaPlayer.apk`；可传目标名只构建部分。`output/` 已加入 `.gitignore`，每个目录附应用版本 / 源码 commit 的 `build-info.json`。
+- macOS 通过 `FLUTTER_XCODE_ARCHS` 分架构编译主应用、Rust 和 Widget。分发副本逐个检查 Mach-O，预编译框架的多余 slice 去掉后从内到外重新 ad-hoc 签名，保留 entitlement/identifier/flags。两份 App 各含 7 个 Mach-O，均只有目标架构，最终目录中的签名完整性通过。
+- 三个 Release 构建均成功；Android APK 核对只含 arm64-v8a；Mac 文件夹约 92MiB / 93MiB，APK 约 62.8MB。构建目录测试 Widget 再次注销。未运行测试或启动新 App。
+- 操作说明见 `BUILD_OUTPUTS.md`，中英文 README 已改用统一构建入口。
+
+
+### 2026-10-18 内置字体资源与包体精简（SET-06）
+
+- 原字体 9 个 TTF 共 56,321,000 字节，占 Mac Release 约 58%。移除 HarmonyOS Sans Medium、Noto Serif SC Bold，并把 EB Garamond 4 个静态字重替换为一个 400–700 可变字体；最终 4 个 TTF 共 32,075,052 字节（减少 43.0%）。
+- 保留的 HarmonyOS Sans Regular/Bold、Noto Serif SC Medium 与旧提交的 SHA-256 完全一致。Noto 30,928 / Harmony 29,063 / Garamond 2,091 个字符均保留；没有按 UI 文案子集化，任意歌曲和歌词的原有字符覆盖不缩减。无衬线中等字重会匹配 Regular，中文衬线粗体改为字体引擎合成，EB Garamond 使用真实可变字重。
+- FontTools 为现有素材制作工具，不新增应用依赖。新增 `tool/compact_fonts.py`，源文件 / 输出的 SHA-256、可变范围与字符数记录在 `assets/fonts/font-sources.json`，版权和三份协议仍随应用分发。现有字体资源测试名单跟随资源更新；本轮未运行测试。
+- 比较过完整 Noto 可变字体与 CFF 编码，体积收益不合适，未作为生产资源；最终保留原 Medium 字形。所有候选只在临时目录，不打入 App。
+- `flutter analyze` 无问题；macOS arm64 / x86_64 和 Android arm64-v8a Release 均构建成功并替换 `output/`，包内检查只含 4 份 TTF，合计字节符合预期，Mac 签名完整性通过，测试 Widget 注册已清理。
+- 包体按文件逻辑字节计（十进制 MB）：arm64 Mac **96.4 → 72.2MB（−25.15%）**；Intel Mac **97.5 → 73.2MB（−24.87%）**；Android APK **62.8 → 47.9MB（−23.75%）**。重建方法见 `BUILD_OUTPUTS.md`；字体资源说明见 `assets/fonts/README.md`。

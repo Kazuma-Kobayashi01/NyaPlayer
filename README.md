@@ -84,8 +84,10 @@ dart format . && flutter analyze && flutter test
 cargo test --manifest-path rust/Cargo.toml
 
 # Release builds
-flutter build apk --release --target-platform android-arm64
-flutter build macos --release
+python3 tool/build_release.py
+# output/darwin-arm64/NyaPlayer.app
+# output/darwin-x86_64/NyaPlayer.app
+# output/android-armv8a/NyaPlayer.apk
 ```
 
 > Flutter desktop builds can't be cross‑compiled across operating systems: build Windows on Windows and Linux on Linux (or use CI).

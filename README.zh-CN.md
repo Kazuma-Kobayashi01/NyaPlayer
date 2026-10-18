@@ -84,8 +84,10 @@ dart format . && flutter analyze && flutter test
 cargo test --manifest-path rust/Cargo.toml
 
 # 发布构建
-flutter build apk --release --target-platform android-arm64
-flutter build macos --release
+python3 tool/build_release.py
+# output/darwin-arm64/NyaPlayer.app
+# output/darwin-x86_64/NyaPlayer.app
+# output/android-armv8a/NyaPlayer.apk
 ```
 
 > Flutter 桌面端不支持跨操作系统交叉编译：Windows 版需在 Windows 上构建，Linux 版需在 Linux 上构建（或使用 CI）。

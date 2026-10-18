@@ -216,6 +216,8 @@ flutter build macos --release
 
 ## M8 打磨与 P2
 
+- [x] 内置字体精简（`SET-06`，2026-10-18 开发者追加）：9 份字体精简至 4 份，EB Garamond 合并为可变字体，HarmonyOS Sans 保留 Regular/Bold，Noto Serif SC 保留 Medium 并用合成粗体；字符覆盖不缩减。字体 56.3MB → 32.1MB，三平台 Release 重新归档到 `output/`，包体减少约 24–25%。
+- [x] Release 产物按平台与架构归档（2026-10-18 开发者追加）：删除旧 Universal App，分别编译 macOS arm64 / x86_64 和 Android arm64-v8a，放入 `output/darwin-arm64` / `darwin-x86_64` / `android-armv8a`；单架构二进制与 macOS 签名检查通过，可用 `tool/build_release.py` 重建。
 - [x] 正式名称与跨平台图标（`UI-21`，2026-10-18 开发者追加）：Material 标准 `music_note` 纯色扁平音符（按开发者最新要求移除猫耳与自绘双音符）；macOS Icon Composer 分层/深色/系统着色与旧系统 ICNS，Android adaptive/monochrome 与各密度 PNG；应用显示名称和 macOS 产物改为 NyaPlayer。素材与重建方式见 `assets/branding/README.md`。
 - [x] Hi-Res 黑金徽章与流光背景、高级玻璃材质（`META-08`、`UI-18`、`UI-19`，2026-10-18，开发者追加；无对应原任务号）：判定改为“无损且高于 CD 音质（位深 > 16 或采样率 > 44.1 kHz）”；徽章与普通标签同形状（圆角 8、高 34）；`FlowingLight` + 封面取色；`GlassSurface` + `AmbientBackdrop`；设置里“流光背景”（默认开）和“材质”（默认标准）。
 - [x] 唱片机封面样式（`UI-20`，2026-10-18，开发者追加；无对应原任务号）：`TurntableCover`——黑胶唱片 + 封面作圆形标签、中心打孔、会随进度移动并在暂停/切歌时抬起的唱臂、唱片旋转与减速；设置里“封面样式”新增“唱片机”。

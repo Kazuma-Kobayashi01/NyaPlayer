@@ -13,6 +13,7 @@ test_music/
 .pub-cache/
 .pub/
 build/
+output/
 coverage/
 *.g.dart.bak
 devtools_options.yaml

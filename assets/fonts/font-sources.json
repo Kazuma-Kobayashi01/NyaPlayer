@@ -1,0 +1,13 @@
+{
+  "EBGaramond": {
+    "source": "https://github.com/google/fonts/tree/main/ofl/ebgaramond",
+    "source_sha256": "4bd3007d4483df0767a89b209ef2a94eb2a997546b95553a48db4629a286d9b1",
+    "weight_range": [
+      400,
+      700
+    ],
+    "characters": 2091,
+    "bytes": 800116,
+    "sha256": "607f88c3797892df6962938c427442906fbde67ae1265606b6d63b976a982f19"
+  }
+}

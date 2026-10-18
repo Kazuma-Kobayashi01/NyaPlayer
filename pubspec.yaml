@@ -81,8 +81,9 @@ flutter:
     - assets/images/
     - assets/fonts/licenses/
 
-  # Bundled fonts (TECH_SPEC appendix A). Static weights only: Flutter picks
-  # the nearest declared weight. Licences are in assets/fonts/licenses/.
+  # Compact bundled fonts (TECH_SPEC appendix A). Flutter >=3.41 maps
+  # FontWeight to the variable Latin serif font's wght axis automatically.
+  # Licences are in assets/fonts/licenses/.
   # Families carry a "Nya " prefix on purpose: a bundled family shadows a
   # system font of the same name, and the system serif list (used when the
   # bundled fonts are switched off) names "Noto Serif SC".
@@ -93,29 +94,20 @@ flutter:
       fonts:
         - asset: assets/fonts/HarmonyOS_Sans_SC_Regular.ttf
           weight: 400
-        - asset: assets/fonts/HarmonyOS_Sans_SC_Medium.ttf
-          weight: 500
         - asset: assets/fonts/HarmonyOS_Sans_SC_Bold.ttf
           weight: 700
-    # EB Garamond: static instances of the variable font (SIL OFL).
+    # A single variable font covers weights 400–700 without repeated outlines.
     - family: Nya EB Garamond
       fonts:
-        - asset: assets/fonts/EBGaramond-400.ttf
+        - asset: assets/fonts/EBGaramond-Variable.ttf
           weight: 400
-        - asset: assets/fonts/EBGaramond-500.ttf
-          weight: 500
-        - asset: assets/fonts/EBGaramond-600.ttf
-          weight: 600
-        - asset: assets/fonts/EBGaramond-700.ttf
-          weight: 700
     # Noto Serif SC (Source Han Serif): the open-source Song/Ming-style CJK
-    # serif that EB Garamond falls back to. Static instances (SIL OFL).
+    # serif that EB Garamond falls back to. Keep the complete Medium face;
+    # heavier text uses the font engine's synthetic bold.
     - family: Nya Noto Serif SC
       fonts:
         - asset: assets/fonts/NotoSerifSC-500.ttf
           weight: 500
-        - asset: assets/fonts/NotoSerifSC-700.ttf
-          weight: 700
   generate: true
 
   # To add assets to your application, add an assets section, like this:

@@ -353,10 +353,10 @@ Android 11+ 的分区存储下，`READ_MEDIA_AUDIO` 只能读音频文件，**�
   - 2026-10-18 开发者指定：补齐原生“关闭窗口 / ⌘W”菜单，红色关闭按钮采用同样的隐藏行为，保留窗口、Flutter 引擎与现有控制中心会话。Dock 或常驻菜单栏图标可显示原窗口，不重新建播放器。菜单栏图标使用 AppKit NSStatusItem（无额外依赖），包含显示窗口、播放/暂停、上下首、退出，标签跟随应用语言。
   - 退出请求通过独立生命周期通道先停止媒体会话、释放 Dart 播放器和 provider，再批准 AppKit 终止；并发退出只清理一次，3 秒未回应时允许系统退出。播放状态持久化仍待 M3-9/数据库，不能把本次进程退出误记为恢复功能完成。
 - 媒体键与控制中心由 `audio_service` 提供（cpal 不注册"正在播放"，不会出现重复条目）；🔍 M0 验证。
-- Rust 库：Cargokit 构建通用二进制（arm64 + x86_64），随 App 打包，无需额外签名步骤。
+- Rust 库：Cargokit 按 Xcode 的 `ARCHS` 构建并随 App 打包。分发时 macOS arm64 / x86_64 分别构建，预编译框架去掉多余 slice 后重新签名，产物按架构放入根目录 `output/`，见 [`BUILD_OUTPUTS.md`](BUILD_OUTPUTS.md)。
 - 键盘快捷键（`SYS-10`）：用 `Shortcuts` + `Actions` 实现，只在 macOS 注册。2026-10-18 开发者指定：⌘, 打开可返回原页面的设置，空格播放/暂停、⌘←/→ 上下首、⌘F 全局搜索；文本编辑期间不抢占空格与方向键。原生应用菜单的 Settings… / ⌘, 同步通过 MethodChannel 打开相同设置入口，保留系统自带的退出、隐藏、最小化与全屏快捷键。
   - 设置中的快捷键说明按实际支持的平台显示：当前仅 macOS 展示；Android 不展示，Windows 待后续适配后再提供自己的按键说明，不显示 macOS 的 ⌘ 文案。
-- 分发：本地 `flutter build macos --release`，ad-hoc 签名即可，首次运行右键"打开"。
+- 分发：运行 `python3 tool/build_release.py darwin-arm64 darwin-x86_64`，生成独立架构的 Release App 到 `output/darwin-arm64` / `output/darwin-x86_64`，使用 ad-hoc 签名；Android 目标名为 `android-armv8a`。脚本与二进制检查见 [`BUILD_OUTPUTS.md`](BUILD_OUTPUTS.md)。
 
 ### 6.3 macOS 桌面卡片（SYS-11）
 
@@ -495,7 +495,7 @@ scan_errors(path PK, message, at)
   - **系统配色（默认）**：`dynamic_color` 的 `DynamicColorBuilder`（Android 12+ 壁纸色板，macOS 强调色；不可用时回退到固定色）。整套色板逐个角色复制到 Flutter 的 `ColorScheme`（见附录 B 第 1 条）；
   - **固定主题色**：`ColorScheme.fromSeed`。
 - 2026-10-18 开发者调整：移除中间的“跟随封面”取色选项及播放器局部主题覆盖，配色仅保留系统 / 固定色；专辑封面模糊背景独立保留，不改变控件的主题色。
-- 字体：默认系统字体；中日文混排时设置 `fontFamilyFallback`，Android 上避免日文汉字被渲染成中文字形——根据界面语言设置 `Locale`，必要时为日文文本单独指定 `locale: Locale('ja')`。
+- 字体：默认使用内置字体（可在设置中关闭）；中日文混排时设置 `fontFamilyFallback`，Android 上避免日文汉字被渲染成中文字形——根据界面语言设置 `Locale`，必要时为日文文本单独指定 `locale: Locale('ja')`。
 
 ### 10.2 自适应布局（按 Material 3 窗口尺寸类）
 
@@ -522,10 +522,10 @@ scan_errors(path PK, message, at)
 - 播放器的播放/暂停、上下首、随机、循环、收藏、菜单及歌词/队列切换均使用无常驻背景的图标按钮；选中项使用主题主色表示状态，保留悬停、聚焦与按下反馈及原触控面积。
 - 手机播放条悬浮：`PlayerBar(floating: true)` 叠在页面之上，外壳通过 `MediaQuery` 把 `PlayerBar.floatingInset` 加进底部 padding，列表自动留白。
 - 字号（2026-10-18 开发者调整）：全局 `textTheme` / `primaryTextTheme` 的各级字号在 Material 3 默认值上减 1 个逻辑像素，保留系统字体缩放；歌词单独使用设置值，默认 20pt，不再叠加全局减量。
-- 字体（2026-10-18 改）：设置中有两项——“衬线 / 非衬线”（`AppFont`）和“使用内置字体”（`useBundledFonts`，默认开）。开：非衬线 = **HarmonyOS Sans SC**（拉丁 + 简繁中文 + 假名，Regular/Medium/Bold）；衬线 = **EB Garamond**（拉丁，400/500/600/700）+ **Noto Serif SC（思源宋体）**（中文，500/700），衬线整体放大 `bundledSerifSizeFactor`=1.08 并整体加重一档（EB Garamond 字面小、笔画细，不补偿会显得偏小偏淡；歌词通过 `FontTuning` 主题扩展同样放大）。关：回到打包字体之前的系统字体配置（非衬线用系统默认；衬线 macOS 用 Times New Roman + 宋体/明朝，Android 用系统 serif + Noto Serif CJK）。内置字体家族名统一加 `Nya ` 前缀，避免与同名系统字体（含用户自装的 EB Garamond、系统衬线回退列表里的 Noto Serif SC）互相遮蔽。字体文件在 `assets/fonts/`，协议文本在 `assets/fonts/licenses/` 并登记进应用的开源许可页。
-  - 许可：HarmonyOS Sans 协议允许打包再分发**未修改**的副本，条件是软件内显著声明使用、不得修改（所以**不做子集裁剪**）、保留协议文本——设置“关于”里有字体声明，协议在许可页。EB Garamond、Noto Serif SC 为 SIL OFL 1.1；二者的静态字重由官方变量字体用 fonttools `varLib.instancer` 切出（OFL 允许修改）。
+- 字体（2026-10-18 改）：设置中有两项——“衬线 / 非衬线”（`AppFont`）和“使用内置字体”（`useBundledFonts`，默认开）。开：非衬线 = **HarmonyOS Sans SC**（拉丁 + 简繁中文 + 假名，Regular/Bold）；衬线 = **EB Garamond**（拉丁，一个可变字体覆盖 400–700）+ **Noto Serif SC（思源宋体）**（中文，保留 500，较粗字重由字体引擎合成），衬线整体放大 `bundledSerifSizeFactor`=1.08 并整体加重一档（EB Garamond 字面小、笔画细，不补偿会显得偏小偏淡；歌词通过 `FontTuning` 主题扩展同样放大）。关：回到打包字体之前的系统字体配置（非衬线用系统默认；衬线 macOS 用 Times New Roman + 宋体/明朝，Android 用系统 serif + Noto Serif CJK）。内置字体家族名统一加 `Nya ` 前缀，避免与同名系统字体（含用户自装的 EB Garamond、系统衬线回退列表里的 Noto Serif SC）互相遮蔽。字体文件在 `assets/fonts/`，协议文本在 `assets/fonts/licenses/` 并登记进应用的开源许可页。
+  - 许可：HarmonyOS Sans 协议允许打包再分发**未修改**的副本，条件是软件内显著声明使用、不得修改（所以**不做子集裁剪**）、保留协议文本——设置“关于”里有字体声明，协议在许可页。EB Garamond、Noto Serif SC 为 SIL OFL 1.1；EB Garamond 由原变量字体用 FontTools `varLib.instancer` 限定 400–700 区间（OFL），Noto Serif SC 保留原先未修改的 500 静态文件。
   - “宋体”说明：macOS 自带的 Songti SC 是苹果的专有字体，不能打包；选用思源宋体（Noto Serif SC，OFL）作为可再分发的开源宋体。
-  - 体积：字体共约 54MB（HarmonyOS Sans 三字重 24.6MB、Noto Serif SC 两字重 29.7MB、EB Garamond 约 2MB），macOS Debug 包约 257MB。需要时可对 OFL 的两款做子集裁剪（可再省约 20–25MB），HarmonyOS Sans 不可。
+  - 体积（2026-10-18 精简）：从 9 个文件、56,321,000 字节减至 4 个文件、32,075,052 字节，减少 43.0%。移除 HarmonyOS Medium、Noto Serif SC 700，EB Garamond 改为单个可变字体；三款的字符覆盖不缩减。中等无衬线字重会匹配常规字重，中文衬线粗体改为合成。素材制作、源校验和取舍见 `assets/fonts/README.md`。
 - 播放页背景（2026-10-18 开发者指定）：独立于主题配色来源，设置中可选主题渐变或封面模糊，默认封面模糊。手机完整播放页、桌面展开播放页和右侧播放器共用同一实现；使用缓存的 256px 封面放大并进行高度模糊，叠加 ColorScheme 表面色保证可读，切歌平滑过渡，无封面回退主题渐变。设置暂随现有 ThemeSettings 存内存，后续统一接 settings 表。
   - 封面背景微调（2026-10-18 开发者纠正）：仅深色模式在 48% surface 遮罩上再叠加 ColorScheme.scrim 的 10% 黑色遮罩；浅色模式不加黑色遮罩，surface 遮罩不透明度由 68% 降为 50%，减少泛白、保留封面色彩。播放条同样仅深色叠 10% 黑色遮罩，浅色的 surfaceContainerHigh 遮罩由 45% 降为 35%。只作用于封面背景，不修改主题渐变或前景封面。
   - 缩放窗口时使用固定的 256/1024px 解码缓存键，不随每个布局像素重新解码；图片替换期间保留上一帧。同源已解析的封面路径有最多 128 条的内存缓存（不持有图片字节），布局切换重建时可同步复用，后台仍验证磁盘缓存；源版本变化独立加载，避免旧封面串图。
