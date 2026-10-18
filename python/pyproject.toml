@@ -1,0 +1,14 @@
+[project]
+name = "nyaplayer-sr"
+version = "0.1.0"
+requires-python = ">=3.12"
+dependencies = [
+    "coremltools>=9.0",
+    "huggingface-hub>=2.2.0",
+    "matplotlib>=3.11.2",
+    "numpy>=2.5.4",
+    "omegaconf>=2.4.0",
+    "soundfile>=0.14.0",
+    "torch>=2.14.1",
+    "torchaudio>=2.11.0",
+]
