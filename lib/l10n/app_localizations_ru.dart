@@ -279,6 +279,51 @@ class AppLocalizationsRu extends AppLocalizations {
   String get eqPresetTrebleBoost => 'Усиление высоких';
 
   @override
+  String get eqPresetClub => 'Клуб';
+
+  @override
+  String get eqPresetDance => 'Танцевальная';
+
+  @override
+  String get eqPresetFullBass => 'Мощный бас';
+
+  @override
+  String get eqPresetFullBassTreble => 'Бас и высокие';
+
+  @override
+  String get eqPresetFullTreble => 'Мощные высокие';
+
+  @override
+  String get eqPresetHeadphones => 'Наушники';
+
+  @override
+  String get eqPresetLargeHall => 'Большой зал';
+
+  @override
+  String get eqPresetLive => 'Живой звук';
+
+  @override
+  String get eqPresetParty => 'Вечеринка';
+
+  @override
+  String get eqPresetReggae => 'Регги';
+
+  @override
+  String get eqPresetSka => 'Ска';
+
+  @override
+  String get eqPresetSoft => 'Мягкий';
+
+  @override
+  String get eqPresetSoftRock => 'Софт-рок';
+
+  @override
+  String get eqPresetTechno => 'Техно';
+
+  @override
+  String get eqPresetLoudness => 'Тонкомпенсация';
+
+  @override
   String get eqPresetCustom => 'Свой';
 
   @override
@@ -744,4 +789,58 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get playbackCoreRust => 'Ядро Rust';
+
+  @override
+  String get settingsSuperRes => 'ИИ-апскейл (SQ-AI)';
+
+  @override
+  String get settingsSuperResHint =>
+      'Преобразует MP3 во FLAC с помощью ИИ-модели на GPU этого Mac. MP3 остаётся; новый файл сохраняется рядом как «имя.SQ-AI.flac». Это сгенерированный звук, а не оригинальная запись. Занимает примерно половину длительности трека.';
+
+  @override
+  String get srModelMissing => 'В этой сборке не установлена ИИ-модель.';
+
+  @override
+  String get srChooseFiles => 'Выбрать треки…';
+
+  @override
+  String get srClearFinished => 'Убрать завершённые';
+
+  @override
+  String get srWaiting => 'Ожидание';
+
+  @override
+  String get srDone => 'Готово';
+
+  @override
+  String get srCancelled => 'Отменено';
+
+  @override
+  String get srExists => 'Уже преобразовано';
+
+  @override
+  String srFailed(String message) {
+    return 'Ошибка: $message';
+  }
+
+  @override
+  String get srPickerTitle => 'MP3-треки для преобразования';
+
+  @override
+  String get srPickerEmpty => 'В медиатеке нет MP3 для преобразования.';
+
+  @override
+  String srConvertSelected(int count) {
+    return 'Преобразовать: $count';
+  }
+
+  @override
+  String get srSelectAll => 'Выбрать все';
+
+  @override
+  String get srSelectNone => 'Снять выбор';
+
+  @override
+  String get srDesktopOnly =>
+      'Только для компьютера. На телефонах и планшетах недоступно.';
 }

@@ -427,6 +427,78 @@ fn mp3_front_cover_preferred() {
 }
 
 // ---------------------------------------------------------------------------
+// Copying tags onto a FLAC (SQ-AI)
+// ---------------------------------------------------------------------------
+
+#[test]
+fn copy_tags_to_flac_carries_tags_lyrics_cover_and_marker() {
+    let mut tag = Id3v2Tag::new();
+    tag.insert(text_frame("TIT2", "缭花绚烂"));
+    tag.insert(text_frame("TPE1", "歌手"));
+    tag.insert(text_frame("TALB", "アルバム"));
+    tag.insert(text_frame("TRCK", "3/12"));
+    tag.insert(uslt("", "[00:01.00]第一行\n[00:02.00]第二行"));
+    tag.insert_picture(picture(PictureType::CoverFront, PNG_FRONT.to_vec()));
+    let mp3 = make_mp3("source.mp3", Some(tag));
+    // The target has its own, different tags that must not survive.
+    let flac = make_flac("target.flac", &[("TITLE", "old"), ("GENRE", "old")], vec![]);
+
+    api::copy_tags_to_flac(s(&mp3), s(&flac), Some("ai-sr".into())).unwrap();
+
+    let m = api::read_metadata(s(&flac)).unwrap();
+    assert_eq!(m.codec, "FLAC");
+    assert_eq!(m.title.as_deref(), Some("缭花绚烂"));
+    assert_eq!(m.artist.as_deref(), Some("歌手"));
+    assert_eq!(m.album.as_deref(), Some("アルバム"));
+    assert_eq!(m.track_no, Some(3));
+    assert_eq!(m.genre, None, "tags of the target are replaced");
+    assert_eq!(
+        m.lyrics.as_deref(),
+        Some("[00:01.00]第一行\n[00:02.00]第二行")
+    );
+    assert!(m.has_cover);
+    assert_eq!(
+        api::read_cover(s(&flac)).unwrap().as_deref(),
+        Some(PNG_FRONT)
+    );
+
+    let mut f = File::open(&flac).unwrap();
+    let parsed = FlacFile::read_from(&mut f, ParseOptions::new()).unwrap();
+    let vc = parsed.vorbis_comments().unwrap();
+    assert_eq!(vc.get(copy::SOURCE_FIELD), Some("ai-sr"));
+}
+
+#[test]
+fn copy_tags_converts_sylt_lyrics_to_lrc() {
+    let mut tag = Id3v2Tag::new();
+    tag.insert(text_frame("TIT2", "sylt"));
+    tag.insert(sylt_frame(
+        TimestampFormat::MS,
+        vec![(1000, "one".into()), (2500, "two".into())],
+    ));
+    let mp3 = make_mp3("sylt.mp3", Some(tag));
+    let flac = make_flac("sylt.flac", &[], vec![]);
+    api::copy_tags_to_flac(s(&mp3), s(&flac), None).unwrap();
+    let lyrics = api::read_metadata(s(&flac)).unwrap().lyrics.unwrap();
+    assert_eq!(lyrics, "[00:01.00]one\n[00:02.50]two");
+}
+
+#[test]
+fn copy_tags_without_source_tags_still_writes_the_marker() {
+    let mp3 = make_mp3("bare.mp3", None);
+    let flac = make_flac("bare.flac", &[("TITLE", "old")], vec![]);
+    api::copy_tags_to_flac(s(&mp3), s(&flac), Some("ai-sr".into())).unwrap();
+    let m = api::read_metadata(s(&flac)).unwrap();
+    assert_eq!(m.title, None);
+    let mut f = File::open(&flac).unwrap();
+    let parsed = FlacFile::read_from(&mut f, ParseOptions::new()).unwrap();
+    assert_eq!(
+        parsed.vorbis_comments().unwrap().get("NYAPLAYER_SOURCE"),
+        Some("ai-sr")
+    );
+}
+
+// ---------------------------------------------------------------------------
 // Batch and errors
 // ---------------------------------------------------------------------------
 

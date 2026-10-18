@@ -15,7 +15,7 @@ class EqState {
   const EqState({
     this.enabled = false,
     this.presetId = 'flat',
-    this.gains = const [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+    this.gains = eqFlatGains,
     this.preamp = 0,
     this.autoPreventClipping = true,
   });
@@ -40,9 +40,11 @@ class EqState {
     if (raw == null) return defaults;
     try {
       final map = jsonDecode(raw) as Map<String, dynamic>;
-      final gains = [
-        for (final g in map['gains'] as List) (g as num).toDouble(),
-      ];
+      var gains = [for (final g in map['gains'] as List) (g as num).toDouble()];
+      // Settings saved by the 10-band version carry over.
+      if (gains.length == legacyEqBandFrequencies.length) {
+        gains = resampleEqGains(gains, legacyEqBandFrequencies);
+      }
       if (gains.length != eqBandFrequencies.length) return defaults;
       return EqState(
         enabled: map['enabled'] as bool? ?? defaults.enabled,
@@ -93,11 +95,7 @@ class EqParams {
     );
   }
 
-  static const flat = EqParams(
-    enabled: false,
-    gains: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-    preamp: 0,
-  );
+  static const flat = EqParams(enabled: false, gains: eqFlatGains, preamp: 0);
 
   final bool enabled;
   final List<double> gains;

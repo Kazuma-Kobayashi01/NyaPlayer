@@ -50,10 +50,14 @@ class EqPresetRepository {
 
   SavedEqPreset? _fromRow(EqPreset row) {
     try {
-      final gains = [
+      var gains = [
         for (final g in jsonDecode(row.gainsJson) as List)
           (g as num).toDouble(),
       ];
+      // Presets saved by the 10-band version carry over.
+      if (gains.length == legacyEqBandFrequencies.length) {
+        gains = resampleEqGains(gains, legacyEqBandFrequencies);
+      }
       if (gains.length != eqBandFrequencies.length) return null;
       return SavedEqPreset(
         id: row.id,

@@ -276,6 +276,51 @@ class AppLocalizationsDe extends AppLocalizations {
   String get eqPresetTrebleBoost => 'Höhenverstärkung';
 
   @override
+  String get eqPresetClub => 'Club';
+
+  @override
+  String get eqPresetDance => 'Dance';
+
+  @override
+  String get eqPresetFullBass => 'Voller Bass';
+
+  @override
+  String get eqPresetFullBassTreble => 'Bass & Höhen';
+
+  @override
+  String get eqPresetFullTreble => 'Volle Höhen';
+
+  @override
+  String get eqPresetHeadphones => 'Kopfhörer';
+
+  @override
+  String get eqPresetLargeHall => 'Große Halle';
+
+  @override
+  String get eqPresetLive => 'Live';
+
+  @override
+  String get eqPresetParty => 'Party';
+
+  @override
+  String get eqPresetReggae => 'Reggae';
+
+  @override
+  String get eqPresetSka => 'Ska';
+
+  @override
+  String get eqPresetSoft => 'Sanft';
+
+  @override
+  String get eqPresetSoftRock => 'Soft Rock';
+
+  @override
+  String get eqPresetTechno => 'Techno';
+
+  @override
+  String get eqPresetLoudness => 'Loudness';
+
+  @override
   String get eqPresetCustom => 'Benutzerdefiniert';
 
   @override
@@ -738,4 +783,60 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get playbackCoreRust => 'Rust-Engine';
+
+  @override
+  String get settingsSuperRes => 'KI-Hochskalierung (SQ-AI)';
+
+  @override
+  String get settingsSuperResHint =>
+      'Wandelt MP3-Dateien mit einem KI-Modell auf der GPU dieses Macs in FLAC um. Die MP3 bleibt erhalten; die neue Datei liegt daneben als „Name.SQ-AI.flac“. Das ist erzeugter Klang, nicht die Originalaufnahme. Dauert etwa die halbe Länge des Titels.';
+
+  @override
+  String get srModelMissing =>
+      'In diesem Build ist das KI-Modell nicht installiert.';
+
+  @override
+  String get srChooseFiles => 'Titel auswählen …';
+
+  @override
+  String get srClearFinished => 'Fertige entfernen';
+
+  @override
+  String get srWaiting => 'Wartet';
+
+  @override
+  String get srDone => 'Fertig';
+
+  @override
+  String get srCancelled => 'Abgebrochen';
+
+  @override
+  String get srExists => 'Bereits umgewandelt';
+
+  @override
+  String srFailed(String message) {
+    return 'Fehlgeschlagen: $message';
+  }
+
+  @override
+  String get srPickerTitle => 'MP3-Titel zum Umwandeln';
+
+  @override
+  String get srPickerEmpty =>
+      'Keine MP3-Titel zum Umwandeln in der Bibliothek.';
+
+  @override
+  String srConvertSelected(int count) {
+    return '$count umwandeln';
+  }
+
+  @override
+  String get srSelectAll => 'Alle auswählen';
+
+  @override
+  String get srSelectNone => 'Auswahl aufheben';
+
+  @override
+  String get srDesktopOnly =>
+      'Nur am Desktop. Auf Smartphones und Tablets nicht verfügbar.';
 }

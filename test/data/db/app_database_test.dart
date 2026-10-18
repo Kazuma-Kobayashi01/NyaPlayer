@@ -1,3 +1,4 @@
+import 'package:nyaplayer/services/eq/eq_presets.dart' hide EqPreset;
 import 'package:drift/drift.dart' hide isNull, isNotNull;
 import 'package:drift/native.dart';
 import 'package:drift_dev/api/migrations_native.dart';
@@ -157,14 +158,7 @@ void main() {
     test('built-in EQ presets are written once and kept up to date', () async {
       final rows = await db.select(db.eqPresets).get();
       expect(rows.where((r) => r.builtin).map((r) => r.name), [
-        'flat',
-        'pop',
-        'rock',
-        'jazz',
-        'classical',
-        'vocal',
-        'bassBoost',
-        'trebleBoost',
+        for (final p in builtinEqPresets) p.id,
       ]);
     });
   });

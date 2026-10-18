@@ -80,6 +80,7 @@ flutter:
   assets:
     - assets/images/
     - assets/fonts/licenses/
+    - assets/licenses/
 
   # Compact bundled fonts (TECH_SPEC appendix A). Flutter >=3.41 maps
   # FontWeight to the variable Latin serif font's wght axis automatically.

@@ -15,14 +15,31 @@ bool isHiRes(Track track) =>
     _losslessCodecs.contains(track.codec.toUpperCase()) &&
     (track.bitDepth > 16 || track.sampleRate > 44100);
 
-/// Plain FLAC: lossless but not Hi-Res (CD quality). It wears the silver-black
-/// variant of the Hi-Res badge.
-bool isPlainFlac(Track track) =>
-    track.codec.toUpperCase() == 'FLAC' && !isHiRes(track);
+/// A FLAC made by the AI super-resolution from an MP3 (SQ-AI). It is saved
+/// beside the original as `name.SQ-AI.flac`, and that name is how the app
+/// knows (the file also carries `NYAPLAYER_SOURCE=ai-sr`).
+bool isAiSr(Track track) =>
+    track.codec.toUpperCase() == 'FLAC' &&
+    track.path.toLowerCase().endsWith('.sq-ai.flac');
 
-/// "FLAC · 24-bit / 48 kHz", or "Hi-Res · 24-bit / 96 kHz" for Hi-Res tracks.
+/// Plain FLAC: lossless but not Hi-Res (CD quality), and not AI-made. It wears
+/// the silver-black variant of the Hi-Res badge and is called SQ.
+bool isPlainFlac(Track track) =>
+    track.codec.toUpperCase() == 'FLAC' && !isHiRes(track) && !isAiSr(track);
+
+/// The name of the quality tier: "Hi-Res", "SQ-AI" (AI-made FLAC), "SQ" (plain
+/// FLAC) or the codec ("MP3").
+String trackQualityName(Track track) {
+  if (isAiSr(track)) return 'SQ-AI';
+  if (isHiRes(track)) return 'Hi-Res';
+  if (isPlainFlac(track)) return 'SQ';
+  return track.codec;
+}
+
+/// "SQ · 16-bit / 44.1 kHz", "SQ-AI · 16-bit / 44.1 kHz", "MP3 · ..." or
+/// "Hi-Res · 24-bit / 96 kHz".
 String trackQualityLabel(Track track) =>
-    '${isHiRes(track) ? 'Hi-Res' : track.codec} · '
+    '${trackQualityName(track)} · '
     '${track.bitDepth}-bit / ${formatSampleRate(track.sampleRate)}';
 
 /// The gold Hi-Res Audio mark (Japan Audio Society; file from Wikimedia
@@ -44,9 +61,10 @@ class HiResLogo extends StatelessWidget {
 }
 
 /// Tappable audio-format label that opens the song info sheet; the same on
-/// phone and desktop. Hi-Res tracks get the dark-gold [_SweepBadge] and plain
-/// FLAC tracks its silver-black twin, each with a one-off sweep of light, in
-/// place of the plain chip (which MP3 keeps).
+/// phone and desktop. Hi-Res tracks get the dark-gold [_SweepBadge], plain
+/// FLAC (SQ) its silver-black twin and AI-made FLAC (SQ-AI) a tech-blue one,
+/// each with a one-off sweep of light, in place of the plain chip (which MP3
+/// keeps).
 class QualityBadge extends StatelessWidget {
   const QualityBadge({super.key, required this.track});
 
@@ -58,8 +76,13 @@ class QualityBadge extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    if (isHiRes(track)) return _SweepBadge(track: track, silver: false);
-    if (isPlainFlac(track)) return _SweepBadge(track: track, silver: true);
+    if (isAiSr(track)) return _SweepBadge(track: track, kind: _BadgeKind.ai);
+    if (isHiRes(track)) {
+      return _SweepBadge(track: track, kind: _BadgeKind.hiRes);
+    }
+    if (isPlainFlac(track)) {
+      return _SweepBadge(track: track, kind: _BadgeKind.silver);
+    }
     return ActionChip(
       avatar: const Icon(Icons.graphic_eq, size: 18),
       label: Text(trackQualityLabel(track)),
@@ -69,20 +92,20 @@ class QualityBadge extends StatelessWidget {
   }
 }
 
-/// The Hi-Res badge (black with a gold hairline edge) and, with [silver], the
-/// plain-FLAC one (black with a silver edge), in the same shape as
-/// the plain chip. When it appears, or the song changes, a short, dim
+enum _BadgeKind { hiRes, silver, ai }
+
+/// The Hi-Res badge (black with a gold hairline edge), the plain-FLAC (SQ) one
+/// (black with a silver edge) and the SQ-AI one (navy with an electric-blue
+/// edge), in the same shape as the plain chip. When it appears, or the song changes, a short, dim
 /// highlight travels once round the edge and a faint band of light crosses
 /// the body; then it rests with no ticker running. (A badge that animated
 /// forever kept the whole player page redrawing on every vsync.) Standing
 /// still from the start when the system asks for reduced motion.
 class _SweepBadge extends StatefulWidget {
-  const _SweepBadge({required this.track, required this.silver});
+  const _SweepBadge({required this.track, required this.kind});
 
   final Track track;
-
-  /// Silver-black (plain FLAC) instead of black-gold (Hi-Res).
-  final bool silver;
+  final _BadgeKind kind;
 
   @override
   State<_SweepBadge> createState() => _SweepBadgeState();
@@ -123,7 +146,7 @@ class _SweepBadgeState extends State<_SweepBadge>
   @override
   void didUpdateWidget(_SweepBadge old) {
     super.didUpdateWidget(old);
-    if ((old.track.id != widget.track.id || old.silver != widget.silver) &&
+    if ((old.track.id != widget.track.id || old.kind != widget.kind) &&
         !MediaQuery.disableAnimationsOf(context)) {
       _flow.forward(from: 0);
     }
@@ -137,7 +160,11 @@ class _SweepBadgeState extends State<_SweepBadge>
 
   @override
   Widget build(BuildContext context) {
-    final colors = widget.silver ? HiResColors.silver : HiResColors.of(context);
+    final colors = switch (widget.kind) {
+      _BadgeKind.hiRes => HiResColors.of(context),
+      _BadgeKind.silver => HiResColors.silver,
+      _BadgeKind.ai => HiResColors.techBlue,
+    };
     final style = Theme.of(context).textTheme.labelLarge?.copyWith(
       color: colors.text,
       fontWeight: FontWeight.w600,
@@ -164,10 +191,19 @@ class _SweepBadgeState extends State<_SweepBadge>
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      if (widget.silver)
-                        Icon(Icons.graphic_eq, size: 18, color: colors.shine)
-                      else
-                        const HiResLogo(size: 18),
+                      switch (widget.kind) {
+                        _BadgeKind.silver => Icon(
+                          Icons.graphic_eq,
+                          size: 18,
+                          color: colors.shine,
+                        ),
+                        _BadgeKind.ai => Icon(
+                          Icons.auto_awesome,
+                          size: 18,
+                          color: colors.shine,
+                        ),
+                        _BadgeKind.hiRes => const HiResLogo(size: 18),
+                      },
                       const SizedBox(width: 8),
                       // Squeezed (a huge system font, a tiny window) the
                       // text gives way instead of overflowing.

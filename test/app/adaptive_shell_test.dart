@@ -28,6 +28,8 @@ import 'package:nyaplayer/features/now_playing/now_playing_page.dart';
 import 'package:nyaplayer/features/queue/queue_list.dart';
 import 'package:nyaplayer/features/queue/queue_sheet.dart';
 import 'package:nyaplayer/domain/models.dart';
+import 'package:nyaplayer/features/shared/cover_art.dart'
+    show nowPlayingCoverHeroTag;
 import 'package:nyaplayer/features/shared/player_bar.dart';
 import 'package:nyaplayer/features/shared/quality_badge.dart';
 import 'package:nyaplayer/features/settings/settings_page.dart';
@@ -505,6 +507,44 @@ void main() {
     await tester.pump(const Duration(milliseconds: 800));
     expect(tester.takeException(), isNull);
     expect(find.byTooltip('Player menu'), findsOneWidget);
+    await engine.pause();
+    await tester.pump(const Duration(milliseconds: 800));
+  });
+
+  testWidgets('the bar cover flies into the full player and back', (
+    tester,
+  ) async {
+    final engine = await _pumpApp(tester, const Size(360, 740));
+    await tester.tap(find.text('Afterglow').first);
+    await tester.pump(const Duration(milliseconds: 300));
+    final heroes = find.byWidgetPredicate(
+      (w) => w is Hero && w.tag == nowPlayingCoverHeroTag,
+    );
+    expect(heroes, findsOneWidget); // the bar's thumbnail
+
+    await tester.tap(
+      find.descendant(
+        of: find.byType(PlayerBar),
+        matching: find.text('Afterglow'),
+      ),
+    );
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 150));
+    // Mid-flight: one cover, somewhere between thumbnail and full size.
+    final flying = tester.getSize(heroes.last).width;
+    expect(flying, greaterThan(48));
+
+    await tester.pump(const Duration(milliseconds: 800));
+    expect(tester.takeException(), isNull);
+    expect(tester.getSize(heroes.last).width, greaterThan(200));
+
+    final navigator = tester.state<NavigatorState>(find.byType(Navigator).last);
+    navigator.pop();
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 150));
+    expect(tester.takeException(), isNull);
+    await tester.pump(const Duration(milliseconds: 800));
+    expect(tester.getSize(heroes).width, 48);
     await engine.pause();
     await tester.pump(const Duration(milliseconds: 800));
   });
@@ -1498,7 +1538,8 @@ void main() {
     expect(isHiRes(make('MP3', 16, 48000)), isFalse);
     expect(trackQualityLabel(make('FLAC', 24, 96000)), startsWith('Hi-Res'));
     expect(trackQualityLabel(make('FLAC', 24, 48000)), startsWith('Hi-Res'));
-    expect(trackQualityLabel(make('FLAC', 16, 44100)), startsWith('FLAC'));
+    expect(trackQualityLabel(make('FLAC', 16, 44100)), startsWith('SQ ·'));
+    expect(trackQualityLabel(make('MP3', 16, 44100)), startsWith('MP3'));
   });
 
   for (final size in const [Size(400, 800), Size(1000, 800), Size(1500, 900)]) {

@@ -23,6 +23,19 @@ Future<List<MetaResult>> readMetadataBatch({required List<String> paths}) =>
 Future<Uint8List?> readCover({required String path}) =>
     RustLib.instance.api.crateApiMetaReadCover(path: path);
 
+/// Copies the tags and cover of `source` (the lossy file) onto the FLAC at
+/// `destination` made from it, and records `marker` (e.g. `ai-sr`) in the
+/// FLAC's `NYAPLAYER_SOURCE` field. Used by the AI super-resolution (SQ-AI).
+Future<void> copyTagsToFlac({
+  required String source,
+  required String destination,
+  String? marker,
+}) => RustLib.instance.api.crateApiMetaCopyTagsToFlac(
+  source: source,
+  destination: destination,
+  marker: marker,
+);
+
 /// Per-file result of [`read_metadata_batch`].
 class MetaResult {
   final String path;

@@ -14,10 +14,34 @@ String _presetName(AppLocalizations l10n, String id) => switch (id) {
   'vocal' => l10n.eqPresetVocal,
   'bassBoost' => l10n.eqPresetBassBoost,
   'trebleBoost' => l10n.eqPresetTrebleBoost,
+  'club' => l10n.eqPresetClub,
+  'dance' => l10n.eqPresetDance,
+  'fullBass' => l10n.eqPresetFullBass,
+  'fullBassTreble' => l10n.eqPresetFullBassTreble,
+  'fullTreble' => l10n.eqPresetFullTreble,
+  'headphones' => l10n.eqPresetHeadphones,
+  'largeHall' => l10n.eqPresetLargeHall,
+  'live' => l10n.eqPresetLive,
+  'party' => l10n.eqPresetParty,
+  'reggae' => l10n.eqPresetReggae,
+  'ska' => l10n.eqPresetSka,
+  'soft' => l10n.eqPresetSoft,
+  'softRock' => l10n.eqPresetSoftRock,
+  'techno' => l10n.eqPresetTechno,
+  'loudness' => l10n.eqPresetLoudness,
   _ => l10n.eqPresetCustom,
 };
 
-String _bandLabel(int hz) => hz >= 1000 ? '${hz ~/ 1000}k' : '$hz';
+/// 1600 Hz -> "1.6k", 25 Hz -> "25".
+String _bandLabel(int hz) {
+  if (hz < 1000) return '$hz';
+  final k = hz / 1000;
+  return '${k == k.roundToDouble() ? k.round() : k}k';
+}
+
+/// Narrowest a band's column may get; on a phone in portrait the 15 bands
+/// do not fit and the sliders scroll sideways.
+const _minBandWidth = 30.0;
 
 class EqualizerPage extends ConsumerWidget {
   const EqualizerPage({super.key});
@@ -128,21 +152,32 @@ class EqualizerPage extends ConsumerWidget {
             ),
           ),
           const SizedBox(height: 16),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 8),
-            child: Row(
-              children: [
-                for (var i = 0; i < eqBandFrequencies.length; i++)
-                  Expanded(
-                    child: _BandSlider(
-                      label: _bandLabel(eqBandFrequencies[i]),
-                      gain: eq.gains[i],
-                      enabled: eq.enabled,
-                      onChanged: (v) => controller.setGain(i, v),
-                    ),
-                  ),
-              ],
-            ),
+          LayoutBuilder(
+            builder: (context, constraints) {
+              final room = constraints.maxWidth - 16;
+              final width = (room / eqBandFrequencies.length).clamp(
+                _minBandWidth,
+                double.infinity,
+              );
+              return SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                padding: const EdgeInsets.symmetric(horizontal: 8),
+                child: Row(
+                  children: [
+                    for (var i = 0; i < eqBandFrequencies.length; i++)
+                      SizedBox(
+                        width: width,
+                        child: _BandSlider(
+                          label: _bandLabel(eqBandFrequencies[i]),
+                          gain: eq.gains[i],
+                          enabled: eq.enabled,
+                          onChanged: (v) => controller.setGain(i, v),
+                        ),
+                      ),
+                  ],
+                ),
+              );
+            },
           ),
           const SizedBox(height: 8),
           ListTile(
@@ -257,7 +292,7 @@ class _BandSlider extends StatelessWidget {
             ),
           ),
         ),
-        Text(label, style: theme.textTheme.labelMedium),
+        Text(label, style: theme.textTheme.labelSmall),
       ],
     );
   }

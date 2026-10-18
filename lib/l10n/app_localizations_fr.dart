@@ -276,6 +276,51 @@ class AppLocalizationsFr extends AppLocalizations {
   String get eqPresetTrebleBoost => 'Aigus renforcés';
 
   @override
+  String get eqPresetClub => 'Club';
+
+  @override
+  String get eqPresetDance => 'Dance';
+
+  @override
+  String get eqPresetFullBass => 'Basses fortes';
+
+  @override
+  String get eqPresetFullBassTreble => 'Basses et aigus';
+
+  @override
+  String get eqPresetFullTreble => 'Aigus forts';
+
+  @override
+  String get eqPresetHeadphones => 'Casque';
+
+  @override
+  String get eqPresetLargeHall => 'Grande salle';
+
+  @override
+  String get eqPresetLive => 'Live';
+
+  @override
+  String get eqPresetParty => 'Fête';
+
+  @override
+  String get eqPresetReggae => 'Reggae';
+
+  @override
+  String get eqPresetSka => 'Ska';
+
+  @override
+  String get eqPresetSoft => 'Doux';
+
+  @override
+  String get eqPresetSoftRock => 'Soft rock';
+
+  @override
+  String get eqPresetTechno => 'Techno';
+
+  @override
+  String get eqPresetLoudness => 'Loudness';
+
+  @override
   String get eqPresetCustom => 'Personnalisé';
 
   @override
@@ -736,4 +781,60 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get playbackCoreRust => 'Moteur Rust';
+
+  @override
+  String get settingsSuperRes => 'Super-résolution IA (SQ-AI)';
+
+  @override
+  String get settingsSuperResHint =>
+      'Convertit des MP3 en FLAC avec un modèle d’IA sur le GPU de ce Mac. Le MP3 est conservé ; le nouveau fichier est enregistré à côté sous « nom.SQ-AI.flac ». C’est du son généré, pas l’enregistrement d’origine. Compter environ la moitié de la durée du morceau.';
+
+  @override
+  String get srModelMissing =>
+      'Le modèle d’IA n’est pas installé dans cette version.';
+
+  @override
+  String get srChooseFiles => 'Choisir des morceaux…';
+
+  @override
+  String get srClearFinished => 'Effacer les terminés';
+
+  @override
+  String get srWaiting => 'En attente';
+
+  @override
+  String get srDone => 'Terminé';
+
+  @override
+  String get srCancelled => 'Annulé';
+
+  @override
+  String get srExists => 'Déjà converti';
+
+  @override
+  String srFailed(String message) {
+    return 'Échec : $message';
+  }
+
+  @override
+  String get srPickerTitle => 'Morceaux MP3 à convertir';
+
+  @override
+  String get srPickerEmpty =>
+      'Aucun morceau MP3 à convertir dans la bibliothèque.';
+
+  @override
+  String srConvertSelected(int count) {
+    return 'Convertir $count';
+  }
+
+  @override
+  String get srSelectAll => 'Tout sélectionner';
+
+  @override
+  String get srSelectNone => 'Tout désélectionner';
+
+  @override
+  String get srDesktopOnly =>
+      'Réservé au bureau. Indisponible sur téléphone et tablette.';
 }

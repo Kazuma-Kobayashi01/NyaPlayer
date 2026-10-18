@@ -1,6 +1,6 @@
-//! 10-band peaking equalizer (TECH_SPEC §5.1).
+//! 15-band peaking equalizer (TECH_SPEC §5.1).
 //!
-//! * RBJ cookbook peaking biquads, 1 octave bandwidth (Q ≈ 1.414), f32,
+//! * RBJ cookbook peaking biquads, 2/3 octave bandwidth (Q ≈ 2.145), f32,
 //!   Direct Form 2 Transposed, independent state per channel.
 //! * Linear preamp applied before the filters.
 //! * Bit-identical bypass when disabled / flat / no active band.
@@ -17,14 +17,15 @@ use biquad::{Biquad, Coefficients, DirectForm2Transposed, Type};
 use rodio::source::SeekError;
 use rodio::{ChannelCount, Sample, SampleRate, Source};
 
-/// Center frequencies of the 10 bands, in Hz.
-pub const BAND_FREQUENCIES: [f32; 10] = [
-    31.0, 62.0, 125.0, 250.0, 500.0, 1000.0, 2000.0, 4000.0, 8000.0, 16000.0,
+/// Center frequencies of the 15 bands, in Hz (2/3 octave apart).
+pub const BAND_FREQUENCIES: [f32; 15] = [
+    25.0, 40.0, 63.0, 100.0, 160.0, 250.0, 400.0, 630.0, 1000.0, 1600.0, 2500.0, 4000.0, 6300.0,
+    10000.0, 16000.0,
 ];
 
 const NUM_BANDS: usize = BAND_FREQUENCIES.len();
-/// One octave bandwidth.
-const BAND_Q: f32 = std::f32::consts::SQRT_2;
+/// Two-thirds of an octave bandwidth: Q = 1 / (2 sinh(ln 2 / 2 * 2/3)).
+const BAND_Q: f32 = 2.145;
 /// Bands at or above this fraction of the sample rate are skipped.
 const MAX_FREQ_RATIO: f32 = 0.45;
 /// Frames between control updates (settings polling, ramp steps).
@@ -41,7 +42,7 @@ const GAIN_EPSILON_DB: f32 = 1e-4;
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct EqSettings {
     pub enabled: bool,
-    pub gains_db: [f32; 10],
+    pub gains_db: [f32; 15],
     pub preamp_db: f32,
 }
 
@@ -49,7 +50,7 @@ impl Default for EqSettings {
     fn default() -> Self {
         Self {
             enabled: true,
-            gains_db: [0.0; 10],
+            gains_db: [0.0; 15],
             preamp_db: 0.0,
         }
     }
@@ -134,7 +135,7 @@ const IDENTITY: Coefficients<f32> = Coefficients {
     b2: 0.0,
 };
 
-/// Wraps a rodio source and applies the 10-band EQ.
+/// Wraps a rodio source and applies the 15-band EQ.
 pub struct EqSource<S> {
     inner: S,
     shared: Arc<EqShared>,
@@ -478,7 +479,7 @@ mod tests {
 
         let disabled = EqSettings {
             enabled: false,
-            gains_db: [6.0; 10],
+            gains_db: [6.0; 15],
             preamp_db: -3.0,
         };
         let out: Vec<f32> =
@@ -488,8 +489,8 @@ mod tests {
             input.iter().map(|v| v.to_bits()).collect::<Vec<_>>()
         );
 
-        // Only band above 0.45 × fs is "active" → skipped → bypass.
-        let high = band(9, 12.0);
+        // The only band above 0.45 × fs is skipped → bypass.
+        let high = band(14, 12.0);
         let out: Vec<f32> =
             EqSource::new(buf(1, 22_050, input.clone()), shared_with(high)).collect();
         assert_eq!(
@@ -500,7 +501,7 @@ mod tests {
 
     #[test]
     fn band_gain_at_center_and_far_away() {
-        let g = sine_gain_db(1000.0, 48_000, band(5, 6.0));
+        let g = sine_gain_db(1000.0, 48_000, band(8, 6.0));
         assert!((g - 6.0).abs() <= 0.3, "1 kHz band gain {g} dB");
 
         let g = sine_gain_db(1000.0, 48_000, band(0, 6.0));
@@ -560,7 +561,7 @@ mod tests {
         let mut out = Vec::new();
         for i in 0..input.len() {
             if i == change_at {
-                shared.set(band(5, 12.0));
+                shared.set(band(8, 12.0));
             }
             out.push(src.next().unwrap());
         }
@@ -583,7 +584,7 @@ mod tests {
         let sr = 44_100;
         let left = sine(1000.0, sr, 1.0, 0.25);
         let interleaved: Vec<f32> = left.iter().flat_map(|l| [*l, 0.0]).collect();
-        let settings = band(5, 6.0);
+        let settings = band(8, 6.0);
         let out: Vec<f32> = EqSource::new(buf(2, sr, interleaved), shared_with(settings)).collect();
         let out_l: Vec<f32> = out.iter().step_by(2).copied().collect();
         let out_r: Vec<f32> = out.iter().skip(1).step_by(2).copied().collect();
@@ -603,7 +604,7 @@ mod tests {
         let input = sine(1000.0, 48_000, 0.5, 0.95);
         let s = EqSettings {
             enabled: true,
-            gains_db: [12.0; 10],
+            gains_db: [12.0; 15],
             preamp_db: 6.0,
         };
         let out: Vec<f32> = EqSource::new(buf(2, 48_000, input), shared_with(s)).collect();
@@ -614,7 +615,7 @@ mod tests {
     #[test]
     fn seek_and_metadata_forwarded() {
         let input = sine(1000.0, 48_000, 0.5, 0.5);
-        let mut src = EqSource::new(buf(2, 48_000, input), shared_with(band(5, 3.0)));
+        let mut src = EqSource::new(buf(2, 48_000, input), shared_with(band(8, 3.0)));
         assert_eq!(src.channels().get(), 2);
         assert_eq!(src.sample_rate().get(), 48_000);
         assert!(src.total_duration().is_some());

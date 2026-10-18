@@ -22,6 +22,7 @@ use lofty::tag::{Accessor, ItemKey, Tag};
 
 use crate::api::meta::{MetaResult, TrackMeta};
 
+pub(crate) mod copy;
 mod encoding;
 #[cfg(test)]
 mod tests;

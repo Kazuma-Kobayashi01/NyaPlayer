@@ -263,6 +263,51 @@ class AppLocalizationsZh extends AppLocalizations {
   String get eqPresetTrebleBoost => '高音增强';
 
   @override
+  String get eqPresetClub => '俱乐部';
+
+  @override
+  String get eqPresetDance => '舞曲';
+
+  @override
+  String get eqPresetFullBass => '重低音';
+
+  @override
+  String get eqPresetFullBassTreble => '重低音+高音';
+
+  @override
+  String get eqPresetFullTreble => '重高音';
+
+  @override
+  String get eqPresetHeadphones => '耳机';
+
+  @override
+  String get eqPresetLargeHall => '大厅';
+
+  @override
+  String get eqPresetLive => '现场';
+
+  @override
+  String get eqPresetParty => '派对';
+
+  @override
+  String get eqPresetReggae => '雷鬼';
+
+  @override
+  String get eqPresetSka => '斯卡';
+
+  @override
+  String get eqPresetSoft => '柔和';
+
+  @override
+  String get eqPresetSoftRock => '轻摇滚';
+
+  @override
+  String get eqPresetTechno => '电子舞曲';
+
+  @override
+  String get eqPresetLoudness => '响度补偿';
+
+  @override
   String get eqPresetCustom => '自定义';
 
   @override
@@ -697,6 +742,59 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get playbackCoreRust => 'Rust 内核';
+
+  @override
+  String get settingsSuperRes => 'AI 超分（SQ-AI）';
+
+  @override
+  String get settingsSuperResHint =>
+      '用本机 GPU 上的 AI 模型把 MP3 转成 FLAC。原 MP3 保留，新文件保存在旁边，名为“名称.SQ-AI.flac”。补出来的是生成的声音，不是原始录音。大约需要歌曲时长的一半。';
+
+  @override
+  String get srModelMissing => '这个版本里没有安装 AI 模型。';
+
+  @override
+  String get srChooseFiles => '从曲库选择歌曲…';
+
+  @override
+  String get srClearFinished => '清除已完成';
+
+  @override
+  String get srWaiting => '等待中';
+
+  @override
+  String get srDone => '已完成';
+
+  @override
+  String get srCancelled => '已取消';
+
+  @override
+  String get srExists => '已经转换过了';
+
+  @override
+  String srFailed(String message) {
+    return '失败：$message';
+  }
+
+  @override
+  String get srPickerTitle => '选择要超分的 MP3';
+
+  @override
+  String get srPickerEmpty => '曲库里没有可转换的 MP3。';
+
+  @override
+  String srConvertSelected(int count) {
+    return '转换 $count 首';
+  }
+
+  @override
+  String get srSelectAll => '全选';
+
+  @override
+  String get srSelectNone => '取消全选';
+
+  @override
+  String get srDesktopOnly => '仅桌面端可用，手机和平板上禁用。';
 }
 
 /// The translations for Chinese, using the Han script (`zh_Hant`).
@@ -955,6 +1053,51 @@ class AppLocalizationsZhHant extends AppLocalizationsZh {
 
   @override
   String get eqPresetTrebleBoost => '高音增強';
+
+  @override
+  String get eqPresetClub => '俱樂部';
+
+  @override
+  String get eqPresetDance => '舞曲';
+
+  @override
+  String get eqPresetFullBass => '重低音';
+
+  @override
+  String get eqPresetFullBassTreble => '重低音+高音';
+
+  @override
+  String get eqPresetFullTreble => '重高音';
+
+  @override
+  String get eqPresetHeadphones => '耳機';
+
+  @override
+  String get eqPresetLargeHall => '大廳';
+
+  @override
+  String get eqPresetLive => '現場';
+
+  @override
+  String get eqPresetParty => '派對';
+
+  @override
+  String get eqPresetReggae => '雷鬼';
+
+  @override
+  String get eqPresetSka => '斯卡';
+
+  @override
+  String get eqPresetSoft => '柔和';
+
+  @override
+  String get eqPresetSoftRock => '輕搖滾';
+
+  @override
+  String get eqPresetTechno => '電子舞曲';
+
+  @override
+  String get eqPresetLoudness => '響度補償';
 
   @override
   String get eqPresetCustom => '自訂';
@@ -1392,6 +1535,59 @@ class AppLocalizationsZhHant extends AppLocalizationsZh {
 
   @override
   String get playbackCoreRust => 'Rust 核心';
+
+  @override
+  String get settingsSuperRes => 'AI 超解析（SQ-AI）';
+
+  @override
+  String get settingsSuperResHint =>
+      '用本機 GPU 上的 AI 模型把 MP3 轉成 FLAC。原 MP3 保留，新檔案儲存在旁邊，名為「名稱.SQ-AI.flac」。補出來的是生成的聲音，不是原始錄音。大約需要歌曲時長的一半。';
+
+  @override
+  String get srModelMissing => '這個版本裡沒有安裝 AI 模型。';
+
+  @override
+  String get srChooseFiles => '從曲庫選擇歌曲…';
+
+  @override
+  String get srClearFinished => '清除已完成';
+
+  @override
+  String get srWaiting => '等待中';
+
+  @override
+  String get srDone => '已完成';
+
+  @override
+  String get srCancelled => '已取消';
+
+  @override
+  String get srExists => '已經轉換過了';
+
+  @override
+  String srFailed(String message) {
+    return '失敗：$message';
+  }
+
+  @override
+  String get srPickerTitle => '選擇要超解析的 MP3';
+
+  @override
+  String get srPickerEmpty => '曲庫裡沒有可轉換的 MP3。';
+
+  @override
+  String srConvertSelected(int count) {
+    return '轉換 $count 首';
+  }
+
+  @override
+  String get srSelectAll => '全選';
+
+  @override
+  String get srSelectNone => '取消全選';
+
+  @override
+  String get srDesktopOnly => '僅桌面端可用，手機和平板上停用。';
 }
 
 /// The translations for Chinese, as used in Hong Kong, using the Han script (`zh_Hant_HK`).
@@ -1650,6 +1846,51 @@ class AppLocalizationsZhHantHk extends AppLocalizationsZh {
 
   @override
   String get eqPresetTrebleBoost => '高音增強';
+
+  @override
+  String get eqPresetClub => '俱樂部';
+
+  @override
+  String get eqPresetDance => '舞曲';
+
+  @override
+  String get eqPresetFullBass => '重低音';
+
+  @override
+  String get eqPresetFullBassTreble => '重低音+高音';
+
+  @override
+  String get eqPresetFullTreble => '重高音';
+
+  @override
+  String get eqPresetHeadphones => '耳機';
+
+  @override
+  String get eqPresetLargeHall => '大堂';
+
+  @override
+  String get eqPresetLive => '現場';
+
+  @override
+  String get eqPresetParty => '派對';
+
+  @override
+  String get eqPresetReggae => '雷鬼';
+
+  @override
+  String get eqPresetSka => '斯卡';
+
+  @override
+  String get eqPresetSoft => '柔和';
+
+  @override
+  String get eqPresetSoftRock => '輕搖滾';
+
+  @override
+  String get eqPresetTechno => '電子舞曲';
+
+  @override
+  String get eqPresetLoudness => '響度補償';
 
   @override
   String get eqPresetCustom => '自訂';
@@ -2087,4 +2328,57 @@ class AppLocalizationsZhHantHk extends AppLocalizationsZh {
 
   @override
   String get playbackCoreRust => 'Rust 核心';
+
+  @override
+  String get settingsSuperRes => 'AI 超解像（SQ-AI）';
+
+  @override
+  String get settingsSuperResHint =>
+      '用本機 GPU 上的 AI 模型將 MP3 轉成 FLAC。原 MP3 保留，新檔案儲存在旁邊，名為「名稱.SQ-AI.flac」。補出來的是生成的聲音，不是原始錄音。大約需要歌曲時長的一半。';
+
+  @override
+  String get srModelMissing => '這個版本裡沒有安裝 AI 模型。';
+
+  @override
+  String get srChooseFiles => '從曲庫選擇歌曲…';
+
+  @override
+  String get srClearFinished => '清除已完成';
+
+  @override
+  String get srWaiting => '等待中';
+
+  @override
+  String get srDone => '已完成';
+
+  @override
+  String get srCancelled => '已取消';
+
+  @override
+  String get srExists => '已經轉換過了';
+
+  @override
+  String srFailed(String message) {
+    return '失敗：$message';
+  }
+
+  @override
+  String get srPickerTitle => '選擇要超解像的 MP3';
+
+  @override
+  String get srPickerEmpty => '曲庫裡沒有可轉換的 MP3。';
+
+  @override
+  String srConvertSelected(int count) {
+    return '轉換 $count 首';
+  }
+
+  @override
+  String get srSelectAll => '全選';
+
+  @override
+  String get srSelectNone => '取消全選';
+
+  @override
+  String get srDesktopOnly => '僅桌面端可用，手機和平板上停用。';
 }

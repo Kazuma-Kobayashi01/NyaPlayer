@@ -39,3 +39,18 @@ key.properties
 
 # Claude Code subagent worktrees
 .claude/worktrees/
+
+# Python (AI super-resolution experiments, python/)
+python/.venv/
+__pycache__/
+*.pyc
+python/models/
+python/out/
+*.pt
+*.pth
+*.ckpt
+*.safetensors
+*.mlpackage
+*.mnn
+*.onnx
+python/vendor/

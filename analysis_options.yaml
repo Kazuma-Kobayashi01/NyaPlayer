@@ -5,6 +5,8 @@ analyzer:
     - build/**
     - android/**
     - macos/**
+    # Tooling and vendored sources (Apollo, MNN) are not part of the app.
+    - python/**
 
     - rust_builder/cargokit/**
 linter:

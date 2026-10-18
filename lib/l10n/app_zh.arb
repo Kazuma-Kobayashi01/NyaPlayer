@@ -116,6 +116,21 @@
   "eqPresetVocal": "人声",
   "eqPresetBassBoost": "低音增强",
   "eqPresetTrebleBoost": "高音增强",
+  "eqPresetClub": "俱乐部",
+  "eqPresetDance": "舞曲",
+  "eqPresetFullBass": "重低音",
+  "eqPresetFullBassTreble": "重低音+高音",
+  "eqPresetFullTreble": "重高音",
+  "eqPresetHeadphones": "耳机",
+  "eqPresetLargeHall": "大厅",
+  "eqPresetLive": "现场",
+  "eqPresetParty": "派对",
+  "eqPresetReggae": "雷鬼",
+  "eqPresetSka": "斯卡",
+  "eqPresetSoft": "柔和",
+  "eqPresetSoftRock": "轻摇滚",
+  "eqPresetTechno": "电子舞曲",
+  "eqPresetLoudness": "响度补偿",
   "eqPresetCustom": "自定义",
   "settingsAppearance": "外观",
   "settingsThemeMode": "主题模式",
@@ -328,5 +343,35 @@
   "settingsPlaybackCore": "播放内核",
   "settingsPlaybackCoreHint": "系统解码（Media3）或 Rust 内核。切换后需重启应用生效。",
   "playbackCoreSystem": "系统（Media3）",
-  "playbackCoreRust": "Rust 内核"
+  "playbackCoreRust": "Rust 内核",
+  "settingsSuperRes": "AI 超分（SQ-AI）",
+  "settingsSuperResHint": "用本机 GPU 上的 AI 模型把 MP3 转成 FLAC。原 MP3 保留，新文件保存在旁边，名为“名称.SQ-AI.flac”。补出来的是生成的声音，不是原始录音。大约需要歌曲时长的一半。",
+  "srModelMissing": "这个版本里没有安装 AI 模型。",
+  "srChooseFiles": "从曲库选择歌曲…",
+  "srClearFinished": "清除已完成",
+  "srWaiting": "等待中",
+  "srDone": "已完成",
+  "srCancelled": "已取消",
+  "srExists": "已经转换过了",
+  "srFailed": "失败：{message}",
+  "@srFailed": {
+    "placeholders": {
+      "message": {
+        "type": "String"
+      }
+    }
+  },
+  "srPickerTitle": "选择要超分的 MP3",
+  "srPickerEmpty": "曲库里没有可转换的 MP3。",
+  "srConvertSelected": "转换 {count} 首",
+  "srSelectAll": "全选",
+  "srSelectNone": "取消全选",
+  "@srConvertSelected": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "srDesktopOnly": "仅桌面端可用，手机和平板上禁用。"
 }

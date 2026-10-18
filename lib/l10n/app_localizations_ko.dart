@@ -263,6 +263,51 @@ class AppLocalizationsKo extends AppLocalizations {
   String get eqPresetTrebleBoost => '고음 강화';
 
   @override
+  String get eqPresetClub => '클럽';
+
+  @override
+  String get eqPresetDance => '댄스';
+
+  @override
+  String get eqPresetFullBass => '풀 베이스';
+
+  @override
+  String get eqPresetFullBassTreble => '풀 베이스 & 트레블';
+
+  @override
+  String get eqPresetFullTreble => '풀 트레블';
+
+  @override
+  String get eqPresetHeadphones => '헤드폰';
+
+  @override
+  String get eqPresetLargeHall => '대형 홀';
+
+  @override
+  String get eqPresetLive => '라이브';
+
+  @override
+  String get eqPresetParty => '파티';
+
+  @override
+  String get eqPresetReggae => '레게';
+
+  @override
+  String get eqPresetSka => '스카';
+
+  @override
+  String get eqPresetSoft => '부드럽게';
+
+  @override
+  String get eqPresetSoftRock => '소프트 록';
+
+  @override
+  String get eqPresetTechno => '테크노';
+
+  @override
+  String get eqPresetLoudness => '라우드니스';
+
+  @override
   String get eqPresetCustom => '사용자 설정';
 
   @override
@@ -702,4 +747,57 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get playbackCoreRust => 'Rust 엔진';
+
+  @override
+  String get settingsSuperRes => 'AI 초해상도 (SQ-AI)';
+
+  @override
+  String get settingsSuperResHint =>
+      '이 Mac의 GPU에서 AI 모델로 MP3를 FLAC으로 변환합니다. 원본 MP3는 그대로 두고, 새 파일은 옆에 “이름.SQ-AI.flac”로 저장됩니다. 생성된 소리이며 원본 녹음이 아닙니다. 곡 길이의 절반 정도가 걸립니다.';
+
+  @override
+  String get srModelMissing => '이 빌드에는 AI 모델이 설치되어 있지 않습니다.';
+
+  @override
+  String get srChooseFiles => '라이브러리에서 곡 선택…';
+
+  @override
+  String get srClearFinished => '완료 항목 지우기';
+
+  @override
+  String get srWaiting => '대기 중';
+
+  @override
+  String get srDone => '완료';
+
+  @override
+  String get srCancelled => '취소됨';
+
+  @override
+  String get srExists => '이미 변환됨';
+
+  @override
+  String srFailed(String message) {
+    return '실패: $message';
+  }
+
+  @override
+  String get srPickerTitle => '변환할 MP3 선택';
+
+  @override
+  String get srPickerEmpty => '라이브러리에 변환할 MP3가 없습니다.';
+
+  @override
+  String srConvertSelected(int count) {
+    return '$count곡 변환';
+  }
+
+  @override
+  String get srSelectAll => '전체 선택';
+
+  @override
+  String get srSelectNone => '선택 해제';
+
+  @override
+  String get srDesktopOnly => '데스크톱 전용입니다. 휴대전화와 태블릿에서는 사용할 수 없습니다.';
 }

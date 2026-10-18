@@ -168,10 +168,10 @@ pub fn player_set_repeat_mode(mode: RepeatMode) {
     }));
 }
 
-/// `gains_db` must have 10 entries (31 Hz … 16 kHz); missing ones are 0.
+/// `gains_db` must have 15 entries (25 Hz … 16 kHz); missing ones are 0.
 #[flutter_rust_bridge::frb(sync)]
 pub fn player_set_equalizer(enabled: bool, gains_db: Vec<f32>, preamp_db: f32) {
-    let mut gains = [0.0f32; 10];
+    let mut gains = [0.0f32; 15];
     for (slot, gain) in gains.iter_mut().zip(gains_db) {
         *slot = gain;
     }

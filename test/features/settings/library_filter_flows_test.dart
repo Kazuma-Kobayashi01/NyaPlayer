@@ -133,6 +133,31 @@ void main() {
     await finish(tester);
   });
 
+  testWidgets('the equalizer has 15 bands that scroll on a narrow phone', (
+    tester,
+  ) async {
+    final container = await pump(tester);
+    tester.view.physicalSize = const Size(360, 740);
+    container.read(routerProvider).go('/equalizer');
+    await settle(tester);
+
+    // 15 band sliders and the preamp.
+    expect(find.byType(Slider), findsNWidgets(16));
+    for (final label in ['25', '160', '1k', '1.6k', '6.3k', '16k']) {
+      expect(find.text(label), findsOneWidget, reason: label);
+    }
+    expect(tester.takeException(), isNull);
+
+    // Everything fits at 360 dp only by scrolling sideways.
+    final scroller = find.byWidgetPredicate(
+      (w) => w is SingleChildScrollView && w.scrollDirection == Axis.horizontal,
+    );
+    expect(scroller, findsWidgets);
+    // The preset row is lazy, so only the first chips are built: Flat leads.
+    expect(find.widgetWithText(ChoiceChip, 'Flat'), findsOneWidget);
+    await finish(tester);
+  });
+
   // pumpAndSettle never returns on the equalizer page (its sliders keep a
   // frame scheduled), so time is advanced by hand.
   testWidgets('the equalizer saves, renames and deletes a preset', (

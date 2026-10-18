@@ -16,6 +16,7 @@ import 'package:nyaplayer/features/now_playing/player_background.dart';
 import 'package:nyaplayer/features/now_playing/player_menu.dart';
 import 'package:nyaplayer/features/queue/queue_list.dart';
 import 'package:nyaplayer/features/queue/queue_sheet.dart';
+import 'package:nyaplayer/features/shared/cover_art.dart';
 import 'package:nyaplayer/features/shared/faded_edges.dart';
 import 'package:nyaplayer/features/shared/library_builder.dart';
 import 'package:nyaplayer/features/shared/quality_badge.dart';
@@ -426,7 +427,11 @@ class _CoverAndLyrics extends ConsumerWidget {
           children: [
             SizedBox.square(
               dimension: size,
-              child: PlayerArtwork(track: track, maxSize: size),
+              child: PlayerArtwork(
+                track: track,
+                maxSize: size,
+                heroTag: nowPlayingCoverHeroTag,
+              ),
             ),
             const SizedBox(height: 12),
             QualityBadge(track: track),
@@ -575,7 +580,11 @@ class _Stage extends StatelessWidget {
       children: [
         LayoutId(
           id: _StagePart.cover,
-          child: PlayerArtwork(track: track, maxSize: 520),
+          child: PlayerArtwork(
+            track: track,
+            maxSize: 520,
+            heroTag: nowPlayingCoverHeroTag,
+          ),
         ),
         LayoutId(
           id: _StagePart.caption,

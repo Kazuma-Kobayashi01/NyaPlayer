@@ -38,16 +38,21 @@ class LibraryRepository {
     final allTrackRows = await _db.select(_db.tracks).get();
     final minMs = minDuration.inMilliseconds;
     // An unknown duration (0) is not "short": the file may just be unreadable.
-    final trackRows = minMs <= 0
-        ? allTrackRows
-        : [
-            for (final t in allTrackRows)
-              if (t.durationMs <= 0 || t.durationMs >= minMs) t,
-          ];
+    // The library shows the better file: an MP3 whose SQ-AI twin sits beside it
+    // (SQ-AI, TECH_SPEC §4.8) stays on disk but is left out here.
+    final superseded = mp3sWithSqAiTwin([for (final t in allTrackRows) t.path]);
+    final trackRows = [
+      for (final t in allTrackRows)
+        if (!superseded.contains(t.path) &&
+            (minMs <= 0 || t.durationMs <= 0 || t.durationMs >= minMs))
+          t,
+    ];
     final shown = {for (final t in trackRows) ?t.albumId};
+    // Albums left without tracks by either filter disappear too.
+    final filtered = trackRows.length != allTrackRows.length;
     final albumRows = [
       for (final a in await _db.select(_db.albums).get())
-        if (minMs <= 0 || shown.contains(a.id)) a,
+        if (!filtered || shown.contains(a.id)) a,
     ];
     final rowById = {for (final t in allTrackRows) t.id: t};
 
@@ -243,4 +248,24 @@ Stream<T> _debounced<T>(Stream<T> source, Duration delay) {
     },
   );
   return controller.stream;
+}
+
+const _sqAiSuffix = '.sq-ai.flac';
+
+/// The paths in [paths] that are MP3s with an SQ-AI twin: `Song.mp3` when
+/// `Song.SQ-AI.flac` is in the same folder. Case does not matter (macOS).
+Set<String> mp3sWithSqAiTwin(Iterable<String> paths) {
+  final all = paths.toList();
+  final twins = {
+    for (final path in all)
+      if (path.toLowerCase().endsWith(_sqAiSuffix))
+        path.toLowerCase().substring(0, path.length - _sqAiSuffix.length),
+  };
+  if (twins.isEmpty) return const {};
+  return {
+    for (final path in all)
+      if (path.toLowerCase().endsWith('.mp3') &&
+          twins.contains(path.toLowerCase().substring(0, path.length - 4)))
+        path,
+  };
 }

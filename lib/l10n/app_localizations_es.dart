@@ -276,6 +276,51 @@ class AppLocalizationsEs extends AppLocalizations {
   String get eqPresetTrebleBoost => 'Refuerzo de agudos';
 
   @override
+  String get eqPresetClub => 'Club';
+
+  @override
+  String get eqPresetDance => 'Dance';
+
+  @override
+  String get eqPresetFullBass => 'Graves intensos';
+
+  @override
+  String get eqPresetFullBassTreble => 'Graves y agudos';
+
+  @override
+  String get eqPresetFullTreble => 'Agudos intensos';
+
+  @override
+  String get eqPresetHeadphones => 'Auriculares';
+
+  @override
+  String get eqPresetLargeHall => 'Sala grande';
+
+  @override
+  String get eqPresetLive => 'En vivo';
+
+  @override
+  String get eqPresetParty => 'Fiesta';
+
+  @override
+  String get eqPresetReggae => 'Reggae';
+
+  @override
+  String get eqPresetSka => 'Ska';
+
+  @override
+  String get eqPresetSoft => 'Suave';
+
+  @override
+  String get eqPresetSoftRock => 'Rock suave';
+
+  @override
+  String get eqPresetTechno => 'Techno';
+
+  @override
+  String get eqPresetLoudness => 'Sonoridad';
+
+  @override
   String get eqPresetCustom => 'Personalizado';
 
   @override
@@ -739,4 +784,60 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get playbackCoreRust => 'Motor Rust';
+
+  @override
+  String get settingsSuperRes => 'Superresolución con IA (SQ-AI)';
+
+  @override
+  String get settingsSuperResHint =>
+      'Convierte MP3 en FLAC con un modelo de IA en la GPU de este Mac. El MP3 se conserva; el archivo nuevo se guarda al lado como «nombre.SQ-AI.flac». Es sonido generado, no la grabación original. Tarda aproximadamente la mitad de la duración de la canción.';
+
+  @override
+  String get srModelMissing =>
+      'El modelo de IA no está instalado en esta versión.';
+
+  @override
+  String get srChooseFiles => 'Elegir canciones…';
+
+  @override
+  String get srClearFinished => 'Quitar terminados';
+
+  @override
+  String get srWaiting => 'En espera';
+
+  @override
+  String get srDone => 'Hecho';
+
+  @override
+  String get srCancelled => 'Cancelado';
+
+  @override
+  String get srExists => 'Ya convertido';
+
+  @override
+  String srFailed(String message) {
+    return 'Error: $message';
+  }
+
+  @override
+  String get srPickerTitle => 'Canciones MP3 para convertir';
+
+  @override
+  String get srPickerEmpty =>
+      'No hay canciones MP3 para convertir en la biblioteca.';
+
+  @override
+  String srConvertSelected(int count) {
+    return 'Convertir $count';
+  }
+
+  @override
+  String get srSelectAll => 'Seleccionar todo';
+
+  @override
+  String get srSelectNone => 'Quitar selección';
+
+  @override
+  String get srDesktopOnly =>
+      'Solo para escritorio. No disponible en teléfonos ni tabletas.';
 }

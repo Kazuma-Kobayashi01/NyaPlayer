@@ -609,7 +609,7 @@ mod tests {
         let input = sine(192_000, 1000.0);
         let eq = EqShared::new();
         let mut settings = EqSettings::default();
-        settings.gains_db[5] = 6.0;
+        settings.gains_db[8] = 6.0;
         eq.set(settings);
         let source = output_source(
             input,
@@ -647,7 +647,7 @@ mod tests {
             output_source(input.clone(), channels, sample_rate, EqShared::new()).collect();
         let eq = EqShared::new();
         let mut settings = EqSettings::default();
-        settings.gains_db[9] = 12.0; // 16 kHz is valid at 192k, not at 22.05k.
+        settings.gains_db[14] = 12.0; // 16 kHz is valid at 192k, not at 22.05k.
         eq.set(settings);
         let output: Vec<f32> = output_source(input, channels, sample_rate, eq).collect();
         assert_eq!(output, baseline);
@@ -662,7 +662,7 @@ mod tests {
             output_source(input.clone(), channels, sample_rate, EqShared::new()).collect();
         let eq = EqShared::new();
         let mut settings = EqSettings::default();
-        settings.gains_db[9] = 12.0;
+        settings.gains_db[14] = 12.0;
         eq.set(settings);
         let output: Vec<f32> = output_source(input, channels, sample_rate, eq).collect();
         assert_eq!(output.len(), baseline.len());

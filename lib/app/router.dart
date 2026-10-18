@@ -16,6 +16,7 @@ import 'package:nyaplayer/features/now_playing/now_playing_page.dart';
 import 'package:nyaplayer/features/queue/queue_list.dart';
 import 'package:nyaplayer/features/settings/onboarding_page.dart';
 import 'package:nyaplayer/features/settings/settings_page.dart';
+import 'package:nyaplayer/features/settings/sr_picker_page.dart';
 
 /// Full-screen routes slide up over the shell on phones and fade/zoom in on
 /// wide windows.
@@ -169,6 +170,7 @@ final routerProvider = Provider<GoRouter>((ref) {
         builder: (_, _) => const SettingsPage(standalone: true),
       ),
       GoRoute(path: '/equalizer', builder: (_, _) => const EqualizerPage()),
+      GoRoute(path: '/sr-picker', builder: (_, _) => const SrPickerPage()),
       GoRoute(path: '/onboarding', builder: (_, _) => const OnboardingPage()),
     ],
   );

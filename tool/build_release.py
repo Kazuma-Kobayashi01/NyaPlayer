@@ -77,6 +77,27 @@ def single_arch_app(app, arch):
     print(f"{arch}: {len(binaries)} Mach-O files contain only this architecture", flush=True)
 
 
+SR_MODEL = ROOT / "python/out/coreml/apollo_core_fp16_12s.mlpackage"
+
+
+def add_sr_model(app):
+    """Puts the AI super-resolution model (SQ-AI) into the app, precompiled.
+
+    The model is built by `python/coreml_convert.py` and is not in git. Without
+    it the app still builds; the settings then say the model is not installed.
+    """
+    if not SR_MODEL.exists():
+        print(f"No {SR_MODEL.relative_to(ROOT)}: building without the "
+              "super-resolution model (see docs/TECH_SPEC.md 4.8)", flush=True)
+        return
+    resources = app / "Contents/Resources"
+    compiled = resources / (SR_MODEL.stem + ".mlmodelc")
+    with tempfile.TemporaryDirectory(prefix=".sr-") as temporary:
+        run("xcrun", "coremlcompiler", "compile", str(SR_MODEL), temporary)
+        shutil.copytree(Path(temporary) / compiled.name, compiled)
+    print(f"Added {compiled.name} to the app", flush=True)
+
+
 def build(target):
     print(f"\nBuilding {target}", flush=True)
     if target.startswith("darwin-"):
@@ -96,6 +117,7 @@ def build(target):
         if target.startswith("darwin-"):
             app = staged / "NyaPlayer.app"
             run("ditto", str(MAC_APP), str(app))
+            add_sr_model(app)  # before the signatures are rebuilt
             single_arch_app(app, arch)
         else:
             apk = ROOT / "build/app/outputs/flutter-apk/app-release.apk"

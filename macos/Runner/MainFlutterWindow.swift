@@ -10,6 +10,7 @@ class MainFlutterWindow: NSWindow {
   private var widgetChannel: FlutterMethodChannel?
   private var widgetBridge: AnyObject?
   private var playerEngine: MacPlayerEngine?
+  private var superResolution: MacSuperResolution?
 
   func sendPlaybackCommand(_ command: String) {
     commandsChannel?.invokeMethod(command, arguments: nil)
@@ -53,6 +54,7 @@ class MainFlutterWindow: NSWindow {
     // Playback runs on AVAudioEngine; Dart drives it over the same channel
     // protocol the Android engine uses (TECH_SPEC §4.7).
     playerEngine = MacPlayerEngine(messenger: flutterViewController.engine.binaryMessenger)
+    superResolution = MacSuperResolution(messenger: flutterViewController.engine.binaryMessenger)
 
     commandsChannel = FlutterMethodChannel(
       name: "nyaplayer/commands",

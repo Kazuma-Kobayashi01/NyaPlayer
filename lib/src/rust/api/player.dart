@@ -53,7 +53,7 @@ void playerReorder({required List<int> order}) =>
 void playerSetRepeatMode({required RepeatMode mode}) =>
     RustLib.instance.api.crateApiPlayerPlayerSetRepeatMode(mode: mode);
 
-/// `gains_db` must have 10 entries (31 Hz … 16 kHz); missing ones are 0.
+/// `gains_db` must have 15 entries (25 Hz … 16 kHz); missing ones are 0.
 void playerSetEqualizer({
   required bool enabled,
   required List<double> gainsDb,

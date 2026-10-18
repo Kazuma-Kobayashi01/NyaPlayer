@@ -3,7 +3,7 @@ import AVFoundation
 /// macOS playback core on AVAudioEngine (TECH_SPEC §4.7, M10-6).
 ///
 /// Decoding and output are the system's (AudioToolbox / CoreAudio). The graph
-/// is `AVAudioPlayerNode -> AVAudioUnitEQ (10 bands) -> main mixer`.
+/// is `AVAudioPlayerNode -> AVAudioUnitEQ (15 bands) -> main mixer`.
 ///
 /// Gapless playback: shortly before the current file ends the next one is
 /// scheduled on the same player node, which plays queued segments back to
@@ -22,7 +22,9 @@ final class MacPlayerCore {
   var onError: ((String) -> Void)?
 
   /// Same centres as the Rust core and `eqBandFrequencies` in Dart.
-  static let bandFrequencies: [Float] = [31, 62, 125, 250, 500, 1000, 2000, 4000, 8000, 16000]
+  static let bandFrequencies: [Float] = [
+    25, 40, 63, 100, 160, 250, 400, 630, 1000, 1600, 2500, 4000, 6300, 10000, 16000,
+  ]
 
   /// Consecutive files that fail to open before playback stops (FMT-07).
   private static let maxConsecutiveFailures = 5
@@ -42,7 +44,7 @@ final class MacPlayerCore {
 
   private let engine = AVAudioEngine()
   private let node = AVAudioPlayerNode()
-  private let eq = AVAudioUnitEQ(numberOfBands: 10)
+  private let eq = AVAudioUnitEQ(numberOfBands: 15)
   private var connectedFormat: AVAudioFormat?
 
   private var paths: [String] = []
@@ -68,7 +70,7 @@ final class MacPlayerCore {
       let band = eq.bands[i]
       band.filterType = .parametric
       band.frequency = frequency
-      band.bandwidth = 1.0  // octaves, as the Rust core's Q = sqrt(2)
+      band.bandwidth = 2.0 / 3.0  // octaves, as the Rust core's Q = 2.145
       band.gain = 0
       band.bypass = false
     }

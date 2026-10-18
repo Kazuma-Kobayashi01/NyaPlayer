@@ -43,6 +43,17 @@ class HiResColors extends ThemeExtension<HiResColors> {
     text: Color(0xFFCDD2D9),
   );
 
+  /// The tech-blue variant worn by FLAC files the AI super-resolution made
+  /// from MP3s (SQ-AI): deep navy with an electric-blue edge and an icy
+  /// highlight. [gold] is the blue of the border here.
+  static const techBlue = HiResColors(
+    deep: Color(0xFF060C17),
+    mid: Color(0xFF0E2747),
+    gold: Color(0xFF2C8FEA),
+    shine: Color(0xFFA8DBFF),
+    text: Color(0xFF7FC3FF),
+  );
+
   static HiResColors of(BuildContext context) =>
       Theme.of(context).extension<HiResColors>() ?? standard;
 

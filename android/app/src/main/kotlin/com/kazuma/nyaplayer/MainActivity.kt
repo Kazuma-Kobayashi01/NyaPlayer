@@ -4,12 +4,17 @@ import android.os.Build
 import com.ryanheise.audioservice.AudioServiceActivity
 import io.flutter.embedding.engine.FlutterEngine
 import io.flutter.plugin.common.MethodChannel
+import java.io.File
 
 class MainActivity : AudioServiceActivity() {
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
         // The Rust audio backend needs the Context before the first playback.
         NyaCore.initAndroid(applicationContext)
+        // The AI super-resolution was tried on Android and taken out again; drop
+        // what a build that had it unpacked (a 34 MB model and a kernel cache).
+        File(applicationContext.filesDir, "sr").deleteRecursively()
+        File(applicationContext.cacheDir, "sr").deleteRecursively()
         // Playback on Android runs on Media3 (TECH_SPEC §4.7); Rust still reads tags.
         AndroidPlayerEngine.attach(applicationContext, flutterEngine.dartExecutor.binaryMessenger)
         // The Android version decides which storage permission applies

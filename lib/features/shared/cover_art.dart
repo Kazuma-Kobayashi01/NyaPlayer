@@ -7,6 +7,10 @@ import 'package:nyaplayer/app/theme/app_theme.dart';
 import 'package:nyaplayer/domain/cover_source.dart';
 import 'package:nyaplayer/services/library/cover_providers.dart';
 
+/// Shared by the player bar's thumbnail and the full player's square cover so
+/// the cover flies between them when the player opens and closes (UI-11).
+const nowPlayingCoverHeroTag = 'now-playing-cover';
+
 /// Cached embedded artwork, with a Material placeholder while absent/loading.
 class CoverArt extends ConsumerWidget {
   const CoverArt({
@@ -73,8 +77,43 @@ class CoverArt extends ConsumerWidget {
       },
     );
     art = ClipRRect(borderRadius: BorderRadius.circular(radius), child: art);
-    if (heroTag != null) art = Hero(tag: heroTag!, child: art);
+    if (heroTag != null) {
+      art = Hero(
+        tag: heroTag!,
+        flightShuttleBuilder: _coverShuttle,
+        child: art,
+      );
+    }
     if (size != null) art = SizedBox.square(dimension: size, child: art);
     return ExcludeSemantics(child: art);
   }
+}
+
+/// The flying cover keeps the destination's picture but rounds its corners
+/// from one end's radius to the other's, instead of jumping to the final one.
+Widget _coverShuttle(
+  BuildContext flightContext,
+  Animation<double> animation,
+  HeroFlightDirection direction,
+  BuildContext fromHeroContext,
+  BuildContext toHeroContext,
+) {
+  ClipRRect clipOf(BuildContext c) => (c.widget as Hero).child as ClipRRect;
+  final from = clipOf(fromHeroContext);
+  final to = clipOf(toHeroContext);
+  // The animation is the route's: it runs 0 -> 1 on push and 1 -> 0 on pop,
+  // 1 being the open player. So the open player's radius is the "end".
+  final pushing = direction == HeroFlightDirection.push;
+  final closed = (pushing ? from : to).borderRadius;
+  final open = (pushing ? to : from).borderRadius;
+  return AnimatedBuilder(
+    animation: animation,
+    builder: (_, child) => ClipRRect(
+      borderRadius:
+          BorderRadiusGeometry.lerp(closed, open, animation.value) ??
+          to.borderRadius,
+      child: child,
+    ),
+    child: to.child,
+  );
 }

@@ -13,6 +13,7 @@ import 'package:nyaplayer/features/search/library_app_bar.dart';
 import 'package:nyaplayer/features/settings/language_dialog.dart';
 import 'package:nyaplayer/features/settings/library_folders.dart';
 import 'package:nyaplayer/features/settings/min_length_tile.dart';
+import 'package:nyaplayer/features/settings/super_resolution_tile.dart';
 import 'package:nyaplayer/services/player/playback_core.dart';
 import 'package:nyaplayer/features/shared/glass_surface.dart'
     show glassMaterialProvider;
@@ -58,6 +59,8 @@ class SettingsPage extends ConsumerWidget {
               ),
               _SectionTitle(l10n.settingsLibrary),
               const _Group(children: [LibraryFoldersTile(), MinLengthTile()]),
+              _SectionTitle(l10n.settingsSuperRes),
+              const _Group(children: [SuperResolutionTile()]),
               _SectionTitle(l10n.settingsAppearance),
               _Group(
                 children: [

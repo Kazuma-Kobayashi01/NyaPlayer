@@ -603,6 +603,96 @@ abstract class AppLocalizations {
   /// **'高音增强'**
   String get eqPresetTrebleBoost;
 
+  /// No description provided for @eqPresetClub.
+  ///
+  /// In zh, this message translates to:
+  /// **'俱乐部'**
+  String get eqPresetClub;
+
+  /// No description provided for @eqPresetDance.
+  ///
+  /// In zh, this message translates to:
+  /// **'舞曲'**
+  String get eqPresetDance;
+
+  /// No description provided for @eqPresetFullBass.
+  ///
+  /// In zh, this message translates to:
+  /// **'重低音'**
+  String get eqPresetFullBass;
+
+  /// No description provided for @eqPresetFullBassTreble.
+  ///
+  /// In zh, this message translates to:
+  /// **'重低音+高音'**
+  String get eqPresetFullBassTreble;
+
+  /// No description provided for @eqPresetFullTreble.
+  ///
+  /// In zh, this message translates to:
+  /// **'重高音'**
+  String get eqPresetFullTreble;
+
+  /// No description provided for @eqPresetHeadphones.
+  ///
+  /// In zh, this message translates to:
+  /// **'耳机'**
+  String get eqPresetHeadphones;
+
+  /// No description provided for @eqPresetLargeHall.
+  ///
+  /// In zh, this message translates to:
+  /// **'大厅'**
+  String get eqPresetLargeHall;
+
+  /// No description provided for @eqPresetLive.
+  ///
+  /// In zh, this message translates to:
+  /// **'现场'**
+  String get eqPresetLive;
+
+  /// No description provided for @eqPresetParty.
+  ///
+  /// In zh, this message translates to:
+  /// **'派对'**
+  String get eqPresetParty;
+
+  /// No description provided for @eqPresetReggae.
+  ///
+  /// In zh, this message translates to:
+  /// **'雷鬼'**
+  String get eqPresetReggae;
+
+  /// No description provided for @eqPresetSka.
+  ///
+  /// In zh, this message translates to:
+  /// **'斯卡'**
+  String get eqPresetSka;
+
+  /// No description provided for @eqPresetSoft.
+  ///
+  /// In zh, this message translates to:
+  /// **'柔和'**
+  String get eqPresetSoft;
+
+  /// No description provided for @eqPresetSoftRock.
+  ///
+  /// In zh, this message translates to:
+  /// **'轻摇滚'**
+  String get eqPresetSoftRock;
+
+  /// No description provided for @eqPresetTechno.
+  ///
+  /// In zh, this message translates to:
+  /// **'电子舞曲'**
+  String get eqPresetTechno;
+
+  /// No description provided for @eqPresetLoudness.
+  ///
+  /// In zh, this message translates to:
+  /// **'响度补偿'**
+  String get eqPresetLoudness;
+
   /// No description provided for @eqPresetCustom.
   ///
   /// In zh, this message translates to:
@@ -1424,6 +1514,102 @@ abstract class AppLocalizations {
   /// In zh, this message translates to:
   /// **'Rust 内核'**
   String get playbackCoreRust;
+
+  /// No description provided for @settingsSuperRes.
+  ///
+  /// In zh, this message translates to:
+  /// **'AI 超分（SQ-AI）'**
+  String get settingsSuperRes;
+
+  /// No description provided for @settingsSuperResHint.
+  ///
+  /// In zh, this message translates to:
+  /// **'用本机 GPU 上的 AI 模型把 MP3 转成 FLAC。原 MP3 保留，新文件保存在旁边，名为“名称.SQ-AI.flac”。补出来的是生成的声音，不是原始录音。大约需要歌曲时长的一半。'**
+  String get settingsSuperResHint;
+
+  /// No description provided for @srModelMissing.
+  ///
+  /// In zh, this message translates to:
+  /// **'这个版本里没有安装 AI 模型。'**
+  String get srModelMissing;
+
+  /// No description provided for @srChooseFiles.
+  ///
+  /// In zh, this message translates to:
+  /// **'从曲库选择歌曲…'**
+  String get srChooseFiles;
+
+  /// No description provided for @srClearFinished.
+  ///
+  /// In zh, this message translates to:
+  /// **'清除已完成'**
+  String get srClearFinished;
+
+  /// No description provided for @srWaiting.
+  ///
+  /// In zh, this message translates to:
+  /// **'等待中'**
+  String get srWaiting;
+
+  /// No description provided for @srDone.
+  ///
+  /// In zh, this message translates to:
+  /// **'已完成'**
+  String get srDone;
+
+  /// No description provided for @srCancelled.
+  ///
+  /// In zh, this message translates to:
+  /// **'已取消'**
+  String get srCancelled;
+
+  /// No description provided for @srExists.
+  ///
+  /// In zh, this message translates to:
+  /// **'已经转换过了'**
+  String get srExists;
+
+  /// No description provided for @srFailed.
+  ///
+  /// In zh, this message translates to:
+  /// **'失败：{message}'**
+  String srFailed(String message);
+
+  /// No description provided for @srPickerTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'选择要超分的 MP3'**
+  String get srPickerTitle;
+
+  /// No description provided for @srPickerEmpty.
+  ///
+  /// In zh, this message translates to:
+  /// **'曲库里没有可转换的 MP3。'**
+  String get srPickerEmpty;
+
+  /// No description provided for @srConvertSelected.
+  ///
+  /// In zh, this message translates to:
+  /// **'转换 {count} 首'**
+  String srConvertSelected(int count);
+
+  /// No description provided for @srSelectAll.
+  ///
+  /// In zh, this message translates to:
+  /// **'全选'**
+  String get srSelectAll;
+
+  /// No description provided for @srSelectNone.
+  ///
+  /// In zh, this message translates to:
+  /// **'取消全选'**
+  String get srSelectNone;
+
+  /// No description provided for @srDesktopOnly.
+  ///
+  /// In zh, this message translates to:
+  /// **'仅桌面端可用，手机和平板上禁用。'**
+  String get srDesktopOnly;
 }
 
 class _AppLocalizationsDelegate

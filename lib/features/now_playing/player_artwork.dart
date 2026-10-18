@@ -35,10 +35,18 @@ class CoverShapeController extends Notifier<CoverShape> {
 /// The large cover shown by the players: a rounded square, a disc that spins
 /// while music plays, or a record player with the cover as the record's label.
 class PlayerArtwork extends ConsumerWidget {
-  const PlayerArtwork({super.key, required this.track, this.maxSize = 440});
+  const PlayerArtwork({
+    super.key,
+    required this.track,
+    this.maxSize = 440,
+    this.heroTag,
+  });
 
   final Track track;
   final double maxSize;
+
+  /// Hero tag for the square cover (the other shapes do not fly).
+  final Object? heroTag;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -56,6 +64,7 @@ class PlayerArtwork extends ConsumerWidget {
               CoverShape.square => _SquareCover(
                 key: ValueKey(('square', track.albumId)),
                 track: track,
+                heroTag: heroTag,
               ),
               CoverShape.disc => _SpinningDisc(
                 key: ValueKey(('disc', track.albumId)),
@@ -79,9 +88,10 @@ class PlayerArtwork extends ConsumerWidget {
 }
 
 class _SquareCover extends StatelessWidget {
-  const _SquareCover({super.key, required this.track});
+  const _SquareCover({super.key, required this.track, this.heroTag});
 
   final Track track;
+  final Object? heroTag;
 
   @override
   Widget build(BuildContext context) {
@@ -96,6 +106,7 @@ class _SquareCover extends StatelessWidget {
         source: track.cover,
         highResolution: true,
         radius: 28,
+        heroTag: heroTag,
       ),
     );
   }

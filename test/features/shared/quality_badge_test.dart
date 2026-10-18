@@ -9,6 +9,7 @@ Track _track({
   String codec = 'FLAC',
   int bitDepth = 16,
   int sampleRate = 44100,
+  String path = '/m/1.flac',
 }) => Track(
   id: id,
   title: 't',
@@ -17,7 +18,7 @@ Track _track({
   album: 'al',
   trackNo: 1,
   duration: const Duration(minutes: 3),
-  path: '/m/1.flac',
+  path: path,
   codec: codec,
   sampleRate: sampleRate,
   bitDepth: bitDepth,
@@ -51,7 +52,7 @@ void main() {
     expect(find.byType(HiResLogo), findsNothing);
   });
 
-  testWidgets('plain FLAC gets the silver-black badge, not the chip', (
+  testWidgets('plain FLAC is called SQ and gets the silver-black badge', (
     tester,
   ) async {
     tester.platformDispatcher.accessibilityFeaturesTestValue =
@@ -70,7 +71,7 @@ void main() {
       findsNothing,
       reason: 'the gold mark is Hi-Res only',
     );
-    expect(find.text('FLAC · 16-bit / 44.1 kHz'), findsOneWidget);
+    expect(find.text('SQ · 16-bit / 44.1 kHz'), findsOneWidget);
     final icon = tester.widget<Icon>(find.byIcon(Icons.graphic_eq));
     expect(icon.color, HiResColors.silver.shine);
     final painters = tester.widgetList<CustomPaint>(
@@ -86,6 +87,40 @@ void main() {
     // The sweep is a one-off, like the Hi-Res one: it ends and nothing ticks.
     await tester.pump(const Duration(milliseconds: 500));
     expect(tester.binding.hasScheduledFrame, isTrue);
+    await tester.pump(const Duration(seconds: 2));
+    expect(tester.binding.hasScheduledFrame, isFalse);
+  });
+
+  testWidgets('an AI-made FLAC is SQ-AI with the tech-blue badge', (
+    tester,
+  ) async {
+    tester.platformDispatcher.accessibilityFeaturesTestValue =
+        const FakeAccessibilityFeatures();
+    final ai = _track(path: '/m/Song.SQ-AI.flac');
+    expect(isAiSr(ai), isTrue);
+    expect(isAiSr(_track(path: '/m/Song.sq-ai.FLAC')), isTrue, reason: 'case');
+    expect(isAiSr(_track()), isFalse);
+    expect(isAiSr(_track(path: '/m/Song.SQ-AI.mp3', codec: 'MP3')), isFalse);
+    expect(isPlainFlac(ai), isFalse, reason: 'SQ-AI is not plain SQ');
+    expect(isHiRes(ai), isFalse, reason: '16-bit / 44.1 kHz');
+
+    await _pump(tester, ai, width: 600);
+    expect(find.byType(ActionChip), findsNothing);
+    expect(find.byType(HiResLogo), findsNothing);
+    expect(find.text('SQ-AI · 16-bit / 44.1 kHz'), findsOneWidget);
+    final icon = tester.widget<Icon>(find.byIcon(Icons.auto_awesome));
+    expect(icon.color, HiResColors.techBlue.shine);
+    // It is blue, not the silver of SQ.
+    expect(
+      HiResColors.techBlue.gold.b,
+      greaterThan(HiResColors.techBlue.gold.r),
+    );
+
+    // Same shape and size as the other badges, and the same one-off sweep.
+    final size = tester.getSize(find.byType(InkWell));
+    await _pump(tester, _track(), width: 600);
+    expect(tester.getSize(find.byType(InkWell)).height, size.height);
+    await _pump(tester, ai, width: 600);
     await tester.pump(const Duration(seconds: 2));
     expect(tester.binding.hasScheduledFrame, isFalse);
   });

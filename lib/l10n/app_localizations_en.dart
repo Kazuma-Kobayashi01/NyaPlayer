@@ -275,6 +275,51 @@ class AppLocalizationsEn extends AppLocalizations {
   String get eqPresetTrebleBoost => 'Treble boost';
 
   @override
+  String get eqPresetClub => 'Club';
+
+  @override
+  String get eqPresetDance => 'Dance';
+
+  @override
+  String get eqPresetFullBass => 'Full bass';
+
+  @override
+  String get eqPresetFullBassTreble => 'Full bass & treble';
+
+  @override
+  String get eqPresetFullTreble => 'Full treble';
+
+  @override
+  String get eqPresetHeadphones => 'Headphones';
+
+  @override
+  String get eqPresetLargeHall => 'Large hall';
+
+  @override
+  String get eqPresetLive => 'Live';
+
+  @override
+  String get eqPresetParty => 'Party';
+
+  @override
+  String get eqPresetReggae => 'Reggae';
+
+  @override
+  String get eqPresetSka => 'Ska';
+
+  @override
+  String get eqPresetSoft => 'Soft';
+
+  @override
+  String get eqPresetSoftRock => 'Soft rock';
+
+  @override
+  String get eqPresetTechno => 'Techno';
+
+  @override
+  String get eqPresetLoudness => 'Loudness';
+
+  @override
   String get eqPresetCustom => 'Custom';
 
   @override
@@ -733,6 +778,60 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get playbackCoreRust => 'Rust core';
+
+  @override
+  String get settingsSuperRes => 'AI super-resolution (SQ-AI)';
+
+  @override
+  String get settingsSuperResHint =>
+      'Turns lossy MP3 files into FLAC with an AI model on this Mac’s GPU. The MP3 stays; the new file is saved beside it as “name.SQ-AI.flac”. It is generated sound, not the original recording. Takes roughly half the song’s length.';
+
+  @override
+  String get srModelMissing => 'The AI model is not installed in this build.';
+
+  @override
+  String get srChooseFiles => 'Choose songs…';
+
+  @override
+  String get srClearFinished => 'Clear finished';
+
+  @override
+  String get srWaiting => 'Waiting';
+
+  @override
+  String get srDone => 'Done';
+
+  @override
+  String get srCancelled => 'Cancelled';
+
+  @override
+  String get srExists => 'Already converted';
+
+  @override
+  String srFailed(String message) {
+    return 'Failed: $message';
+  }
+
+  @override
+  String get srPickerTitle => 'MP3 songs to convert';
+
+  @override
+  String get srPickerEmpty => 'No MP3 songs to convert in your library.';
+
+  @override
+  String srConvertSelected(int count) {
+    return 'Convert $count';
+  }
+
+  @override
+  String get srSelectAll => 'Select all';
+
+  @override
+  String get srSelectNone => 'Clear';
+
+  @override
+  String get srDesktopOnly =>
+      'Desktop only. Not available on phones and tablets.';
 }
 
 /// The translations for English, as used in the United Kingdom (`en_GB`).

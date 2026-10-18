@@ -141,6 +141,7 @@ class _ActiveBar extends ConsumerWidget {
               source: track.cover,
               size: 48,
               radius: 8,
+              heroTag: nowPlayingCoverHeroTag,
             ),
             const SizedBox(width: 12),
             Expanded(

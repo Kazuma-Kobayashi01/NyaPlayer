@@ -49,3 +49,14 @@ pub fn read_metadata_batch(paths: Vec<String>) -> Vec<MetaResult> {
 pub fn read_cover(path: String) -> anyhow::Result<Option<Vec<u8>>> {
     crate::meta::read_cover(&path)
 }
+
+/// Copies the tags and cover of `source` (the lossy file) onto the FLAC at
+/// `destination` made from it, and records `marker` (e.g. `ai-sr`) in the
+/// FLAC's `NYAPLAYER_SOURCE` field. Used by the AI super-resolution (SQ-AI).
+pub fn copy_tags_to_flac(
+    source: String,
+    destination: String,
+    marker: Option<String>,
+) -> anyhow::Result<()> {
+    crate::meta::copy::copy_tags_to_flac(&source, &destination, marker.as_deref())
+}

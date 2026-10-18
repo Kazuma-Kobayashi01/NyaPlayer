@@ -1,3 +1,4 @@
+import 'package:nyaplayer/services/eq/eq_presets.dart' hide EqPreset;
 import 'package:drift/drift.dart' hide isNotNull, isNull;
 import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -187,6 +188,78 @@ void main() {
     });
   });
 
+  group('SQ-AI twins', () {
+    test(
+      'an MP3 with its SQ-AI FLAC beside it is left out of the library',
+      () async {
+        await addTrack('/m/a/Song.mp3', title: 'Song');
+        await addTrack('/m/a/Song.SQ-AI.flac', title: 'Song');
+        await addTrack('/m/a/Other.mp3', title: 'Other');
+        // Same name in another folder is a different song.
+        await addTrack('/m/b/Song.mp3', title: 'Song B');
+        final lib = await library.loadLibrary();
+        expect(lib.tracks.map((t) => t.path), [
+          '/m/a/Song.SQ-AI.flac',
+          '/m/a/Other.mp3',
+          '/m/b/Song.mp3',
+        ]);
+      },
+    );
+
+    test('the MP3 comes back when the SQ-AI file is gone', () async {
+      await addTrack('/m/a/Song.mp3');
+      expect((await library.loadLibrary()).tracks, hasLength(1));
+      final twin = await addTrack('/m/a/Song.SQ-AI.flac');
+      expect(
+        (await library.loadLibrary()).tracks.single.path,
+        endsWith('.flac'),
+      );
+      await (db.delete(db.tracks)..where((t) => t.id.equals(twin))).go();
+      expect((await library.loadLibrary()).tracks.single.path, '/m/a/Song.mp3');
+    });
+
+    test('matching ignores case, and only MP3s are replaced', () {
+      expect(
+        mp3sWithSqAiTwin([
+          '/M/Song.MP3',
+          '/m/song.sq-ai.FLAC',
+          '/m/song.flac',
+          '/m/lone.mp3',
+        ]),
+        {'/M/Song.MP3'},
+      );
+      expect(mp3sWithSqAiTwin(['/m/a.mp3', '/m/b.flac']), isEmpty);
+      // A plain FLAC of the same name is not a twin.
+      expect(mp3sWithSqAiTwin(['/m/a.mp3', '/m/a.flac']), isEmpty);
+    });
+
+    test(
+      'an album whose only track was the replaced MP3 does not linger',
+      () async {
+        final a = await db
+            .into(db.albums)
+            .insert(
+              AlbumsCompanion.insert(
+                albumKey: 'old',
+                title: const Value('Old tags'),
+              ),
+            );
+        final b = await db
+            .into(db.albums)
+            .insert(
+              AlbumsCompanion.insert(
+                albumKey: 'new',
+                title: const Value('New tags'),
+              ),
+            );
+        await addTrack('/m/a/Song.mp3', albumId: a);
+        await addTrack('/m/a/Song.SQ-AI.flac', albumId: b);
+        final lib = await library.loadLibrary();
+        expect(lib.albums.map((x) => x.title), ['New tags']);
+      },
+    );
+  });
+
   group('EQ presets (EQ-04)', () {
     test('saves, renames and deletes user presets only', () async {
       final repo = EqPresetRepository(db);
@@ -194,7 +267,7 @@ void main() {
       await db.select(db.eqPresets).get();
       expect(await repo.watch().first, isEmpty);
 
-      final gains = [for (var i = 0; i < 10; i++) i - 5.0];
+      final gains = [for (var i = 0; i < 15; i++) i - 7.0];
       final id = await repo.add('Mine', gains, -2);
       expect(id, greaterThanOrEqualTo(100));
 
@@ -220,11 +293,19 @@ void main() {
       expect(list, isEmpty);
     });
 
+    test('a preset saved by the 10-band version is carried over', () async {
+      final repo = EqPresetRepository(db);
+      final id = await repo.add('Old', [for (var i = 0; i < 10; i++) 6.0], 0);
+      final saved = (await repo.watch().first).singleWhere((p) => p.id == id);
+      expect(saved.gains, hasLength(eqBandFrequencies.length));
+      expect(saved.gains, everyElement(6.0));
+    });
+
     test('ids of new presets never collide with the built-in ones', () async {
       final repo = EqPresetRepository(db);
       await db.select(db.eqPresets).get();
-      final a = await repo.add('A', List.filled(10, 0), 0);
-      final b = await repo.add('B', List.filled(10, 0), 0);
+      final a = await repo.add('A', List.filled(15, 0), 0);
+      final b = await repo.add('B', List.filled(15, 0), 0);
       expect(b, a + 1);
       expect(a, greaterThanOrEqualTo(100));
     });

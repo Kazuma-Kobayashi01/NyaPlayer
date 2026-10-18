@@ -8,7 +8,11 @@ import androidx.media3.common.MediaItem
 import androidx.media3.common.PlaybackException
 import androidx.media3.common.Player
 import androidx.media3.common.Timeline
+import androidx.media3.common.util.UnstableApi
+import androidx.media3.exoplayer.DefaultRenderersFactory
 import androidx.media3.exoplayer.ExoPlayer
+import androidx.media3.exoplayer.audio.AudioSink
+import androidx.media3.exoplayer.audio.DefaultAudioSink
 import io.flutter.plugin.common.BinaryMessenger
 import io.flutter.plugin.common.EventChannel
 import io.flutter.plugin.common.MethodCall
@@ -21,17 +25,21 @@ import java.io.File
  * mirrors the Rust engine (`rust/src/player/engine.rs`): the same queue
  * commands, loop modes and "skip broken files, stop after five in a row".
  *
- * Not yet here (later M10 tasks): the 10-band EQ (M10-4), audio focus and
- * becoming-noisy handling (M10-5, still done by AudioFocusCoordinator), so
- * ExoPlayer is built with both of those disabled.
+ * The 10-band EQ (M10-4) is an ExoPlayer audio processor, see
+ * [EqualizerAudioProcessor]. Not yet here (M10-5): audio focus and
+ * becoming-noisy handling, still done by AudioFocusCoordinator, so ExoPlayer
+ * is built with both of those disabled.
  *
  * Runs on the main thread (ExoPlayer requirement); Flutter method and event
  * channel callbacks are already delivered there.
  */
+@OptIn(UnstableApi::class)
 class AndroidPlayerEngine private constructor(context: Context) :
     MethodChannel.MethodCallHandler, EventChannel.StreamHandler {
 
-    private val player: ExoPlayer = ExoPlayer.Builder(context)
+    private val equalizer = EqualizerAudioProcessor()
+
+    private val player: ExoPlayer = ExoPlayer.Builder(context, EqRenderersFactory(context, equalizer))
         .setAudioAttributes(
             AudioAttributes.Builder()
                 .setUsage(C.USAGE_MEDIA)
@@ -149,8 +157,13 @@ class AndroidPlayerEngine private constructor(context: Context) :
                 "all" -> Player.REPEAT_MODE_ALL
                 else -> Player.REPEAT_MODE_OFF
             }
-            // EQ arrives with M10-4; accepting the call keeps the Dart side uniform.
-            "setEqualizer" -> Unit
+            "setEqualizer" -> {
+                val enabled = call.argument<Boolean>("enabled") ?: false
+                val gains = call.argument<List<Number>>("gainsDb").orEmpty().map { it.toDouble() }
+                val preamp = call.argument<Number>("preampDb")?.toDouble() ?: 0.0
+                android.util.Log.i("NyaEq", "setEqualizer enabled=$enabled preamp=$preamp gains=$gains")
+                equalizer.core.set(enabled, gains, preamp)
+            }
             "setVolume" -> player.volume = (call.argument<Number>("volume")?.toFloat() ?: 1f)
                 .coerceIn(0f, 1f)
             "position" -> {
@@ -234,4 +247,24 @@ class AndroidPlayerEngine private constructor(context: Context) :
     private fun mediaItem(path: String): MediaItem =
         MediaItem.fromUri(Uri.fromFile(File(path)))
 
+}
+
+/**
+ * Builds the audio sink with the EQ in its processor chain. Float output is
+ * on so 24/32-bit PCM reaches the EQ as float instead of being cut to 16 bit.
+ */
+@OptIn(UnstableApi::class)
+private class EqRenderersFactory(
+    context: Context,
+    private val equalizer: EqualizerAudioProcessor,
+) : DefaultRenderersFactory(context) {
+    override fun buildAudioSink(
+        context: Context,
+        enableFloatOutput: Boolean,
+        enableAudioTrackPlaybackParams: Boolean,
+    ): AudioSink = DefaultAudioSink.Builder(context)
+        .setAudioProcessors(arrayOf(equalizer))
+        .setEnableFloatOutput(enableFloatOutput)
+        .setEnableAudioTrackPlaybackParams(enableAudioTrackPlaybackParams)
+        .build()
 }

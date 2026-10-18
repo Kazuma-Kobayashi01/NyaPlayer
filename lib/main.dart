@@ -23,7 +23,8 @@ import 'package:nyaplayer/data/repositories/settings_repository.dart';
 import 'package:nyaplayer/services/player/playback_persistence.dart';
 import 'package:nyaplayer/data/sample_library.dart';
 import 'package:nyaplayer/dev/preview_hook.dart';
-import 'package:nyaplayer/services/eq/eq_state.dart';
+import 'package:nyaplayer/features/shared/quality_badge.dart' show isHiRes;
+import 'package:nyaplayer/services/eq/eq_binding.dart';
 import 'package:nyaplayer/services/player/audio_focus_coordinator.dart';
 import 'package:nyaplayer/services/player/platform_player_engine.dart';
 import 'package:nyaplayer/services/player/fake_player_engine.dart';
@@ -159,11 +160,8 @@ Future<void> main() async {
     AudioFocusCoordinator(container, session).start();
   }
   // The equalizer UI writes eqProvider; the engine follows it (TECH_SPEC §5).
-  container.listen<EqState>(
-    eqProvider,
-    (_, state) => engine.setEqualizer(EqParams.fromState(state)),
-    fireImmediately: true,
-  );
+  // Hi-Res tracks skip it, to stay as recorded.
+  bindEqualizer(container, engine, passThrough: isHiRes);
   await restorePlayback(container);
   if (Platform.isMacOS) {
     widgets = MacOSWidgetBridge(container);
