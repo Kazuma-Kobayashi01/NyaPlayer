@@ -35,10 +35,11 @@
 | 🎵 **Playback** | FLAC (incl. 24‑bit / hi‑res) and MP3 with gapless playback, decoded by the platform itself: Media3 ExoPlayer on Android, AVAudioEngine on macOS |
 | 📚 **Library** | Scans your music folders; browse by songs, albums, artists, folders; playlists, favourites, full‑text search, exclude folders, hide very short tracks |
 | 🖼️ **Cover art & lyrics** | Embedded artwork and lyrics or `.lrc` files (UTF‑8, GBK, Shift‑JIS), scrolling highlight, tap‑to‑seek, bilingual lines (original + translation) |
-| 🏅 **Quality badges** | A gold **Hi‑Res** badge and a silver‑black **FLAC** badge show the real format and sample rate, each with a one‑off sweep of light |
+| 🏅 **Quality badges** | A gold **Hi‑Res** badge, a silver‑black **SQ** badge (plain FLAC) and a tech‑blue **SQ‑AI** badge (FLAC made by AI super‑resolution) show the real format and sample rate, each with a one‑off sweep of light |
+| ✨ **AI super‑resolution (desktop only)** | Pick MP3s from your library in Settings and turn them into 16‑bit / 44.1 kHz FLAC with the Apollo model on the GPU (Core ML on macOS), about 2.4× real time. On phones and tablets the setting is shown but switched off. The MP3 stays; the new file is saved beside it as `name.SQ-AI.flac` with tags, lyrics and cover copied over. It is generated sound, not the original recording |
 | 🎨 **Material 3 design** | Light / dark, wallpaper‑based dynamic colour, blurred cover backdrop with coloured light, square / spinning‑disc / turntable covers, several progress‑bar styles, adaptive layouts for phone, tablet, foldable and desktop |
 | 📱 **System integration** | Background playback, media notification (works with Samsung's media capsule), lock‑screen / headset / media‑key controls, audio focus; macOS menu‑bar menu and desktop widgets |
-| 🎚️ **10‑band equalizer** | 31 Hz – 16 kHz, ±12 dB, built‑in and custom presets, off by default |
+| 🎚️ **15‑band equalizer** | 25 Hz – 16 kHz (⅔ octave), ±12 dB, 23 built‑in presets and your own, off by default; Hi‑Res tracks bypass it to stay untouched |
 | 🌍 **Languages** | English, 简体中文, 繁體中文, 日本語, 한국어, Deutsch, Español, Français, Русский |
 | 🔒 **Privacy first** | Zero network requests, zero telemetry. Your library never leaves your device |
 
@@ -59,11 +60,11 @@
 
 ## 🚧 Known limitations
 
-- **Android equalizer.** The Media3 core does not apply the equalizer yet. To use it, switch **Settings → Playback core** to *Rust core* and restart the app (macOS applies the equalizer natively).
 - **Android is `arm64-v8a` only**, and release builds are signed with the debug key for now.
 - **macOS gapless:** two files with different sample rates or channel counts are joined with a very short gap, because the audio graph has to be rebuilt between them.
 - **Android renders with Skia**, not Impeller (see below). Re‑check the `EnableImpeller` flag in `AndroidManifest.xml` whenever Flutter is upgraded.
-- Not built yet: Android home‑screen widget, sleep timer, ReplayGain.
+- **AI super‑resolution is desktop only** (today that means macOS). It runs on the GPU through Core ML, with no CPU fallback; the model is built from `python/` and bundled by `tool/build_release.py` (not in git). It is Apollo (CC BY‑SA 4.0). An Android version was tried and dropped: the model needed about 10 GB of memory on a phone, so on mobile the setting is disabled.
+- Deliberately left out (this is a personal‑use player): Android home‑screen widget, sleep timer, playback speed, ReplayGain, M3U import/export, smart lists.
 
 ## ⚡ Performance notes
 

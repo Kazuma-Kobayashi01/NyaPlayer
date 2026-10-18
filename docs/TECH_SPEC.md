@@ -37,7 +37,7 @@ Rust 侧（`rust/Cargo.toml`）：
 |---|---|---|---|
 | 解码 | `symphonia` | 0.6 | 只启用 FLAC、MP3；开启 gapless（去除编码器延迟/填充） |
 | 输出、队列、跳转、重采样 | `rodio` | 0.23 | 底层 `cpal` 0.18：Android 走 AAudio/OpenSL ES（Oboe），macOS 走 CoreAudio；只启用需要的解码特性 |
-| 均衡器滤波器 | `biquad` | 0.6 | 10 段峰值滤波（RBJ cookbook），见 §5 |
+| 均衡器滤波器 | `biquad` | 0.6 | 15 段峰值滤波（RBJ cookbook），见 §5 |
 | 标签/封面/歌词/音频参数 | `lofty` | 0.25 | FLAC Vorbis Comment / PICTURE，MP3 ID3v2（USLT/SYLT/APIC） |
 | 桥 | `flutter_rust_bridge` | 2.13.0 | 同上 |
 | 通用 | `anyhow`、`log`（+ 平台日志后端） | 最新 | 错误与日志 |
@@ -91,7 +91,7 @@ Rust 侧（`rust/Cargo.toml`）：
                                        │ flutter_rust_bridge（FFI）
 ┌──────────────────────────── Rust 内核（rust/ nya_core）───────────────────────┐
 │ player：命令通道 + 独立音频线程（rodio/cpal）；队列预读实现无缝播放；事件流回 Dart │
-│ dsp：10 段 biquad EQ + 前级增益 + 防削波，参数无锁更新、带平滑，不爆音            │
+│ dsp：15 段 biquad EQ + 前级增益 + 防削波，参数无锁更新、带平滑，不爆音            │
 │ decode：symphonia（FLAC/MP3，gapless）     meta：lofty（标签/歌词/封面/参数）    │
 └──────────────────────────────────────┬───────────────────────────────────────┘
                                        │
@@ -199,7 +199,7 @@ abstract interface class PlayerEngine {
   Future<void> move(int from, int to);
   Future<void> reorder(List<int> order); // 原索引的完整排列；保留当前音源和进度
   Future<void> setLoopMode(LoopMode mode);           // none / all / one
-  Future<void> setEqualizer(EqParams params);        // EQ，见 §5；开关、10 段增益、前级增益
+  Future<void> setEqualizer(EqParams params);        // EQ，见 §5；开关、15 段增益、前级增益
   Future<void> setVolume(double linear);             // 0..1，用于音频焦点 duck
   Future<void> dispose();
 }
@@ -262,7 +262,7 @@ Rust 内核（cpal）不负责系统音频会话，必须自己用 `audio_sessio
 |---|---|---|
 | 内核 | `androidx.media3` ExoPlayer，Kotlin 实现 `AndroidPlayerEngine`，经 `MethodChannel` / `EventChannel` 暴露 | Swift 实现：`MacPlayerCore`（`AVAudioEngine` + `AVAudioPlayerNode` + `AVAudioUnitEQ`，不依赖 Flutter）加 `MacPlayerEngine`（通道转接）。两个平台的通道协议相同，Dart 侧共用 `PlatformPlayerEngine`（已落地，M10-6） |
 | 无缝播放 | ExoPlayer 播放列表，FLAC / MP3（LAME / Xing 头）gapless，🔍 实测 | 在同一 `AVAudioPlayerNode` 上连续 `scheduleFile`，🔍 实测 |
-| EQ（10 段，§5 频点与预设不变） | Media3 自定义 `AudioProcessor`，Kotlin 移植现有 biquad 系数（RBJ peaking），与 Rust 实现用同一组测试向量对拍 | `AVAudioUnitEQ`，10 个 parametric 频段 |
+| EQ（15 段，§5 频点与预设不变） | Media3 自定义 `AudioProcessor`，Kotlin 移植现有 biquad 系数（RBJ peaking），与 Rust 实现用同一组测试向量对拍 | `AVAudioUnitEQ`，10 个 parametric 频段 |
 | 焦点 / 变噪 | `setAudioAttributes(..., handleAudioFocus = true)` 与 `setHandleAudioBecomingNoisy(true)`；去掉 Dart 侧重复的焦点处理，避免两处各管一次 | 系统路由变化通知 |
 | 系统媒体会话 | 继续使用 `audio_service`，ExoPlayer 只做引擎，不启用 `media3-session` | 同现状 |
 | 解码器选择（Android） | **优先级（开发者决定，应用要给不同机型的用户用）：官方硬件 > 官方软件**，只用系统 `MediaCodec` / `AudioTrack` 提供的路径，不自带解码器。实现为自定义 `MediaCodecSelector` 排序，不做白名单：① 系统声明为硬件加速的解码器（`isHardwareAccelerated && !isSoftwareOnly`）；② Google 软件解码器（`c2.android.*`、`OMX.google.*`）；③ 其余厂商软件解码器兜底。同时 `DefaultRenderersFactory.setEnableDecoderFallback(true)`：选中的解码器初始化或运行失败时自动换下一个，永远不因某机型的解码器问题而无法播放。启动与每次切歌都在日志里打印实际选中的解码器名 | — |
@@ -277,14 +277,72 @@ Rust 内核（cpal）不负责系统音频会话，必须自己用 `audio_sessio
 
 **保留在 Rust 的部分**：`lofty` 读标签 / 封面 / 歌词、`encoding_rs` 修编码、EQ 的 Dart 侧参数模型。**退路**：`RustPlayerEngine` 在 M10-9 通过前保留（按平台开关切换），验收通过后再删除 rodio / symphonia、Android 的 `jni` / `ndk-context` / `android_context.rs`。
 
+### 4.8 AI 超分 SQ-AI（2026-10-18 开发者追加，仅 macOS）
+
+**目标**：把有损的 MP3 用 AI 补出高频、修复编码伪影，存成 FLAC。补出来的是模型生成的声音，不是丢失的原始信息，所以单独标成 SQ-AI（SQ-04）。
+
+**模型**：Apollo（JusperLee/Apollo，Kai Li 与 Yi Luo，ICASSP 2025，**CC BY-SA 4.0**，权重 63.5 MB，1650 万参数，输入输出 44.1 kHz）。用 `python/coreml_convert.py` 把它去掉 STFT / iSTFT 的网络部分转成 Core ML FP16（36 MB，窗口固定 12 秒，输入 `re` `im` 各 `[2, 442, 1201]`（`python/coreml_convert.py --seconds 12`），输出 `est_re` `est_im`）。许可证页登记了署名；转换后的模型按同一许可共享。模型**不进 git**（`*.mlpackage`、`python/models/` 已忽略），`tool/build_release.py` 在 macOS 包里放预编译的 `apollo_core_fp16_12s.mlmodelc`；没有它也能构建，设置里显示“未安装”。
+
+**只在桌面端可用（2026-10-19）**：设置里“AI 超分”这一项在所有平台都显示，但手机和平板（Android、iOS）上整行置灰、按钮禁用，副标题写“仅桌面端可用，手机和平板上禁用”，也不显示任务列表（`SuperResolutionTile`，按 `defaultTargetPlatform` 判断；`MethodChannelSrBackend.isAvailable` 也只在 macOS 返回 true）。
+
+**入口与选歌**：设置 → AI 超分 →“从曲库选择歌曲…”，路由 `/sr-picker`（`lib/features/settings/sr_picker_page.dart`）。页面从曲库（`libraryProvider`）里取 `codec == MP3` 的歌，按标题排序，可多选、全选 / 取消；正在转换的歌不再出现；点“转换 N 首”后回到设置页看进度。**不用系统的文件选择框**（2026-10-18 开发者要求：Android 上没有对应的选择器，从曲库选才能两个平台共用；也不会选到曲库之外的文件）。
+
+**流水线**（`macos/Runner/SRConverter.swift`，经 `MacSuperResolution.swift` 的通道 `nyaplayer/sr` 与事件通道 `nyaplayer/sr/events`；Dart 侧 `lib/services/sr/super_resolution.dart`）：
+1. 读 MP3（AVAudioFile），不是 44.1 kHz 或立体声的转成 44.1 kHz 双声道。
+2. 每 10 秒一块，前后各带 1 秒真实音频（Apollo 在输入边缘不可靠，上下文算完丢掉）；每块都只算一次，结果按顺序拼接。窗口 12 秒（块长 = 窗口 − 两侧上下文，窗口大小从模型的输入形状里读），短于 12 秒的补静音再裁掉。**上下文不能减到 0.5 秒**：实测每个接缝处只有 16.7 dB 的局部信噪比（会有咔嗒声），1 秒则与“2 秒上下文”的标准答案一致（131 dB 以上）；**窗口也不是越大越好**：每秒窗口音频的耗时随窗口变长而上升（7 秒 326 ms、12 秒 344 ms、17 秒 405 ms），折算每秒有用音频 7 秒窗口（5 秒块）457 ms、12 秒窗口（10 秒块）413 ms、17 秒窗口（15 秒块）459 ms，所以 12 秒最划算。把块从 5 秒放到 10 秒让重复计算从 40% 降到 20%，整条流水线约快 10–15%，输出与旧窗口一致（68.5 dB，差异只在文件开头 1 秒的边缘）。
+3. STFT（n_fft 882，hop 441，hann，反射补边，与 `torch.stft` 一致）和 iSTFT 用 Accelerate 的矩阵乘法实现（882 = 2·3²·7² 不是 vDSP FFT 支持的长度）。
+4. Core ML 推理，计算单元 `cpuAndGPU`（不用神经引擎）。
+5. **响度对齐**：整首输出的 RMS 调到与输入一致（增益限制在 ±6 dB 内，输入近乎静音则不动），再过一个带前瞻的硬限幅器（上限 0.999，立体声联动；每个采样需要的增益取前后各 10 ms 窗口的最小值再做同长度的滑动平均，所以增益在峰值前后各约 10 ms 平滑地降下去再升回来，不削波，也不需要降低整首的音量；不需要限幅的采样逐位不变）。实测 40 秒：输出比输入只低 0.03 dB，逐秒偏差在 ±0.2 dB 内，峰值 0.999；此前“整首按峰值缩小”会让整首小 1.4 到 2 dB。
+6. 用 ExtAudioFile 写 **16-bit FLAC**（`kFLACFormatFlag_16BitSourceData`）。AVAudioFile 不能指定 FLAC 的来源位深，会写出 24-bit，被应用当成 Hi-Res，所以不用它。先写临时文件再改名。
+7. Dart 收到完成事件后，用 Rust `copy_tags_to_flac`（`rust/src/meta/copy.rs`）把标签、歌词（含 SYLT 转成的 LRC）、封面复制到 FLAC 并写 `NYAPLAYER_SOURCE=ai-sr`，再重新扫描曲库。
+
+**识别**：靠文件名后缀 `.SQ-AI.flac`（`isAiSr`），不改数据库；文件里的 `NYAPLAYER_SOURCE` 留作备用。
+
+**曲库去重**：`LibraryRepository.loadLibrary` 里，旁边有 `名称.SQ-AI.flac` 的 `名称.mp3`（同一文件夹，不分大小写）不进曲库，文件本身不动；SQ-AI 文件删掉后 MP3 自动回来；因此变空的专辑也不显示。注意：这些 MP3 在歌单、收藏里也随之看不到，收藏状态不会转给 SQ-AI 文件。
+
+**实测（M4 MacBook Air）**：Core ML FP16 与 PyTorch FP32 的网络输出信噪比 52.4 dB；7 秒窗口 GPU 上 1954 ms（PyTorch MPS 3495 ms）；Swift 整条流水线约 2.4 倍实时（40 秒音频 16.3 秒；改成 12 秒窗口后约再快 10–15%），一首 3 分半的歌约 1.5 分钟。机器发热降频后会更慢（无风扇的 MacBook Air 长时间满载实测掉到 1.06 倍实时）。GPU 满载是预期：每秒音频约 0.5–0.7 TFLOP，这块 GPU 实际只有 1–2 TFLOP/s，所以是计算量大，不是代码低效。每次转换约 2.5 倍实时，CPU 做同样的事慢 50 到 60 倍（5 秒音频 208 秒），所以**不做 CPU + GPU 并行**。FP16 对 PyTorch MPS 只快 4%（计算受限），INT8 模拟量化与 FP32 输出的信噪比 18.6 dB、开发者听过没问题，但 GPU 没有 INT8 加速，没采用。
+
+**神经引擎（ANE）实测（M4，2026-10-18）：不能用，这个模型按现状一个算子都没排到 ANE 上。** `CPU_AND_NE` 下 7 秒窗口 18347 ms（0.38 倍实时，比 GPU 慢 9 倍，首次加载 62 秒用来为 ANE 编译），`MLComputePlan` 显示 3527 个算子**全部**排在 CPU 上；`ALL` 下 CPU 1680、GPU 1847、ANE 0；数值是对的（48.1 dB）。单个算子层面几乎都被 ANE 支持，只有 48 个不支持（24 个 `reshape`、12 个 `reverse`（RoPE 里的翻转）、12 个 `mul`），所以问题不在算子清单，而在 ANE 对张量形状 / 排布的限制，具体原因没查清。想用 ANE 得做“ANE 友好”的改写（`[N, C, 1, T]` 排布、RoPE 的 `reverse` 换成预先算好的置换、手写注意力、固定小形状），工作量中到大、收益不确定，而 GPU 已经 2.4 倍实时，所以**暂不做**。评估脚本：`python/coreml_bench.py --units ane`、`python/coreml_plan.py`。
+
+**Android：试过，2026-10-19 已移除，现在只有 macOS。** 想过用 MNN（OpenCL / Vulkan，FP16 + GPU，不设 CPU 兜底）做，做到了能打进 APK：把网络导出 ONNX 再转 MNN（34 MB，无不支持算子；Mac 上 CPU 与 PyTorch 对账 49.6 dB）、自己写的 C++ STFT / 混合基 FFT / 重采样 / 限幅 / FLAC 编码器（与 torch 和 libsndfile 对账通过）、MediaCodec 解码、MediaStore 发布。**但在你的 S23 Ultra（11 GB 内存）上，12 秒窗口的 MNN 会话被系统杀掉：被杀时占 4.8 GB 物理内存 + 5.5 GB 交换，合计约 10 GB**（lmkd 记录 `to free 5067204kB rss, 5799296kB swap`），所以没跑到推理就死了。之前在 Mac 上 MNN 就报过 6.8 GB。原因是每层频带注意力的 MLP 中间张量是 `[2×帧数, 2048, 80]`，同时存活好几个。
+
+**留给以后的思路（没有验证过）**：①把网络按帧、按频带切片依次算（频带注意力对每一帧独立，时间卷积对每个频带独立，数学上结果相同；在 PyTorch 里验证过切 12 片帧 + 8 片频带与原网络最大差 7e-7），让大中间张量一次只存在一片；②缩短窗口，但上下文要 1 秒（0.5 秒会在接缝处有咔嗒声），窗口再短重复计算就太多；③GPU 速度本身还没测到。另外三个会再踩的坑：**PyPI 的 `MNN` 包自带遥测**（见下）；**MNN 没有开关能禁止个别算子退回它的 CPU 后端**（逐算子建执行器时发生，`backupType` 不阻止，`BACKENDS` 只报主后端），“不许 CPU”只能靠耗时闸近似；release 包的 **R8 会把只被 JNI 按名字引用的方法删掉**（`SrNative.Listener`），要加 keep 规则。**别用 `pip install MNN` 带的转换工具**：它一运行就用全局 `pip` 装阿里云日志 SDK，向阿里云杭州上传转换参数（含文件完整路径）和硬件 UUID（发生过一次，miniconda 里的包已清理）；要用就从源码编 C++ `MNNConvert`。相关代码（`cpp/`、`AndroidSuperResolution.kt`、`SrNative.kt`、MNN 构建、`python/mnn*`）都已删除，没进过 git。
+
+**没做 / 待办**：批量转换整个文件夹；收藏 / 歌单关系不会从 MP3 转给 SQ-AI 文件
+
+### 4.9 歌曲卡片分享、播放历史与 AI 独立版本（规划，2026-10-19，PLAN M12，尚未实现）
+
+**版本策略**：主线（`main`）**永远不联网**——没有网络代码、不声明 `INTERNET`、README 的隐私承诺不变。联网的 AI 听歌分析只存在于 **git 分支 `ai`**，作为独立版本发布：独立 App ID（建议 `com.kazuma.nyaplayer.ai`）、独立名称（NyaPlayer AI）、可与主线同机安装；`ai` 定期合并主线，**绝不往主线合**。为了让合并顺滑，`ai` 上的改动尽量只新增文件（新的 Rust 模块、新的 Dart 目录、新的设置页入口），少改主线已有代码。
+
+**歌曲卡片分享**（主线，不联网）：卡片是一个普通的 Flutter 部件（封面、歌名、歌手、所选歌词行，背景取自封面的颜色，字体沿用内置字体），用 `RepaintBoundary.toImage` 渲染成 PNG 存到临时文件，再交给系统分享（macOS 的分享菜单、Android 的 share intent）或保存。需要一个分享插件（候选 `share_plus`）——**新依赖，先在附录 A 记理由并征得同意**。歌词行取自应用已有的歌词解析（`LyricsLoader`）。
+
+**播放历史与本地统计**（主线，不联网）：新增数据库表（草案：`play_history(id, track_id → tracks.id ON DELETE SET NULL, 当时的歌名 / 艺术家 / 专辑 / 流派 / 年份快照, started_at, played_ms, completed)`；快照是为了曲库重扫、文件被删后统计还成立）。记录规则**待你确认**，建议：听满 30 秒或一半才记一次；暂停不算新的一次；单曲循环每循环一次记一次；拖动进度只算实际听的时长。统计在本地用 SQL 聚合；`ListeningSummary` 是不含文件路径的聚合结构（前 N 个艺术家 / 专辑 / 歌曲及次数、时长，流派 / 年份 / 时段分布，总时长，统计区间）。主线只用它显示统计页和提供“清除”；独立版本把它序列化后交给 AI。
+
+**AI 独立版本**（仅分支 `ai`）：
+- 协议用 OpenAI Chat Completions：`POST {base_url}/chat/completions`，`Authorization: Bearer <key>`，消息是一条 system、一条 user，`stream: false`。**应用只提供这个接口，不内置任何服务商**（2026-10-19 开发者决定）：没有预设端点、没有服务商列表、也不推荐哪一家；用户自己找模型提供商，自己填 Base URL、模型名和 API Key。这样也免去了替各家端点变动负责。免责声明里要写明：服务商由用户自己选择，与开发者无关。
+- **网络库用 Rust**（开发者决定）。建议 `ureq` 3.x（同步、体积小，TLS 用 `rustls`，**带内置根证书（`webpki-roots`）**，这样不依赖 Android 的系统证书目录）；备选 `reqwest`（异步、更重，要带 tokio）。依赖一律关默认特性、只开需要的。同步函数由 `flutter_rust_bridge` 放在线程池里跑，不卡界面。接口草案：`ai_chat(base_url, api_key, model, system_prompt, user_content, timeout_secs, disclaimer_token) -> Result<String, AiError { kind, message }>`；`kind` 为 Key 无效 / 额度或限流 / 网络 / 超时 / 响应格式错 / 未同意声明；取消靠共享标志；**不打印请求头，Key 也不进 panic 信息**。测试用本地假服务器（候选 `tiny_http`，开发依赖）。这些 crate 只在 `ai` 分支的 `Cargo.toml` 里。
+- **提示词全部是系统提示词，写在代码里，用户不能改，界面上没有任何输入框**；一份分析、一份推荐；输出结构固定；语言跟随界面语言。
+- **只发聚合统计**（`ListeningSummary`），不发文件路径、歌词、封面；发送前给用户看“将发送的内容”。艺术家名和歌名属于会发给第三方的信息，界面上写明。
+- API Key 由用户填，存系统安全存储（候选 `flutter_secure_storage`，只在 `ai` 分支引入），不进数据库、日志和备份。
+- **免责声明（DISC-01 到 06）**：所有联网服务共用一个“声明关卡”（`NetworkDisclaimer`）：功能第一次联网前弹出，同意后记录（声明版本、时间、服务商）；换服务商或声明有新版本时重新弹；拒绝则功能保持关闭，应用其余部分照常。**双重拦截**：Dart 界面先过关卡，Rust 的 `ai_chat` 还要收到一个与编译进去的声明版本一致的凭证，否则返回“未同意声明”，防止哪天有代码路径绕过界面。声明正文至少涵盖：会把什么发给谁；第三方服务的条款、费用和可用性由你自己承担；AI 输出可能有误、不构成任何建议；开发者不对第三方服务及其输出负责；可随时在设置里查看和撤回。**正文由你审定后再做 10 种语言**（我不是律师，这不是法律意见）。
+- 默认不发任何请求；只在点按钮时请求；结果缓存在本地可清除；界面标注“AI 生成，可能有误”。
+- 一次调用的费用由用户自己的 Key 承担：**待你定**要不要加每日次数上限或“调用前确认”。
+
+**待你确认**：①分支名与 App ID（建议 `ai`、`com.kazuma.nyaplayer.ai`、名称 NyaPlayer AI）；②网络库 `ureq` 还是 `reqwest`；③播放记录规则；④免责声明正文（要写明服务商由用户自己选择）；⑤是否要调用次数上限。
+
+**不做**：自定义提示词、在线歌词 / 封面刮削、账号、云同步、把整个曲库或歌词上传；主线里的任何联网。
+
 ## 5. 均衡器（EQ）
 
 ### 5.1 实现方式
 
 在 Rust 内核中实现（`rust/src/dsp`），两个平台共用同一实现（`EQ-08`），不依赖任何系统 EQ 或 FFmpeg 滤镜。
 
-- 10 个频点：31, 62, 125, 250, 500, 1000, 2000, 4000, 8000, 16000 Hz。
-- 每段为二阶峰值滤波（RBJ Audio EQ Cookbook，`biquad` crate），带宽 1 倍频程（Q ≈ 1.414），每声道独立状态，`f32` 处理。
+- 15 个频点（2026-10-18 由 10 段改为 15 段，⅔ 倍频程）：25, 40, 63, 100, 160, 250, 400, 630, 1000, 1600, 2500, 4000, 6300, 10000, 16000 Hz。Rust（`rust/src/dsp/eq.rs`）、Android（`EqCore.kt`）、macOS（`MacPlayerCore.swift`，`AVAudioUnitEQ` 15 段 parametric、bandwidth ⅔ 倍频程）三处必须同步。
+- 每段为二阶峰值滤波（RBJ Audio EQ Cookbook，`biquad` crate），带宽 ⅔ 倍频程（Q ≈ 2.145），每声道独立状态，`f32` 处理。
+- **Hi-Res 绕过**：当前曲目按 META-08 判定为 Hi-Res（无损且位深 > 16 或采样率 > 44.1 kHz）时，Dart 侧（`lib/services/eq/eq_binding.dart`）下发 `enabled=false`，该曲保持原样；切歌时自动恢复。三种内核通用。
+- **旧版 10 段设置的迁移**：`EqState.fromJson` 与用户预设（`eq_preset_repository`）读到 10 个增益时，按对数频率线性插值（`resampleEqGains`）成 15 个，不丢用户的曲线。
+- **Android 音频输出别开浮点**：`DefaultAudioSink` 保持 ExoPlayer 默认的浮点设置。2026-10-18 试过强制 `setEnableFloatOutput(true)`，普通 FLAC 出现爆音、异常变速和电音（均衡器关闭时也有）；还原后正常。EQ 处理器只接 16-bit 与浮点 PCM，其余格式自动不经过 EQ。
 - 前级增益：线性乘法，放在滤波器之前。
 - 自动防削波（`EQ-05`）：开启时 `preamp = -max(0, 所有频段中的最大正增益)`，由 Dart 侧 `EqParams` 计算后下发（与 UI 显示一致）。
 - 直通：EQ 关闭，或全部增益为 0 且 preamp 为 0 时完全跳过处理（零开销）。
@@ -297,22 +355,17 @@ Rust 内核（cpal）不负责系统音频会话，必须自己用 `audio_sessio
 ### 5.2 交互规则
 
 - 滑块拖动时**节流 30ms** 调用 `setEqualizer`（Rust 侧开销极小，实时可听），松手时立即应用一次最终值（`EQ-06`）。
-- EQ 状态（开关、当前预设 ID、10 个增益、preamp、防削波）保存在 `settings` 表，启动时在 `openQueue` 之前应用。
+- EQ 状态（开关、当前预设 ID、15 个增益、preamp、防削波）保存在 `settings` 表，启动时在 `openQueue` 之前应用。
 
-### 5.3 内置预设（单位 dB，频点顺序同上）
+### 5.3 内置预设
 
-| 预设 | 31 | 62 | 125 | 250 | 500 | 1k | 2k | 4k | 8k | 16k |
-|---|---|---|---|---|---|---|---|---|---|---|
-| 平坦 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
-| 流行 | -1 | 1 | 3 | 4 | 3 | 0 | -1 | -1 | 1 | 2 |
-| 摇滚 | 4 | 3 | 2 | 0 | -1 | -1 | 1 | 3 | 4 | 4 |
-| 爵士 | 3 | 2 | 1 | 2 | -1 | -1 | 0 | 1 | 2 | 3 |
-| 古典 | 3 | 2 | 1 | 0 | 0 | 0 | 0 | 1 | 2 | 3 |
-| 人声 | -2 | -2 | -1 | 1 | 3 | 4 | 3 | 1 | 0 | -1 |
-| 低音增强 | 6 | 5 | 4 | 2 | 0 | 0 | 0 | 0 | 0 | 0 |
-| 高音增强 | 0 | 0 | 0 | 0 | 0 | 1 | 2 | 4 | 5 | 6 |
+共 23 个，权威数值在 `lib/services/eq/eq_presets.dart`（`builtinEqPresets`，15 个增益，单位 dB，频点顺序同 §5.1），每次打开数据库写入 `eq_presets` 表（`builtin = true`）。来源分三类：
 
-（数值为起点，可在实际听感测试后微调，修改时同步更新本表。）
+- **原有 8 个**（平坦、流行、摇滚、爵士、古典、人声、低音增强、高音增强）：沿用 10 段版本的曲线，按对数频率插值到 15 段。
+- **经典 14 个**（Club、Dance、Full bass、Full bass & treble、Full treble、Headphones、Large hall、Live、Party、Reggae、Ska、Soft、Soft rock、Techno）：取自 VLC 的 `modules/audio_filter/equalizer_presets.h`（沿袭 Winamp 的经典预设），原值有超过 ±12 dB 的，截到 ±12 dB，同样插值到 15 段。这些曲线偏激进，靠自动防削波压低前级。
+- **自制 1 个**：Loudness（小音量响度补偿，低频 +6 dB、高频 +4 dB 的缓坡）。
+
+没有找到 iTunes / Apple Music 预设的公开数值，所以没有收录。用户自存的预设存在同一张表，旧的 10 段预设读出时自动迁移到 15 段。
 
 ## 6. 平台相关
 
@@ -348,7 +401,7 @@ Rust 内核（cpal）不负责系统音频会话，必须自己用 `audio_sessio
 ```
 
 - `MainActivity` 继承 `AudioServiceActivity`（或直接用它作为 activity）。
-- `INTERNET` 权限：Rust 内核只读本地文件，**不声明** `INTERNET`（`NFR-06`）。
+- `INTERNET` 权限：Rust 内核只读本地文件，**不声明** `INTERNET`（`NFR-06`）。（主线永远不声明；只有独立版本——分支 `ai`——才会声明，见 §4.9。）
 - Rust 库由 Cargokit 在 Gradle 构建时编译为 `arm64-v8a`、`armeabi-v7a`、`x86_64` 三个 ABI 的 `.so`；cpal 0.18 在 Android 上直接调用 AAudio（链接 `libaaudio`），不再需要 OpenSL ES 回退。
 - 构建：Release 使用 `--split-per-abi` 或 App Bundle，控制包体。
 - 边到边显示：`SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge)`，所有页面正确处理 `MediaQuery.padding`（`UI-15`）。
@@ -610,6 +663,10 @@ scan_errors(path PK, message, at)
 |---|---|---|
 | 2026-10-18 | **计划（待 M10-2 实现时落地）**：Android 原生新增 Gradle 依赖 `androidx.media3:media3-exoplayer:1.11.1`（2026-10-18 从 Google Maven 核实的最新稳定版；`media3-common` 由它传递引入；不引入 `media3-session`、`media3-ui`）。macOS 使用系统框架 AVFoundation / AudioToolbox，无第三方依赖。M10-9 验收后删除 Rust 的 `rodio`、`symphonia` 相关特性，及 Android 的 `jni`、`ndk-context` | 开发者决定 2.0 起编解码全部使用平台提供的实现，见 §4.7。已确认的取舍：Android 的 EQ 不再由 Rust 处理。 |
 | 2026-10-18 | 加入 `permission_handler` ^13.0.2；Android 清单新增 `READ_MEDIA_AUDIO` 与 `READ_EXTERNAL_STORAGE`（`maxSdkVersion=32`）；`MainActivity.kt` 新增一个只返回 `Build.VERSION.SDK_INT` 的通道；macOS `Info.plist` 增加桌面/文档/下载/可移动/网络卷的用途说明 | 均在 §1.3 清单内、符合 §6.1 方案 C（只申请音频读取权限）。permission_handler 在 Android 12 上把音频权限当作空操作、在 13+ 上拒绝存储权限，必须按系统版本选对权限，所以需要版本号。**Android 部分按开发者要求未编译、未真机验证。** |
+| 2026-10-18 | 新增 Android **测试**依赖 `junit:junit:4.13.2`（仅 `testImplementation`，不进 APK）：用来在 JVM 上跑 `EqCoreTest`，把 Kotlin 版 EQ 与 Rust 版 `rust/src/dsp/eq.rs` 的测试用例对拍（M10-4）。 | 开发者同意做 Android EQ；不加依赖就无法测试 `EqCore`。 |
+| 2026-10-18 | AI 超分 SQ-AI（macOS）：Core ML（系统框架）、Accelerate（系统框架），无新增 Dart / Rust 依赖。开发工具 `python/`（uv：torch、torchaudio、numpy、coremltools、omegaconf、soundfile、huggingface-hub、matplotlib），只用来评估和转换模型，不进应用。模型 Apollo 为 CC BY-SA 4.0，见 §4.8。 | 开发者要求把 MP3 超分成 FLAC；FLAC 写入用系统的 ExtAudioFile，不加 Rust 编码库。 |
+| 2026-10-18 | Android AI 超分曾计划用 MNN，**2026-10-19 放弃并移除**（手机上内存约 10 GB 被系统杀掉，见 §4.8）；MNN 源码和 `onnx`、`onnxscript` 都已从 `python/` 去掉，PyPI 的 `MNN` 包带遥测，别再装。 | 开发者要求试 Android，试过不行。 |
+| 2026-10-19 | **计划，未批准、未加入**（M12）：主线——分享插件（候选 `share_plus`）。仅 `ai` 分支——Rust 网络库（建议 `ureq` + `rustls` + `webpki-roots`，备选 `reqwest`；dev：`tiny_http`）、存 API Key 的系统安全存储（候选 `flutter_secure_storage`）。主线不引入任何网络依赖。 | 卡片分享需要系统分享；AI 联网只在独立版本，需要 HTTP / TLS 与存 Key。具体选哪个、要不要加，等开发者确认（TECH_SPEC §4.9）。 |
 | 2026-10-18 | 新增打包字体资源（非 Dart 依赖）：HarmonyOS Sans SC ×3、EB Garamond ×4、Noto Serif SC ×2 及三份协议文本 | 开发者要求内置字体；许可与取舍见 §10 “字体”。 |
 | 2026-10-18 | M1-5 加入 `drift`、`drift_flutter`；dev：`drift_dev`、`build_runner`。随后按开发者“sqlite 用主流版本”的指示**不直接依赖 `sqlite3_flutter_libs`**（已移除；它被 `drift_flutter` 传递引入，但 0.6.0+eol 版本是不含原生代码的空壳），SQLite 由 `sqlite3` 3.x 官方构建 hook 内置（macOS 实测 `sqlite3` 与 drift 正常工作）。加入 `file_picker` ^13.1.0 | 均在 §1.3 清单内。`file_picker` 用于“添加音乐文件夹”（SET-01、LIB-01）。FTS5 trigram 是否可用仍待 M0-11 验证。 |
 | 2026-10-18 | 开发者已授权：将锁文件已有的间接依赖 `crypto` 3.0.7 声明为直接依赖；加入 `image` ^4.12.0、`path_provider` ^2.1.6 | M2-6 按 §7.3 使用 SHA-1 专辑键命名、在 isolate 生成缩略图、存到应用支持目录。`crypto` 复用锁定版本；后两项原已在 §1.3 清单内。 |
