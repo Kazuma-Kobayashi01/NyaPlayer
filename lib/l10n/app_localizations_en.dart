@@ -720,6 +720,19 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get surfaceMaterialHint =>
       'Premium glass turns the sidebar, cards, player bar and drawer into translucent frosted glass over a softly moving light. Uses more power.';
+
+  @override
+  String get settingsPlaybackCore => 'Playback core';
+
+  @override
+  String get settingsPlaybackCoreHint =>
+      'System decoding (Media3) or the Rust core. Restart the app to apply.';
+
+  @override
+  String get playbackCoreSystem => 'System (Media3)';
+
+  @override
+  String get playbackCoreRust => 'Rust core';
 }
 
 /// The translations for English, as used in the United Kingdom (`en_GB`).
@@ -762,4 +775,17 @@ class AppLocalizationsEnGb extends AppLocalizationsEn {
 
   @override
   String get lyricsCentered => 'Centre lines';
+
+  @override
+  String get settingsPlaybackCore => 'Playback core';
+
+  @override
+  String get settingsPlaybackCoreHint =>
+      'System decoding (Media3) or the Rust core. Restart the app to apply.';
+
+  @override
+  String get playbackCoreSystem => 'System (Media3)';
+
+  @override
+  String get playbackCoreRust => 'Rust core';
 }

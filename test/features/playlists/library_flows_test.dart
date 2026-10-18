@@ -10,6 +10,7 @@ import 'package:nyaplayer/app/router.dart';
 import 'package:nyaplayer/data/db/app_database.dart';
 import 'package:nyaplayer/data/db/database_providers.dart';
 import 'package:nyaplayer/data/library_providers.dart';
+import 'package:nyaplayer/features/settings/settings_page.dart';
 import 'package:nyaplayer/services/library/library_scanner.dart';
 import 'package:nyaplayer/services/library/scan_diff.dart';
 import 'package:nyaplayer/services/platform/folder_picker.dart';
@@ -57,6 +58,21 @@ class _FakePermission implements MusicPermission {
 
   @override
   Future<void> openSettings() async => settingsOpened++;
+}
+
+/// The settings list is lazy and the Android-only playback core tile sits
+/// above the library section, so scroll the list to a folder control first.
+Future<void> revealSetting(WidgetTester tester, Finder finder) async {
+  await tester.scrollUntilVisible(
+    finder,
+    300,
+    scrollable: find
+        .descendant(
+          of: find.byType(SettingsPage),
+          matching: find.byType(Scrollable),
+        )
+        .first,
+  );
 }
 
 Future<void> settle(WidgetTester tester) async {
@@ -292,7 +308,7 @@ void main() {
     container.read(routerProvider).go('/settings');
     await settle(tester);
 
-    await tester.ensureVisible(find.text('Add folder'));
+    await revealSetting(tester, find.text('Add folder'));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Add folder'));
     await settle(tester);
@@ -305,13 +321,13 @@ void main() {
     expect(titles, contains('New'));
 
     // Picking the same folder again is refused.
-    await tester.ensureVisible(find.text('Add folder'));
+    await revealSetting(tester, find.text('Add folder'));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Add folder'));
     await settle(tester);
     expect(find.text('That folder is already in the list'), findsOneWidget);
 
-    await tester.ensureVisible(find.byTooltip('Remove this folder'));
+    await revealSetting(tester, find.byTooltip('Remove this folder'));
     await tester.pumpAndSettle();
     await tester.tap(find.byTooltip('Remove this folder'));
     await settle(tester);
@@ -331,7 +347,7 @@ void main() {
     container.read(routerProvider).go('/settings');
     await settle(tester);
 
-    await tester.ensureVisible(find.text('Add folder'));
+    await revealSetting(tester, find.text('Add folder'));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Add folder'));
     await settle(tester);
@@ -351,7 +367,7 @@ void main() {
     container.read(routerProvider).go('/settings');
     await settle(tester);
 
-    await tester.ensureVisible(find.text('Add folder'));
+    await revealSetting(tester, find.text('Add folder'));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Add folder'));
     await tester.pumpAndSettle();
@@ -380,7 +396,7 @@ void main() {
     container.read(routerProvider).go('/settings');
     await settle(tester);
 
-    await tester.ensureVisible(find.text('Add folder'));
+    await revealSetting(tester, find.text('Add folder'));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Add folder'));
     await tester.pumpAndSettle();
@@ -418,7 +434,7 @@ void main() {
     container.read(routerProvider).go('/settings');
     await settle(tester);
 
-    await tester.ensureVisible(find.text('Exclude folder'));
+    await revealSetting(tester, find.text('Exclude folder'));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Exclude folder'));
     await settle(tester);
@@ -437,7 +453,7 @@ void main() {
     container.read(routerProvider).go('/settings');
     await settle(tester);
 
-    await tester.ensureVisible(find.text('Add folder'));
+    await revealSetting(tester, find.text('Add folder'));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Add folder'));
     await settle(tester);
@@ -465,7 +481,7 @@ void main() {
     container.read(routerProvider).go('/settings');
     await settle(tester);
 
-    await tester.ensureVisible(find.text('Add folder'));
+    await revealSetting(tester, find.text('Add folder'));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Add folder'));
     await settle(tester);

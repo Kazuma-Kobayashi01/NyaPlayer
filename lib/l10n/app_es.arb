@@ -213,5 +213,9 @@
   "surfaceMaterial": "Material",
   "materialStandard": "Estándar",
   "materialGlass": "Cristal premium",
-  "surfaceMaterialHint": "El cristal premium convierte la barra lateral, las tarjetas, la barra del reproductor y el panel en cristal esmerilado translúcido sobre una luz en movimiento. Consume más energía."
+  "surfaceMaterialHint": "El cristal premium convierte la barra lateral, las tarjetas, la barra del reproductor y el panel en cristal esmerilado translúcido sobre una luz en movimiento. Consume más energía.",
+  "settingsPlaybackCore": "Motor de reproducción",
+  "settingsPlaybackCoreHint": "Decodificación del sistema (Media3) o motor Rust. Reinicia la app para aplicarlo.",
+  "playbackCoreSystem": "Sistema (Media3)",
+  "playbackCoreRust": "Motor Rust"
 }

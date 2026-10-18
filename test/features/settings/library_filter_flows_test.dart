@@ -9,6 +9,7 @@ import 'package:nyaplayer/data/db/app_database.dart';
 import 'package:nyaplayer/data/db/database_providers.dart';
 import 'package:nyaplayer/data/library_filter.dart';
 import 'package:nyaplayer/data/library_providers.dart';
+import 'package:nyaplayer/features/settings/settings_page.dart';
 import 'package:nyaplayer/services/eq/eq_state.dart';
 import 'package:nyaplayer/services/player/fake_player_engine.dart';
 import 'package:nyaplayer/services/player/queue_controller.dart';
@@ -104,6 +105,22 @@ void main() {
 
     container.read(routerProvider).go('/settings');
     await settle(tester);
+    // The settings list is lazy; the Android-only playback core tile sits above.
+    await tester.scrollUntilVisible(
+      find.text('Minimum track length'),
+      300,
+      scrollable: find
+          .descendant(
+            of: find.byType(SettingsPage),
+            matching: find.byType(Scrollable),
+          )
+          .first,
+    );
+    await Scrollable.ensureVisible(
+      tester.element(find.text('Minimum track length')),
+      alignment: 0.5,
+    );
+    await tester.pump();
     await tester.tap(find.text('Minimum track length'));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Show all tracks'));

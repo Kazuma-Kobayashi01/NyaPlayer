@@ -11,5 +11,9 @@
   "favoritesEmptyTitle": "No favourites yet",
   "colorSourceHint": "Use system colours or a fixed theme colour. Player backgrounds are configured separately.",
   "settingsEqualizerSubtitle": "10-band equaliser and presets",
-  "lyricsCentered": "Centre lines"
+  "lyricsCentered": "Centre lines",
+  "settingsPlaybackCore": "Playback core",
+  "settingsPlaybackCoreHint": "System decoding (Media3) or the Rust core. Restart the app to apply.",
+  "playbackCoreSystem": "System (Media3)",
+  "playbackCoreRust": "Rust core"
 }

@@ -731,4 +731,17 @@ class AppLocalizationsRu extends AppLocalizations {
   @override
   String get surfaceMaterialHint =>
       'Премиум-стекло превращает боковую панель, карточки, панель плеера и меню в полупрозрачное матовое стекло поверх плавно движущегося света. Расходует больше энергии.';
+
+  @override
+  String get settingsPlaybackCore => 'Движок воспроизведения';
+
+  @override
+  String get settingsPlaybackCoreHint =>
+      'Системное декодирование (Media3) или ядро Rust. Чтобы применить, перезапустите приложение.';
+
+  @override
+  String get playbackCoreSystem => 'Система (Media3)';
+
+  @override
+  String get playbackCoreRust => 'Ядро Rust';
 }

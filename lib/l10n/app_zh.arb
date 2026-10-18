@@ -324,5 +324,9 @@
   "surfaceMaterial": "材质",
   "materialStandard": "标准",
   "materialGlass": "高级玻璃",
-  "surfaceMaterialHint": "高级玻璃会让侧栏、卡片、播放条和抽屉变成半透明的磨砂玻璃，背后透出缓缓流动的光。更耗电。"
+  "surfaceMaterialHint": "高级玻璃会让侧栏、卡片、播放条和抽屉变成半透明的磨砂玻璃，背后透出缓缓流动的光。更耗电。",
+  "settingsPlaybackCore": "播放内核",
+  "settingsPlaybackCoreHint": "系统解码（Media3）或 Rust 内核。切换后需重启应用生效。",
+  "playbackCoreSystem": "系统（Media3）",
+  "playbackCoreRust": "Rust 内核"
 }

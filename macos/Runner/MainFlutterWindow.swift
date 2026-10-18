@@ -2,6 +2,9 @@ import Cocoa
 import FlutterMacOS
 
 class MainFlutterWindow: NSWindow {
+  /// Reference desktop window, in points rather than Retina screenshot pixels.
+  private static let defaultWindowSize = NSSize(width: 1288, height: 852)
+  private static let minimumContentSize = NSSize(width: 400, height: 700)
   private var commandsChannel: FlutterMethodChannel?
   private var lifecycleChannel: FlutterMethodChannel?
   private var widgetChannel: FlutterMethodChannel?
@@ -131,35 +134,48 @@ class MainFlutterWindow: NSWindow {
 
     // Smallest allowed window: a normal phone-sized layout. There is no
     // maximum; the window can grow up to (and into) full screen.
-    let minSize = NSSize(width: 400, height: 700)
-    self.contentMinSize = minSize
     self.collectionBehavior.insert(.fullScreenPrimary)
-    // minSize only constrains user resizing, so a smaller restored frame has
-    // to be grown by hand.
-    let content = self.contentRect(forFrameRect: self.frame).size
-    if content.width < minSize.width || content.height < minSize.height {
-      self.setContentSize(NSSize(
-        width: max(content.width, minSize.width),
-        height: max(content.height, minSize.height)))
-    }
-
-    // Dev aid: NYA_WINDOW_SIZE=400x860 opens the window phone-sized.
-    if let spec = ProcessInfo.processInfo.environment["NYA_WINDOW_SIZE"] {
-      let parts = spec.split(separator: "x").compactMap { Double($0) }
-      if parts.count == 2 {
-        // Delayed so it wins over macOS window-frame restoration.
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) {
-          self.setContentSize(NSSize(
-            width: max(parts[0], minSize.width),
-            height: max(parts[1], minSize.height)))
-          self.center()
-        }
-      }
-    }
+    applyInitialWindowSize()
 
     RegisterGeneratedPlugins(registry: flutterViewController)
 
     super.awakeFromNib()
+  }
+
+  /// Also applied once after application launch so restored frames cannot
+  /// replace the requested startup size. Reopening a hidden window keeps its
+  /// current user-adjusted frame.
+  func applyInitialWindowSize() {
+    var requested = Self.defaultWindowSize
+    // Dev aid keeps its original content-size semantics for phone previews.
+    if let spec = ProcessInfo.processInfo.environment["NYA_WINDOW_SIZE"] {
+      let parts = spec.split(separator: "x").compactMap { Double($0) }
+      if parts.count == 2 && parts.allSatisfy({ $0.isFinite && $0 > 0 }) {
+        requested = frameRect(forContentRect: NSRect(
+          origin: .zero,
+          size: NSSize(
+            width: max(parts[0], Self.minimumContentSize.width),
+            height: max(parts[1], Self.minimumContentSize.height)))).size
+      }
+    }
+    guard let visible = (screen ?? NSScreen.main)?.visibleFrame else {
+      contentMinSize = Self.minimumContentSize
+      setFrame(NSRect(origin: frame.origin, size: requested), display: false)
+      center()
+      return
+    }
+    let available = visible.insetBy(dx: 8, dy: 8)
+    let availableContent = contentRect(forFrameRect: available).size
+    contentMinSize = NSSize(
+      width: min(Self.minimumContentSize.width, availableContent.width),
+      height: min(Self.minimumContentSize.height, availableContent.height))
+    let size = NSSize(
+      width: min(requested.width, available.width),
+      height: min(requested.height, available.height))
+    setFrame(NSRect(
+      x: available.midX - size.width / 2,
+      y: available.midY - size.height / 2,
+      width: size.width, height: size.height), display: false)
   }
 
   /// Extra space between the window corner and the traffic lights, in points.

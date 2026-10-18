@@ -834,6 +834,18 @@ void main() {
 
     // The current value is shown on the row, and the dialog lists "System"
     // first, then every language by its own name in English-name order.
+    // The settings list is lazy and the Android-only playback core tile sits
+    // above the language row, so scroll the row into the built range first.
+    await tester.scrollUntilVisible(
+      find.widgetWithText(ListTile, 'Language'),
+      300,
+      scrollable: find
+          .descendant(
+            of: find.byType(SettingsPage),
+            matching: find.byType(Scrollable),
+          )
+          .first,
+    );
     expect(find.text('System'), findsWidgets);
     await openDialog('Language');
     final rows = find.descendant(

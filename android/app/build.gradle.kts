@@ -56,6 +56,12 @@ kotlin {
     }
 }
 
+dependencies {
+    // Platform decoding path (TECH_SPEC §4.7, M10-2). media3-common comes in
+    // transitively through media3-exoplayer.
+    implementation("androidx.media3:media3-exoplayer:1.11.1")
+}
+
 flutter {
     source = "../.."
 }

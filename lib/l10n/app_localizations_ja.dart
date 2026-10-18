@@ -687,4 +687,17 @@ class AppLocalizationsJa extends AppLocalizations {
   @override
   String get surfaceMaterialHint =>
       'サイドバー、カード、プレーヤーバー、ドロワーが半透明のすりガラスになり、背後でゆっくり動く光が透けて見えます。消費電力が増えます。';
+
+  @override
+  String get settingsPlaybackCore => '再生エンジン';
+
+  @override
+  String get settingsPlaybackCoreHint =>
+      'システムデコード（Media3）またはRustエンジン。反映には再起動が必要です。';
+
+  @override
+  String get playbackCoreSystem => 'システム（Media3）';
+
+  @override
+  String get playbackCoreRust => 'Rustエンジン';
 }

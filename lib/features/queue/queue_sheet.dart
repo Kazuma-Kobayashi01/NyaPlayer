@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/physics.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:nyaplayer/features/queue/queue_list.dart';
 import 'package:nyaplayer/l10n/app_localizations.dart';
@@ -25,29 +26,47 @@ class QueueSheetDrag {
   /// Settles open or closed from the release velocity (px/s, > 0 downwards).
   void end(double velocity) {
     if (velocity <= -_flingVelocity) {
-      open();
+      open(velocity);
     } else if (velocity >= _flingVelocity) {
-      close();
+      close(velocity);
     } else if (controller.value >= 0.5) {
-      open();
+      open(velocity);
     } else {
-      close();
+      close(velocity);
     }
   }
 
-  void open() => controller.animateTo(
-    1,
-    duration: Durations.medium4,
-    curve: Easing.emphasizedDecelerate,
+  // A spring that starts with the finger's velocity, so the sheet carries on
+  // at the speed it was thrown instead of restarting a fixed-length curve.
+  static final _spring = SpringDescription.withDampingRatio(
+    mass: 1,
+    stiffness: 650,
+    ratio: 1.0,
   );
 
-  // animateBack so the controller ends `dismissed` (animateTo(0) would
-  // report `completed`).
-  void close() => controller.animateBack(
-    0,
-    duration: Durations.medium2,
-    curve: Easing.emphasizedAccelerate,
-  );
+  void _settle(double target, double velocity) {
+    controller
+        .animateWith(
+          SpringSimulation(
+            _spring,
+            controller.value,
+            target,
+            // Dragging down (velocity > 0) lowers the value.
+            -velocity / travel,
+          ),
+        )
+        // The spring stops within its tolerance; land exactly so a closed
+        // sheet is really at 0 and removed.
+        .whenCompleteOrCancel(() {
+          if ((controller.value - target).abs() < 0.01) {
+            controller.value = target;
+          }
+        });
+  }
+
+  void open([double velocity = 0]) => _settle(1, velocity);
+
+  void close([double velocity = 0]) => _settle(0, velocity);
 }
 
 /// Full-height play queue that slides up over the phone player. Dragging the

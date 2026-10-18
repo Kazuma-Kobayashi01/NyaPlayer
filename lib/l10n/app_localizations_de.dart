@@ -725,4 +725,17 @@ class AppLocalizationsDe extends AppLocalizations {
   @override
   String get surfaceMaterialHint =>
       'Premium-Glas macht Seitenleiste, Karten, Player-Leiste und Menü zu durchscheinendem Milchglas über einem sanft bewegten Licht. Verbraucht mehr Strom.';
+
+  @override
+  String get settingsPlaybackCore => 'Wiedergabe-Engine';
+
+  @override
+  String get settingsPlaybackCoreHint =>
+      'Systemdekodierung (Media3) oder Rust-Engine. Nach einem Neustart der App wirksam.';
+
+  @override
+  String get playbackCoreSystem => 'System (Media3)';
+
+  @override
+  String get playbackCoreRust => 'Rust-Engine';
 }

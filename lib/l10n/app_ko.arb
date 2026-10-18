@@ -213,5 +213,9 @@
   "surfaceMaterial": "재질",
   "materialStandard": "표준",
   "materialGlass": "프리미엄 유리",
-  "surfaceMaterialHint": "사이드바, 카드, 재생 바, 서랍이 반투명 젖빛 유리로 바뀌고 그 뒤로 천천히 움직이는 빛이 비칩니다. 전력을 더 사용합니다."
+  "surfaceMaterialHint": "사이드바, 카드, 재생 바, 서랍이 반투명 젖빛 유리로 바뀌고 그 뒤로 천천히 움직이는 빛이 비칩니다. 전력을 더 사용합니다.",
+  "settingsPlaybackCore": "재생 엔진",
+  "settingsPlaybackCoreHint": "시스템 디코딩(Media3) 또는 Rust 엔진. 적용하려면 앱을 다시 시작하세요.",
+  "playbackCoreSystem": "시스템 (Media3)",
+  "playbackCoreRust": "Rust 엔진"
 }

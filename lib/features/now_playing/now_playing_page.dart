@@ -79,8 +79,7 @@ class _CompactPlayerState extends State<_CompactPlayer>
     with SingleTickerProviderStateMixin {
   final _pages = PageController();
   int _page = 0;
-  late final _queueAnimation = AnimationController(vsync: this)
-    ..addStatusListener((_) => setState(() {}));
+  late final _queueAnimation = AnimationController(vsync: this);
   late final _queue = QueueSheetDrag(_queueAnimation);
 
   @override
@@ -149,13 +148,23 @@ class _CompactPlayerState extends State<_CompactPlayer>
                       Expanded(
                         child: PageView(
                           controller: _pages,
+                          physics: const _SnappyPagePhysics(),
+                          // Build the neighbouring page before it is dragged
+                          // in, and keep both alive: otherwise the whole
+                          // lyrics page is built in the middle of the swipe
+                          // towards it, which makes that direction jump.
+                          allowImplicitScrolling: true,
                           onPageChanged: (page) => setState(() => _page = page),
                           children: [
-                            _CoverAndLyrics(
-                              track: track,
-                              onLyrics: () => _goTo(1),
+                            _KeepAlive(
+                              child: _CoverAndLyrics(
+                                track: track,
+                                onLyrics: () => _goTo(1),
+                              ),
                             ),
-                            const FadedEdges(child: LyricsView()),
+                            const _KeepAlive(
+                              child: FadedEdges(child: LyricsView()),
+                            ),
                           ],
                         ),
                       ),
@@ -180,53 +189,101 @@ extension on _CompactPlayerState {
   /// gesture closes it first.
   Widget _withQueueSheet(Widget player) {
     final scheme = Theme.of(context).colorScheme;
-    final open = _queueAnimation.status != AnimationStatus.dismissed;
-    return PopScope(
-      canPop: !open,
-      onPopInvokedWithResult: (didPop, _) {
-        if (!didPop) _queue.close();
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        _queue.travel = constraints.maxHeight;
+        return Stack(
+          children: [
+            GestureDetector(
+              behavior: HitTestBehavior.translucent,
+              onVerticalDragUpdate: (d) => _queue.update(d.delta.dy),
+              onVerticalDragEnd: (d) => _queue.end(d.primaryVelocity ?? 0),
+              child: player,
+            ),
+            // Only this overlay rebuilds when the sheet opens or closes; the
+            // player underneath is built once.
+            ListenableBuilder(
+              listenable: _queueAnimation,
+              builder: (context, _) {
+                final open = _queueAnimation.value > 0;
+                return PopScope(
+                  canPop: !open,
+                  onPopInvokedWithResult: (didPop, _) {
+                    if (!didPop) _queue.close();
+                  },
+                  child: !open
+                      ? const SizedBox.shrink()
+                      : Stack(
+                          children: [
+                            Positioned.fill(
+                              child: GestureDetector(
+                                onTap: _queue.close,
+                                child: ColoredBox(
+                                  color: scheme.scrim.withValues(
+                                    alpha: 0.32 * _queueAnimation.value,
+                                  ),
+                                ),
+                              ),
+                            ),
+                            Positioned(
+                              left: 0,
+                              right: 0,
+                              top:
+                                  (1 - _queueAnimation.value) *
+                                  constraints.maxHeight,
+                              height: constraints.maxHeight,
+                              child: _queueSheet(),
+                            ),
+                          ],
+                        ),
+                );
+              },
+            ),
+          ],
+        );
       },
-      child: LayoutBuilder(
-        builder: (context, constraints) {
-          _queue.travel = constraints.maxHeight;
-          return Stack(
-            children: [
-              GestureDetector(
-                behavior: HitTestBehavior.translucent,
-                onVerticalDragUpdate: (d) => _queue.update(d.delta.dy),
-                onVerticalDragEnd: (d) => _queue.end(d.primaryVelocity ?? 0),
-                child: player,
-              ),
-              if (open) ...[
-                Positioned.fill(
-                  child: GestureDetector(
-                    onTap: _queue.close,
-                    child: FadeTransition(
-                      opacity: _queueAnimation,
-                      child: ColoredBox(
-                        color: scheme.scrim.withValues(alpha: 0.32),
-                      ),
-                    ),
-                  ),
-                ),
-                AnimatedBuilder(
-                  animation: _queueAnimation,
-                  builder: (context, child) => Positioned(
-                    left: 0,
-                    right: 0,
-                    top: (1 - _queueAnimation.value) * constraints.maxHeight,
-                    height: constraints.maxHeight,
-                    child: child!,
-                  ),
-                  child: QueueSheet(drag: _queue),
-                ),
-              ],
-            ],
-          );
-        },
-      ),
     );
   }
+
+  /// Cached as its own layer so the shadow and rounded clip are rasterized
+  /// once and the sheet only moves while it slides.
+  Widget _queueSheet() => RepaintBoundary(child: QueueSheet(drag: _queue));
+}
+
+/// Keeps a [PageView] page built while it is off screen.
+class _KeepAlive extends StatefulWidget {
+  const _KeepAlive({required this.child});
+
+  final Widget child;
+
+  @override
+  State<_KeepAlive> createState() => _KeepAliveState();
+}
+
+class _KeepAliveState extends State<_KeepAlive>
+    with AutomaticKeepAliveClientMixin {
+  @override
+  bool get wantKeepAlive => true;
+
+  @override
+  Widget build(BuildContext context) {
+    super.build(context);
+    return widget.child;
+  }
+}
+
+/// Page snapping with a stiffer spring than the default, so a slow release
+/// settles about as briskly as a fling instead of drifting in.
+class _SnappyPagePhysics extends PageScrollPhysics {
+  const _SnappyPagePhysics({super.parent});
+
+  @override
+  _SnappyPagePhysics applyTo(ScrollPhysics? ancestor) =>
+      _SnappyPagePhysics(parent: buildParent(ancestor));
+
+  @override
+  SpringDescription get spring =>
+      SpringDescription.withDampingRatio(mass: 0.5, stiffness: 320, ratio: 1.0);
 }
 
 class _CloseButton extends StatelessWidget {

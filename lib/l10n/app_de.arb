@@ -213,5 +213,9 @@
   "surfaceMaterial": "Material",
   "materialStandard": "Standard",
   "materialGlass": "Premium-Glas",
-  "surfaceMaterialHint": "Premium-Glas macht Seitenleiste, Karten, Player-Leiste und Menü zu durchscheinendem Milchglas über einem sanft bewegten Licht. Verbraucht mehr Strom."
+  "surfaceMaterialHint": "Premium-Glas macht Seitenleiste, Karten, Player-Leiste und Menü zu durchscheinendem Milchglas über einem sanft bewegten Licht. Verbraucht mehr Strom.",
+  "settingsPlaybackCore": "Wiedergabe-Engine",
+  "settingsPlaybackCoreHint": "Systemdekodierung (Media3) oder Rust-Engine. Nach einem Neustart der App wirksam.",
+  "playbackCoreSystem": "System (Media3)",
+  "playbackCoreRust": "Rust-Engine"
 }

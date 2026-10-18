@@ -279,5 +279,9 @@
   "surfaceMaterial": "Material",
   "materialStandard": "Standard",
   "materialGlass": "Premium glass",
-  "surfaceMaterialHint": "Premium glass turns the sidebar, cards, player bar and drawer into translucent frosted glass over a softly moving light. Uses more power."
+  "surfaceMaterialHint": "Premium glass turns the sidebar, cards, player bar and drawer into translucent frosted glass over a softly moving light. Uses more power.",
+  "settingsPlaybackCore": "Playback core",
+  "settingsPlaybackCoreHint": "System decoding (Media3) or the Rust core. Restart the app to apply.",
+  "playbackCoreSystem": "System (Media3)",
+  "playbackCoreRust": "Rust core"
 }

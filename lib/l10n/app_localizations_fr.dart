@@ -723,4 +723,17 @@ class AppLocalizationsFr extends AppLocalizations {
   @override
   String get surfaceMaterialHint =>
       'Le verre premium rend la barre latérale, les cartes, la barre de lecture et le tiroir translucides, comme du verre dépoli sur une lumière mouvante. Consomme plus d\'énergie.';
+
+  @override
+  String get settingsPlaybackCore => 'Moteur de lecture';
+
+  @override
+  String get settingsPlaybackCoreHint =>
+      'Décodage système (Media3) ou moteur Rust. Redémarrez l\'app pour appliquer.';
+
+  @override
+  String get playbackCoreSystem => 'Système (Media3)';
+
+  @override
+  String get playbackCoreRust => 'Moteur Rust';
 }

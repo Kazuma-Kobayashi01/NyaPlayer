@@ -1,11 +1,9 @@
-import 'dart:io';
-import 'dart:ui';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:nyaplayer/app/theme/hires_colors.dart';
 import 'package:nyaplayer/app/theme/theme_settings.dart';
 import 'package:nyaplayer/features/now_playing/flowing_light.dart';
+import 'package:nyaplayer/features/now_playing/pre_blurred_cover.dart';
 import 'package:nyaplayer/features/shared/quality_badge.dart' show isHiRes;
 import 'package:nyaplayer/domain/models.dart';
 import 'package:nyaplayer/services/library/cover_providers.dart';
@@ -97,23 +95,11 @@ class PlayerBackground extends ConsumerWidget {
                               fit: StackFit.expand,
                               children: [
                                 gradient,
-                                ImageFiltered(
-                                  imageFilter: ImageFilter.blur(
-                                    sigmaX: 48,
-                                    sigmaY: 48,
-                                    tileMode: TileMode.mirror,
-                                  ),
-                                  child: Transform.scale(
-                                    scale: 1.3,
-                                    child: Image.file(
-                                      File(cover.thumbnail),
-                                      fit: BoxFit.cover,
-                                      width: double.infinity,
-                                      height: double.infinity,
-                                      cacheWidth: 256,
-                                      gaplessPlayback: true,
-                                      errorBuilder: (_, _, _) => gradient,
-                                    ),
+                                Transform.scale(
+                                  scale: 1.3,
+                                  child: PreBlurredCover(
+                                    path: cover.thumbnail,
+                                    fallback: gradient,
                                   ),
                                 ),
                                 ColoredBox(

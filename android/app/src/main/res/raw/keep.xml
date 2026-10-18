@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- audio_service looks up the notification small icon by name at runtime
+     (lib/main.dart: androidNotificationIcon), so R8 resource shrinking would
+     otherwise remove it in release builds and the notification would crash. -->
+<resources xmlns:tools="http://schemas.android.com/tools"
+    tools:keep="@drawable/ic_stat_music" />

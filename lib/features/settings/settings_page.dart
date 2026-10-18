@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:nyaplayer/app/window_chrome.dart';
@@ -12,6 +13,7 @@ import 'package:nyaplayer/features/search/library_app_bar.dart';
 import 'package:nyaplayer/features/settings/language_dialog.dart';
 import 'package:nyaplayer/features/settings/library_folders.dart';
 import 'package:nyaplayer/features/settings/min_length_tile.dart';
+import 'package:nyaplayer/services/player/playback_core.dart';
 import 'package:nyaplayer/features/shared/glass_surface.dart'
     show glassMaterialProvider;
 import 'package:nyaplayer/l10n/app_localizations.dart';
@@ -46,7 +48,13 @@ class SettingsPage extends ConsumerWidget {
             ),
             children: [
               _SectionTitle(l10n.settingsGeneral),
-              const _Group(children: [_StartPageTile()]),
+              _Group(
+                children: [
+                  const _StartPageTile(),
+                  if (defaultTargetPlatform == TargetPlatform.android)
+                    const _PlaybackCoreTile(),
+                ],
+              ),
               _SectionTitle(l10n.settingsLibrary),
               const _Group(children: [LibraryFoldersTile(), MinLengthTile()]),
               _SectionTitle(l10n.settingsAppearance),
@@ -351,6 +359,50 @@ class _StartPageTile extends ConsumerWidget {
           children: [
             Text(
               startPageLabel(l10n, current),
+              style: Theme.of(context).textTheme.labelLarge
+                  ?.copyWith(color: Theme.of(context).colorScheme.primary),
+            ),
+            const Icon(Icons.arrow_drop_down),
+          ],
+        ),
+        onTap: () => controller.isOpen ? controller.close() : controller.open(),
+      ),
+    );
+  }
+}
+
+/// Chooses the Android playback core (TECH_SPEC §4.7). Takes effect after a
+/// restart because the engine is created at startup.
+class _PlaybackCoreTile extends ConsumerWidget {
+  const _PlaybackCoreTile();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context);
+    final current = ref.watch(playbackCoreProvider);
+    String label(PlaybackCore core) => switch (core) {
+      PlaybackCore.system => l10n.playbackCoreSystem,
+      PlaybackCore.rust => l10n.playbackCoreRust,
+    };
+    return MenuAnchor(
+      alignmentOffset: const Offset(16, 0),
+      menuChildren: [
+        for (final core in PlaybackCore.values)
+          MenuItemButton(
+            trailingIcon: core == current ? const Icon(Icons.check) : null,
+            onPressed: () => ref.read(playbackCoreProvider.notifier).set(core),
+            child: Text(label(core)),
+          ),
+      ],
+      builder: (context, controller, _) => ListTile(
+        leading: const Icon(Icons.memory_outlined),
+        title: Text(l10n.settingsPlaybackCore),
+        subtitle: Text(l10n.settingsPlaybackCoreHint),
+        trailing: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              label(current),
               style: Theme.of(context).textTheme.labelLarge
                   ?.copyWith(color: Theme.of(context).colorScheme.primary),
             ),

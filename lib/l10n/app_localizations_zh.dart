@@ -684,6 +684,18 @@ class AppLocalizationsZh extends AppLocalizations {
   @override
   String get surfaceMaterialHint =>
       '高级玻璃会让侧栏、卡片、播放条和抽屉变成半透明的磨砂玻璃，背后透出缓缓流动的光。更耗电。';
+
+  @override
+  String get settingsPlaybackCore => '播放内核';
+
+  @override
+  String get settingsPlaybackCoreHint => '系统解码（Media3）或 Rust 内核。切换后需重启应用生效。';
+
+  @override
+  String get playbackCoreSystem => '系统（Media3）';
+
+  @override
+  String get playbackCoreRust => 'Rust 内核';
 }
 
 /// The translations for Chinese, using the Han script (`zh_Hant`).
@@ -1365,6 +1377,19 @@ class AppLocalizationsZhHant extends AppLocalizationsZh {
   @override
   String get surfaceMaterialHint =>
       '高級玻璃會讓側邊欄、卡片、播放列和抽屜變成半透明的霧面玻璃，背後透出緩緩流動的光。較耗電。';
+
+  @override
+  String get settingsPlaybackCore => '播放核心';
+
+  @override
+  String get settingsPlaybackCoreHint =>
+      '系統解碼（Media3）或 Rust 核心。切換後需重新啟動應用程式才會生效。';
+
+  @override
+  String get playbackCoreSystem => '系統（Media3）';
+
+  @override
+  String get playbackCoreRust => 'Rust 核心';
 }
 
 /// The translations for Chinese, as used in Hong Kong, using the Han script (`zh_Hant_HK`).
@@ -2046,4 +2071,17 @@ class AppLocalizationsZhHantHk extends AppLocalizationsZh {
   @override
   String get surfaceMaterialHint =>
       '高級玻璃會令側邊欄、卡片、播放列同抽屜變成半透明嘅磨砂玻璃，背後透出緩緩流動嘅光。較耗電。';
+
+  @override
+  String get settingsPlaybackCore => '播放核心';
+
+  @override
+  String get settingsPlaybackCoreHint =>
+      '系統解碼（Media3）或 Rust 核心。切換後需重新啟動應用程式才會生效。';
+
+  @override
+  String get playbackCoreSystem => '系統（Media3）';
+
+  @override
+  String get playbackCoreRust => 'Rust 核心';
 }

@@ -25,7 +25,9 @@ import 'package:nyaplayer/data/sample_library.dart';
 import 'package:nyaplayer/dev/preview_hook.dart';
 import 'package:nyaplayer/services/eq/eq_state.dart';
 import 'package:nyaplayer/services/player/audio_focus_coordinator.dart';
+import 'package:nyaplayer/services/player/android_player_engine.dart';
 import 'package:nyaplayer/services/player/fake_player_engine.dart';
+import 'package:nyaplayer/services/player/playback_core.dart';
 import 'package:nyaplayer/services/player/player_engine.dart';
 import 'package:nyaplayer/services/player/queue_controller.dart';
 import 'package:nyaplayer/services/player/rust_player_engine.dart';
@@ -59,7 +61,6 @@ Future<void> main() async {
     );
     overrides = [playerEngineProvider.overrideWithValue(engine)];
   } else {
-    engine = RustPlayerEngine();
     final database = AppDatabase();
     final repository = LibraryRepository(database);
     final devDir = kDebugMode ? Platform.environment['NYA_MUSIC_DIR'] : null;
@@ -69,6 +70,12 @@ Future<void> main() async {
     }
     final needsOnboarding = (await repository.roots()).isEmpty;
     final settings = await DbSettingsStore.open(database);
+    // Android decodes with Media3 by default (TECH_SPEC §4.7, M10-2); the
+    // Rust core stays selectable in settings. Other platforms keep Rust.
+    final core = savedPlaybackCore(settings);
+    engine = Platform.isAndroid && core == PlaybackCore.system
+        ? AndroidPlayerEngine()
+        : RustPlayerEngine();
     final favorites = await DbFavoritesStore.open(database);
     final playback = DbPlaybackStore(database);
     PlaybackPersistence? persistence;

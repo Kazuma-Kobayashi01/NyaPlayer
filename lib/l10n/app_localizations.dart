@@ -1400,6 +1400,30 @@ abstract class AppLocalizations {
   /// In zh, this message translates to:
   /// **'高级玻璃会让侧栏、卡片、播放条和抽屉变成半透明的磨砂玻璃，背后透出缓缓流动的光。更耗电。'**
   String get surfaceMaterialHint;
+
+  /// No description provided for @settingsPlaybackCore.
+  ///
+  /// In zh, this message translates to:
+  /// **'播放内核'**
+  String get settingsPlaybackCore;
+
+  /// No description provided for @settingsPlaybackCoreHint.
+  ///
+  /// In zh, this message translates to:
+  /// **'系统解码（Media3）或 Rust 内核。切换后需重启应用生效。'**
+  String get settingsPlaybackCoreHint;
+
+  /// No description provided for @playbackCoreSystem.
+  ///
+  /// In zh, this message translates to:
+  /// **'系统（Media3）'**
+  String get playbackCoreSystem;
+
+  /// No description provided for @playbackCoreRust.
+  ///
+  /// In zh, this message translates to:
+  /// **'Rust 内核'**
+  String get playbackCoreRust;
 }
 
 class _AppLocalizationsDelegate

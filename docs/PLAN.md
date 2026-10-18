@@ -30,6 +30,8 @@
 | **M7** | P1 功能 | M | 播放列表、双语歌词、多艺术家、日文界面、快捷键等 |
 | **M8** | 打磨与 P2 | L | Expressive 动效、ReplayGain、睡眠定时等 |
 
+| **M10** | 2.0 平台原生播放内核（Android 优先） | L | Android Media3 内核、macOS AVFoundation 内核，性能与稳定性对比报告 |
+
 规模：S ≈ 1–3 个晚上，M ≈ 1–2 周的业余时间，L ≈ 不设上限、按兴趣挑着做。
 
 ---
@@ -72,6 +74,7 @@
 - [ ] M1-3 Android：Manifest 权限与 audio_service 组件（§6.1）、`minSdk 31`（已改）、边到边显示。
   - [x] 2026-10-18 获开发者明确授权加入 WAKE_LOCK / FOREGROUND_SERVICE / FOREGROUND_SERVICE_MEDIA_PLAYBACK、媒体服务及接收器，MainActivity 继承 AudioServiceActivity；引入 §1 允许的 audio_service 0.18.19 / audio_session 0.2.4，格式化、分析、123 个 Flutter 测试通过。曲库访问权限仍待 M2 授权流程。
 - [x] M1-4 macOS：关闭 sandbox、`window_manager` 初始化、最小窗口尺寸（§6.2）。（最小窗口 400×700 用原生 `contentMinSize` 实现，无最大限制可全屏；标题栏与红绿灯已融入界面；sandbox 已于 2026-10-18 获授权关闭；window_manager 0.5.2 已接入关闭拦截与隐藏，详见 M4-5）
+  - [x] 2026-10-18 按参考截图将桌面默认启动外框设为 1288×852 逻辑像素，居中并按屏幕可用区域限制；启动后恢复隐藏窗口不重置用户当次调整的大小。
 - [x] M1-5 drift 数据库：建好 §9 全部表（先不实现 FTS），生成代码，写一个迁移测试。（2026-10-18：`lib/data/db/` 11 张表 + 4 个索引，schema v1 快照在 `drift_schemas/`，`SchemaVerifier` 迁移测试与约束测试共 7 个通过；DAO/仓库、FTS5 留给 M2。）
 - [x] M1-6 主题系统：`LyraTheme`，支持明/暗/跟随系统、壁纸动态取色、固定种子色；设置项存 `settings` 表。（2026-10-18 完成：主题、语言、启动页、封面形状、进度条样式、播放页背景、歌词显示选项均存入 `settings` 表，启动时一次读入、之后后台顺序写入；未知/损坏的值回退默认值，从不写入默认值。）
   - [x] 2026-10-18 按开发者调整移除中间的“跟随封面”取色选项，配色只保留系统 / 固定色，独立保留封面模糊背景；格式化、分析、120 个 Flutter 测试通过。
@@ -242,6 +245,24 @@ flutter build macos --release
 - [ ] 定义跨端快照字段与更新时机；封面复用 `CoverCache` 的 256px 文件；分别验证 widget 扩展/receiver 在应用冷启动、暂停、曲目切换时的状态同步。
 
 设计边界与原生技术路线见 [`DESKTOP_WIDGETS.md`](DESKTOP_WIDGETS.md)。
+
+---
+
+## M10 2.0 平台原生播放内核（Android 优先）
+
+方案与取舍见 TECH_SPEC §4.7，依赖变更见附录 A。接口始终是 `PlayerEngine`，UI 与 `QueueController` 不改；`RustPlayerEngine` 在 M10-9 通过前作为退路保留。
+
+- [x] M10-1 基线（2026-10-18 完成：闪退根因是发布包资源压缩删除了通知图标 `ic_stat_music`，已加 `res/raw/keep.xml` 修复；CPU/温度基线已采样，待 M10-9 对比）。原描述：Android 真机抓切歌闪退的 `adb logcat`（区分 Rust panic / AAudio 错误 / JVM 异常）；记录当前 Rust 内核的 CPU 占用（`top -H`、Perfetto）与连续播放 30 分钟的温度，写入 `SPIKE_REPORT.md`，作为 M10-9 的对照。同时导出开发者真机的音频 `MediaCodecList`（`adb shell dumpsys media.codec` 或应用内临时调试输出），记录有哪些 FLAC / MP3 解码器、是厂商还是 Google 的。
+- [~] M10-2（2026-10-18 代码完成：`AndroidPlayerEngine.kt` + `lib/services/player/android_player_engine.dart`，设置里可切换内核，338 项测试通过；真机播放已做首轮，待完整验收）Android `AndroidPlayerEngine`：Kotlin + Media3 ExoPlayer，经通道实现 `PlayerEngine` 全部方法（不含 EQ），事件对齐 `playing / currentIndex / completed / errors`，位置沿用拉取模式。自定义 `MediaCodecSelector` 按“系统声明的硬件 > Google 软件 > 其他厂商软件”排序，开启 `setEnableDecoderFallback(true)`（见 TECH_SPEC §4.7），并在日志里打印实际选中的解码器名。
+- [ ] M10-3 队列与无缝：`openQueue / add / insert / remove / move / reorder / jumpTo / setLoopMode` 映射到 ExoPlayer 播放列表；FLAC 与 MP3 gapless 用连续专辑与自制测试曲实测；解码失败跳下一首、连续失败 5 首停止（`FMT-07`）。
+- [ ] M10-4 Android EQ：Media3 自定义 `AudioProcessor` 移植 10 段 biquad，和 Rust 实现用同一组测试向量对拍；`setEqualizer` 拖动时不卡顿。
+- [ ] M10-5 Android 焦点与设备变化：ExoPlayer 接管音频焦点与拔耳机暂停，删除 `AudioFocusCoordinator` 中重复的部分，保留 ducking 语义（`setVolume`）。
+- [ ] M10-6 macOS `MacPlayerEngine`：Swift + `AVAudioEngine`，`AVAudioUnitEQ` 10 段，gapless 连续调度，设备变化后续播。
+- [ ] M10-7 macOS 退出流程：为 `onExit` 各步加耗时日志，定位退出慢；引擎提供显式关闭，不再依赖进程结束。
+- [ ] M10-8 平台切换开关：按平台选择 `AndroidPlayerEngine` / `MacPlayerEngine` / `RustPlayerEngine`，便于对照与回退。
+- [ ] M10-9 验收：连续切歌压测（500 次不崩）、30 分钟播放的 CPU / 温度对比 M10-1、格式矩阵（FLAC 16/24bit、96k、MP3 CBR/VBR）、gapless 与 EQ 实听；通过后删除 Rust 的 rodio / symphonia 与 Android 的 `jni` / `ndk-context`，更新 TECH_SPEC。
+- [ ] M10-11 Android 硬件 offload 路径：用 `AudioOffloadPreferences` 请求 DSP offload，运行时探测支持情况；EQ 关闭时 offload、开启时切回 PCM，验证切换、gapless、seek 与通知栏进度；在你的手机上对比 offload、`c2.sec.*`、`c2.android.*` 三条路径的 CPU 与温度，结果写入 `SPIKE_REPORT.md` 并据此调整排序。
+- [ ] M10-10（待定）M4A / OGG / Opus 等格式：系统解码器自带支持，是否放开 `FMT` 需求由开发者决定，不属 2.0 默认范围。
 
 ---
 

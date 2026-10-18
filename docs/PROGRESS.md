@@ -153,6 +153,9 @@
 2. 测试音乐：本轮开始时 `test_music/` 有两首（FLAC 十年、MP3 缭花绚烂），这两首已获听感反馈。期间开发者新增 `那颗星梦见的春日 - 鸣潮先约电台&jixwang&小林未郁.flac`（界面显示 24bit/48kHz），该文件未纳入本轮正式听感验收。其他规格、真实连续专辑仍需补充。
 3. 2026-10-18 已获“提交”指令，本轮累计代码与文档纳入同一次提交；主作者使用现有 Git 身份 Kazuma-Kobayashi01，协作署名依次为 Claude、Codex。worktree 已在前序工作中清理，不 push。
 
+4. **2.0 播放内核改为平台原生（2026-10-18 开发者决定）**：Android 全部使用 Google 的 Media3 ExoPlayer 编解码，macOS 使用系统 AVFoundation；Android 优先。已写入 TECH_SPEC §4.7、附录 A / B-4 和 PLAN M10。我替开发者选的默认项（可改）：EQ 用 Media3 自定义 `AudioProcessor` 保留 10 段，而不是系统 `Equalizer`（后者频段数由设备决定，对不上现有 10 段 UI 与预设）；系统媒体会话继续用 `audio_service`；`RustPlayerEngine` 验收前保留为退路；M4A / OGG / Opus 是否放开留待决定（M10-10）。**尚未写任何实现代码**，下一步是 M10-1（Android 真机基线）。
+   - 补充决定（同日）：应用要给别人使用，Android 解码器优先级为**官方硬件 > 官方软件**，只用系统 `MediaCodec` / `AudioTrack` 路径并带自动回退，不限定只用 Google 的 `c2.android.*`（取代此前“只放行 Google 解码器”的写法）。开发者手机（高通 + 三星）的 `MediaCodecList` 里没有音频硬件解码器，真正的硬件路径只可能是 DSP offload，它与自定义 EQ 互斥，见 TECH_SPEC §4.7、PLAN M10-11。
+
 ## 7. 下一步建议（按顺序）
 
 ### 2026-10-19 计划
@@ -334,3 +337,89 @@
 - 比较过完整 Noto 可变字体与 CFF 编码，体积收益不合适，未作为生产资源；最终保留原 Medium 字形。所有候选只在临时目录，不打入 App。
 - `flutter analyze` 无问题；macOS arm64 / x86_64 和 Android arm64-v8a Release 均构建成功并替换 `output/`，包内检查只含 4 份 TTF，合计字节符合预期，Mac 签名完整性通过，测试 Widget 注册已清理。
 - 包体按文件逻辑字节计（十进制 MB）：arm64 Mac **96.4 → 72.2MB（−25.15%）**；Intel Mac **97.5 → 73.2MB（−24.87%）**；Android APK **62.8 → 47.9MB（−23.75%）**。重建方法见 `BUILD_OUTPUTS.md`；字体资源说明见 `assets/fonts/README.md`。
+
+
+### 2026-10-18 桌面默认启动尺寸（UI-05 / M1-4）
+
+- 按开发者提供的 Retina 截图，采用约 1288×852 逻辑像素的默认窗口外框。macOS NIB 初始尺寸同步调整，`MainFlutterWindow.applyInitialWindowSize()` 在初始化与 `applicationDidFinishLaunching` 后应用，启动时在当前屏幕 `visibleFrame` 内居中。
+- 可用区域四周预留 8pt，较小显示器按可用宽高限制；内容最小 400×700 在小屏幕上也相应下调，避免最小限制把窗口推到屏幕外。不设置窗口最大限制；隐藏后从 Dock 恢复保留当前尺寸。`NYA_WINDOW_SIZE` 开发预览继续作为内容尺寸覆盖。
+- macOS arm64 / x86_64 Release 构建成功，逐 Mach-O 单架构与签名检查通过，两份 App 已替换到 `output/`；未启动新 App 或修改当前安装副本。Android 本轮未重编译，预发布分支快照保留。
+- 本轮未运行测试；构建目录的测试 Widget 注册再次清理。
+
+### 2026-10-18 Android 严重问题记录：卡顿 / 切歌闪退 / 发热（未修复，待定位）
+
+**现象（开发者反馈）**：Android 端卡顿、播放时切歌闪退、发热。
+
+**解码路径核查结论：Android 没有使用硬件解码器。**
+- 解码是纯软件：`rust/src/player/engine.rs` 的 `open_decoder` 调用 rodio `Decoder`（内部为 symphonia，只启用 FLAC / MP3 feature，见 `rust/Cargo.toml`），全程在 Rust 侧 CPU 完成。
+- 之后串联 `UniformSourceIterator` 重采样（`output_source`），再经 `EqSource` 做 10 段 biquad EQ，最后由 cpal 的 AAudio 后端输出。硬解（MediaCodec）的链路在本项目中不存在。
+- Dart 侧 `pubspec.yaml` 没有 `just_audio` / `media_kit` / `video_player` 等播放插件，`android/app` 中也没有 ExoPlayer / MediaPlayer / MediaCodec 的引用。`audio_service` 只负责系统媒体会话与通知，不解码。
+- 因此“发热、卡顿”的首要怀疑对象是软解加逐样本 EQ 的 CPU 占用，尤其是高码率 FLAC、高采样率（hi-res）文件要重采样时。这一点尚未实测。
+
+**切歌闪退的待查线索（均为推断，未复现）**
+- 每次切歌都会走 `start_at`：`cancel_all` 后新建 `Player::connect_new`，并重新 `open_decoder`。如果切换与 `poll` 的 `on_track_started` 或 `refresh_next` 交错，可能存在竞态。
+- Android 上 AAudio 输出流出错会触发 `device_lost`，随后走 `recover_device` 重开输出流。流的关闭与重开时机是否与切歌冲突，需要日志确认。
+- Rust 侧的 panic 与日志通过 `android_log.rs` 输出到 logcat，JNI 初始化在 `android_context.rs`。闪退时应优先看 logcat 中的 panic / `nya_core` 标签，确认是 Rust panic、AAudio 错误还是 JVM 层异常。
+
+**2026-10-18 真机核查结果（M10-1，已取代下方的推断）**：闪退的根因不在播放内核，而在发布包的资源压缩。
+- 系统 DropBox 里有 4 条 `data_app_crash`（18:34，版本 1.2.0-alpha 发布包，`user/release-keys`），堆栈均为 `IllegalArgumentException: Invalid notification (no valid small icon)`，抛在 audio_service 调用 `NotificationManager.notify` 时。每次都是播放后 2.5–4.7 秒，与切歌时更新媒体通知吻合。
+- 原因：`lib/main.dart` 里 `androidNotificationIcon: 'drawable/ic_stat_music'` 是按字符串名称在运行时查找的资源，代码里没有直接引用。`output/android-armv8a/NyaPlayer.apk`（17:47 发布构建，commit 587bf4a）的 `resources.arsc` 中**没有 `drawable/ic_stat_music`**，已被资源压缩删除，查找结果为 0，通知抛异常，进程被杀。
+- 为什么 debug 复现不了：当前 debug 包（`build/app/outputs/flutter-apk/app-debug.apk`）保留了该资源，播放和切歌正常，AAudio 流一直处于 STARTED，没有重建或错误。
+- 因此“切歌闪退”与 EQ / 解码无关。发热与卡顿仍待测量（当时 app 进程 CPU 约 62%，AP 57°C，皮肤温度 39.1°C，线程状态 1）。
+- **已修复**：新增 `android/app/src/main/res/raw/keep.xml`，`tools:keep="@drawable/ic_stat_music"`。重新构建发布包后资源表中已有该图标，安装到三星 S9180（Android 15）后：媒体通知正常发出（标题、transport 类别、NO_CLEAR），系统 `MediaOngoingActivity`（胶囊）出现，播放期间没有新的 `data_app_crash`。
+- 待观察：systemui 的 `MediaDataManager` 报 `FileNotFoundException` 指向 `files/covers/...`，可能是封面文件尚未生成或系统无权读取应用私有目录，需要确认胶囊上的封面是否显示。
+- 日志文件：`scratchpad/logcat_m10_1.txt`（19:06–19:07）。测试曲已推到手机 `/sdcard/Music/NyaTest/`。
+
+**下一步建议**
+1. 真机（非模拟器）用 `adb logcat` 抓闪退瞬间的日志，区分 Rust panic、AAudio 错误和 JVM 异常。（已完成：结果见上，闪退是 JVM 层的通知异常。）
+2. 用 Android Studio Profiler 或 `top -H` 查 CPU 占用，区分解码、EQ 与 UI 线程的开销；对比 EQ 全平直与关闭时的发热差异，以确定是否要做 bypass 或降低 EQ 计算频率。
+3. 如果确认软解开销过大，再评估 Android 硬解路径（例如通过平台通道接 MediaCodec），这属于架构变更，需先在 TECH_SPEC 附录 A 记录并征得开发者同意。
+
+**macOS 对照（同一天补充）**
+- 解码与 EQ 与 Android 共用 `engine.rs`：同样是 rodio / symphonia 软解加 biquad EQ，macOS 上也没有硬解。因此“发热”的理论成因相同，只是桌面 CPU 余量大，目前未观察到卡顿或发热。输出后端为 CoreAudio（经 cpal），不是 AAudio。
+- 切歌闪退 macOS 未复现，与 Android 的崩溃路径不能直接等同，需单独验证。
+- 退出慢是另一条链路，与播放内核无关，属于应用层关闭顺序：
+  1. `AppDelegate.applicationShouldTerminate` 把退出挂起，调用 `prepareToExit`，最多等 3 秒兜底（`DispatchQueue.main.asyncAfter`）。
+  2. Dart 侧 `lib/main.dart` 的 `onExit` 依次 `await`：`widgets.close()`（经 channel 通知原生桌面卡片）、`flushStores()`（设置、收藏、播放状态落库）、`handler.stop()`，然后 `handler.dispose()`、`engine.dispose()`。
+  3. Rust 引擎没有主动关闭流程：`Command::Shutdown` 从未发送，`engine.dispose()` 只调用 `playerPause()`，引擎线程随进程退出。
+- 因此退出慢有两个可能：Dart 任一步骤迟迟不返回（最坏被 3 秒兜底截断），或 `flushStores` 落库耗时。尚未用日志确认，建议在 `onExit` 各步前后加耗时日志，并在 `prepareToExit` 完成时打印时间戳，区分是 Dart 还是 Swift 侧等待。
+
+
+### 2026-10-18 M10-2：Android Media3 播放内核与设置切换
+
+- 通知修复：`res/raw/keep.xml` 保留 `ic_stat_music`，发布包的媒体胶囊恢复显示（见上一节）。
+- 新增 `AndroidPlayerEngine.kt`（Media3 ExoPlayer 1.11.1）和 Dart 侧 `lib/services/player/android_player_engine.dart`，实现 `PlayerEngine` 全部方法；行为对齐 Rust 引擎：连续失败 5 首停止、循环模式、`reorder` 保持播放位置。
+- 本轮暂缓：EQ（M10-4，原生侧收到 `setEqualizer` 后忽略）、音频焦点与拔耳机（M10-5，仍由 `AudioFocusCoordinator` 处理，ExoPlayer 关闭了自动焦点）。
+- 设置：新增 `playback.core`（`system` / `rust`），默认 `system`；设置页仅 Android 显示该选项，切换后重启生效。引擎在 `settings` 打开后创建。
+- 测试：因设置页新增一项，库文件夹、语言、最短时长相关的 widget 测试改为先滚动再点击（懒加载列表）；全部 339 项通过。
+- 待查：真机 debug 版中间出现一次 Flutter 断言红屏 `'_dependents.isEmpty': is not true`（framework.dart:6281），播放未中断，logcat 未抓到堆栈。需要确认复现步骤（当时在做什么操作）。
+
+### 2026-10-18 播放页滑动卡顿与手感（Android，release 包实测）
+
+- 现象：开着“流光背景”和“模糊封面背景”时全屏播放页滑动明显卡；关掉后好很多。上划播放列表动画不顺；封面→歌词滑动很快，歌词→封面正常。
+- 测量方法：`adb shell input swipe` 自动滑动，同时读 `dumpsys SurfaceFlinger --latency <图层>` 的呈现时间戳（`gfxinfo` 对 Flutter 的 Impeller 渲染不统计帧，不能用）。脚本在会话 scratchpad 的 `measure.py`。
+- 基线（release，流光与模糊都关）：页面左右滑 302 帧、列表上划 714 帧，帧间隔 p99 = 8.3ms（120Hz），最大 16.7ms，没有超过 20ms 的帧。所以此时不是掉帧，是手感问题。开启流光与模糊的对比数据尚未量到（测量中途被打断，且我临时把手机上的“流光背景”打开了，需要关回去）。
+- 手感问题的原因：
+  1. `PageView` 默认销毁屏幕外页面，每次滑向歌词页都要从头构建整页歌词（所有行加 GlobalKey），构建发生在手指滑动中，所以“封面→歌词”会突然加速，反方向页面很轻则正常。
+  2. 上划列表时每次动画状态变化都会 `setState`，重建整个播放页。
+  3. 列表松手后用固定时长曲线，不继承手指速度。
+- 修改：`now_playing_page.dart` 两页用 `AutomaticKeepAlive` 保持存活并开启 `allowImplicitScrolling` 提前构建相邻页，翻页物理改为更硬的弹簧；队列浮层只重建自己（`ListenableBuilder`），并用 `RepaintBoundary` 缓存阴影与圆角；`queue_sheet.dart` 松手后用带手指速度的弹簧收尾。339 项测试通过。
+- 待真机复测。模糊封面背景（sigma 48 全屏）与流光仍是开启时的主要开销，下一步考虑用更小的预缩放图或预先模糊的位图替代实时 `ImageFiltered`。
+
+#### 播放页性能实测结果与修复（同日，三星 S9180，release，120Hz）
+
+帧间隔均值 / 超过 20ms 的帧占比（`adb input swipe` 自动滑动，SurfaceFlinger 呈现时间戳）：
+
+| 版本 / 组合 | 页面左右滑 | 上划播放列表 |
+|---|---|---|
+| 旧包，模糊封面开 + 流光开 | 16.5ms / 7% | 20.8ms / 49% |
+| 旧包，两者都关 | 8.4ms / 0% | 8.3ms / 0% |
+| 页面/列表优化后，模糊开 + 流光开 | 15.4ms / 5% | 19.2ms / 33% |
+| 同上，模糊关 + 流光开 | 8.4ms / 0% | 8.3ms / 0% |
+| 同上，模糊开 + 流光关 | 9.2ms / 0% | 14.5ms / 16% |
+| **预模糊封面后，模糊开 + 流光开** | **8.3ms / 0%** | **8.6ms / 0%（1 帧）** |
+
+- 结论：单独的流光很便宜；开销来自 `player_background.dart` 里的全屏实时 `ImageFilter.blur`（sigma 48），叠加流光动画时更重。
+- 修复：新增 `lib/features/now_playing/pre_blurred_cover.dart`。封面缩到 160px 解码、只模糊一次生成 `ui.Image`（sigma 7px，约等于原来的 48dp），之后背景只是一张双线性拉伸的位图。换歌时重新生成，生成前显示渐变底色。`cover_art_test.dart` 相应改为检查 `PreBlurredCover` 与 `RawImage`。339 项测试通过。
+- 另外（上一节）：页面保活与预构建、队列浮层局部重建与弹簧松手，对“模糊开 + 流光开”的改善有限（均值 16.5→15.4ms），真正的收益来自预模糊。
+- 注意：测试结束时手机上的“模糊封面”和“流光背景”都保持开启（应用默认值），开发者原来是手动关掉的。

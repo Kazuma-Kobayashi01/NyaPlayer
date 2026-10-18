@@ -252,6 +252,29 @@ Rust 内核（cpal）不负责系统音频会话，必须自己用 `audio_sessio
 - 🔍 M0 需确认 cpal/Oboe 在 Android 上**没有**自行申请音频焦点（预期没有），并确认 AAudio 流的 usage 为 media。**2026-10-18 已确认**（API 37 模拟器）：播放时焦点栈只有 audio_session 申请的 `GAIN`（`USAGE_MEDIA` / `CONTENT_TYPE_MUSIC`）一条。
 - **2026-10-18 实现**（`lib/services/player/audio_focus_coordinator.dart`，仅 Android 启用）：监听 `QueueState.playing`，开始播放后 `setActive(true)`，被拒则立刻暂停；用户暂停时 `setActive(false)`。**被打断期间不释放焦点**，否则系统不会再通知“焦点回来了”，也就无法自动恢复。`unknown`（永久丢失）只暂停、不自动恢复；用户在打断期间自己按了播放则取消自动恢复。实测来电暂停、挂断恢复。
 
+### 4.7 2.0 系统原生解码内核（2026-10-18 开发者决定，规划中，尚未实现）
+
+**决定**：2.0 起所有编解码都交给平台提供的实现，不再用 Rust 的 symphonia / rodio 播放。Android 使用 Google 的 Media3 ExoPlayer（解码走系统 MediaCodec 与 Google 提供的 FLAC / MP3 解码器）；macOS 使用系统的 AVFoundation / AudioToolbox。Dart 侧仍只通过 §4.2 的 `PlayerEngine` 接口，UI 与 `QueueController` 不变。
+
+**事实边界（实现前须记住）**：FLAC 与 MP3 在手机上没有独立的“专用硬件解码单元”。MediaCodec 的 `c2.android.flac.decoder`、`c2.android.mp3.decoder` 本身是 Google 的软件解码器；macOS 系统解码同样跑在 CPU 上。换成系统内核换到的主要是：由平台维护的解码与输出路径（含 AAudio 缓冲、音频焦点、设备切换）、更多格式（M4A / OGG / Opus 等）、以及可能的 DSP offload 机会，**不保证降低发热**。所以 M10-1 先测基线，M10-9 对比验收。
+
+| 项 | Android | macOS |
+|---|---|---|
+| 内核 | `androidx.media3` ExoPlayer，Kotlin 实现 `AndroidPlayerEngine`，经 `MethodChannel` / `EventChannel` 暴露 | Swift 实现 `MacPlayerEngine`，`AVAudioEngine` + `AVAudioPlayerNode` |
+| 无缝播放 | ExoPlayer 播放列表，FLAC / MP3（LAME / Xing 头）gapless，🔍 实测 | 在同一 `AVAudioPlayerNode` 上连续 `scheduleFile`，🔍 实测 |
+| EQ（10 段，§5 频点与预设不变） | Media3 自定义 `AudioProcessor`，Kotlin 移植现有 biquad 系数（RBJ peaking），与 Rust 实现用同一组测试向量对拍 | `AVAudioUnitEQ`，10 个 parametric 频段 |
+| 焦点 / 变噪 | `setAudioAttributes(..., handleAudioFocus = true)` 与 `setHandleAudioBecomingNoisy(true)`；去掉 Dart 侧重复的焦点处理，避免两处各管一次 | 系统路由变化通知 |
+| 系统媒体会话 | 继续使用 `audio_service`，ExoPlayer 只做引擎，不启用 `media3-session` | 同现状 |
+| 解码器选择（Android） | **优先级（开发者决定，应用要给不同机型的用户用）：官方硬件 > 官方软件**，只用系统 `MediaCodec` / `AudioTrack` 提供的路径，不自带解码器。实现为自定义 `MediaCodecSelector` 排序，不做白名单：① 系统声明为硬件加速的解码器（`isHardwareAccelerated && !isSoftwareOnly`）；② Google 软件解码器（`c2.android.*`、`OMX.google.*`）；③ 其余厂商软件解码器兜底。同时 `DefaultRenderersFactory.setEnableDecoderFallback(true)`：选中的解码器初始化或运行失败时自动换下一个，永远不因某机型的解码器问题而无法播放。启动与每次切歌都在日志里打印实际选中的解码器名 | — |
+| 真正的硬件路径（Android） | 音频的“硬件解码”实际指 **DSP offload**（`AudioTrack` offload，由 Media3 的 `AudioOffloadPreferences` 请求），运行时用 `AudioManager.isOffloadedPlaybackSupported` 探测，机型不支持就自动走 PCM。**offload 与自定义 EQ `AudioProcessor` 互斥**（音频不经过应用的 PCM）：EQ 关闭或各段为 0 dB 时才允许 offload，开启后切到 PCM 路径。该切换的无缝性与 seek 行为需实测 | — |
+
+**设备实测参考（开发者自己手机的 `MediaCodecList`，高通 + 三星，2026-10-18 截图）**：
+- 音频解码器全部是软件解码：Google 的 `c2.android.flac/mp3/aac/opus/vorbis.decoder`（及旧的 `OMX.google.*`），加三星自带的 `c2.sec.flac/mp3/ape/ima/amrnb/amrwb.decoder`，以及 Dolby 的 `ac4/eac3`。
+- 高通（`c2.qti.*`、`OMX.qcom.*`）只提供视频硬件解码器：avc、hevc、vp9、av1。**没有任何音频硬件解码器**，进一步证实 FLAC / MP3 不存在专用硬件解码。
+- 厂商（`c2.sec.*`）与 Google（`c2.android.*`）解码器同时存在，所以选择哪个必须显式控制。`MediaCodecInfo.isHardwareAccelerated` 对厂商音频解码器不可靠（厂商编解码器常被默认标成硬件加速），只能当作“系统声明”，不能当作真的走了硬件的证据。因此排序用它，但是否真的省电要靠 M10-1 / M10-9 在真机上分别测 `c2.sec.*` 与 `c2.android.*` 的 CPU 占用来验证，结果不理想就调整排序。
+
+**保留在 Rust 的部分**：`lofty` 读标签 / 封面 / 歌词、`encoding_rs` 修编码、EQ 的 Dart 侧参数模型。**退路**：`RustPlayerEngine` 在 M10-9 通过前保留（按平台开关切换），验收通过后再删除 rodio / symphonia、Android 的 `jni` / `ndk-context` / `android_context.rs`。
+
 ## 5. 均衡器（EQ）
 
 ### 5.1 实现方式
@@ -510,7 +533,7 @@ scan_errors(path PK, message, at)
 
 - 一级导航：歌曲、收藏、专辑、艺术家、文件夹、播放列表、设置（设置与前六项之间用分隔线隔开）；顶栏标题居中，右侧只有搜索（`SearchAnchor`），不设溢出菜单；均衡器从设置页和播放页进入。
 - macOS 标题栏：去掉系统标题栏（`titlebarAppearsTransparent` + `fullSizeContentView`，标题隐藏），红绿灯直接浮在应用界面上；红绿灯向内偏移（右 8pt、下 6pt，类似 VS Code，在 `MainFlutterWindow.swift` 里重设按钮位置）；Flutter 侧用 `TitlebarInset`（`lib/app/window_chrome.dart`）在顶部留出 34dp 安全区，桌面布局由侧边栏避让；全屏时通过 MethodChannel `nyaplayer/window` 收到通知并取消该留白。
-- macOS 窗口：最小 400×700（手机版的正常大小，在 `MainFlutterWindow.swift` 用 `contentMinSize` 设置），不设最大尺寸，可拉伸至全屏。
+- 桌面启动窗口（2026-10-18 开发者按截图指定）：默认外框 **1288×852 逻辑像素/point**，在当前屏幕可用区域居中；macOS 在 NIB 初始化与应用启动完成时设置，防止系统恢复旧的小窗口。小屏幕按可用区域减去四周 8pt 留白限制大小；默认内容最小 400×700，屏幕更小时同步下调最小限制。不设最大尺寸，可拉伸至全屏。仅进程启动时应用默认值，关窗隐藏后恢复保留当次手调尺寸；开发预览 `NYA_WINDOW_SIZE` 的内容尺寸覆盖仍保留。当前桌面原生目标为 macOS，后续 Windows/Linux 原生壳沿用这一默认规格。
 
 ### 10.3 组件约定
 
@@ -581,6 +604,7 @@ scan_errors(path PK, message, at)
 
 | 日期 | 变更 | 理由 |
 |---|---|---|
+| 2026-10-18 | **计划（待 M10-2 实现时落地）**：Android 原生新增 Gradle 依赖 `androidx.media3:media3-exoplayer:1.11.1`（2026-10-18 从 Google Maven 核实的最新稳定版；`media3-common` 由它传递引入；不引入 `media3-session`、`media3-ui`）。macOS 使用系统框架 AVFoundation / AudioToolbox，无第三方依赖。M10-9 验收后删除 Rust 的 `rodio`、`symphonia` 相关特性，及 Android 的 `jni`、`ndk-context` | 开发者决定 2.0 起编解码全部使用平台提供的实现，见 §4.7。已确认的取舍：Android 的 EQ 不再由 Rust 处理。 |
 | 2026-10-18 | 加入 `permission_handler` ^13.0.2；Android 清单新增 `READ_MEDIA_AUDIO` 与 `READ_EXTERNAL_STORAGE`（`maxSdkVersion=32`）；`MainActivity.kt` 新增一个只返回 `Build.VERSION.SDK_INT` 的通道；macOS `Info.plist` 增加桌面/文档/下载/可移动/网络卷的用途说明 | 均在 §1.3 清单内、符合 §6.1 方案 C（只申请音频读取权限）。permission_handler 在 Android 12 上把音频权限当作空操作、在 13+ 上拒绝存储权限，必须按系统版本选对权限，所以需要版本号。**Android 部分按开发者要求未编译、未真机验证。** |
 | 2026-10-18 | 新增打包字体资源（非 Dart 依赖）：HarmonyOS Sans SC ×3、EB Garamond ×4、Noto Serif SC ×2 及三份协议文本 | 开发者要求内置字体；许可与取舍见 §10 “字体”。 |
 | 2026-10-18 | M1-5 加入 `drift`、`drift_flutter`；dev：`drift_dev`、`build_runner`。随后按开发者“sqlite 用主流版本”的指示**不直接依赖 `sqlite3_flutter_libs`**（已移除；它被 `drift_flutter` 传递引入，但 0.6.0+eol 版本是不含原生代码的空壳），SQLite 由 `sqlite3` 3.x 官方构建 hook 内置（macOS 实测 `sqlite3` 与 drift 正常工作）。加入 `file_picker` ^13.1.0 | 均在 §1.3 清单内。`file_picker` 用于“添加音乐文件夹”（SET-01、LIB-01）。FTS5 trigram 是否可用仍待 M0-11 验证。 |
@@ -596,3 +620,4 @@ scan_errors(path PK, message, at)
 1. **`dynamic_color` 与 `material_ui`**：Flutter 3.47 将 Material 拆为独立包 `material_ui`，`dynamic_color` 2.1.0 返回该包的 `ColorScheme`，与 `flutter/material.dart` 的不是同一类型。决定（2026-10-17）：使用完整系统色板，由 `adoptSystemScheme` 逐个角色复制，不新增依赖。
 2. **双语歌词的排列（§8.2）**：开发者曲库中 4 首双语歌词的原文/翻译顺序是反的。决定（2026-10-17）：按惯例处理（同一时间戳第一行为原文），这些文件视为数据问题，不做特殊处理。
 3. **播放内核改用 Rust（2026-10-17，开发者决定）**：原方案 media_kit 的最大风险是打包的 libmpv 是否含 EQ 所需的 libavfilter 滤镜，且其维护放缓。改为 Rust 内核：symphonia 解码（FLAC/MP3 gapless）、rodio/cpal 输出与重采样、biquad 自写 10 段 EQ、lofty 读标签；参考了开源 Flutter + Rust 播放器 Rune（MPL-2.0，只参考思路，不拷贝代码）。好处：EQ 两平台完全一致且可测试，标签读取更快；代价：无缝播放预读、设备切换需要自己实现。media_kit 保留为退路（§1.4）。
+4. **2.0 改用平台原生播放内核（2026-10-18，开发者决定，取代第 3 条中的播放部分）**：Android 起初看到卡顿、切歌闪退、发热，核查确认全程是 symphonia 软解加 Rust EQ，没有使用系统解码。开发者决定 2.0 起 Android 全部使用 Google 提供的编解码（Media3 ExoPlayer），macOS 使用系统 AVFoundation，范围与取舍见 §4.7。第 3 条保留的部分：lofty 读标签、encoding_rs、FRB。

@@ -726,4 +726,17 @@ class AppLocalizationsEs extends AppLocalizations {
   @override
   String get surfaceMaterialHint =>
       'El cristal premium convierte la barra lateral, las tarjetas, la barra del reproductor y el panel en cristal esmerilado translúcido sobre una luz en movimiento. Consume más energía.';
+
+  @override
+  String get settingsPlaybackCore => 'Motor de reproducción';
+
+  @override
+  String get settingsPlaybackCoreHint =>
+      'Decodificación del sistema (Media3) o motor Rust. Reinicia la app para aplicarlo.';
+
+  @override
+  String get playbackCoreSystem => 'Sistema (Media3)';
+
+  @override
+  String get playbackCoreRust => 'Motor Rust';
 }

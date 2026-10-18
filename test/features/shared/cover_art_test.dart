@@ -9,6 +9,7 @@ import 'package:nyaplayer/domain/cover_source.dart';
 import 'package:nyaplayer/domain/models.dart';
 import 'package:nyaplayer/app/theme/theme_settings.dart';
 import 'package:nyaplayer/features/now_playing/player_background.dart';
+import 'package:nyaplayer/features/now_playing/pre_blurred_cover.dart';
 import 'package:nyaplayer/features/shared/cover_art.dart';
 import 'package:nyaplayer/services/library/cover_cache.dart';
 import 'package:nyaplayer/services/library/cover_providers.dart';
@@ -229,18 +230,22 @@ void main() {
             ),
           );
       await tester.pumpWidget(view(track));
-      expect(find.byType(ImageFiltered), findsNothing);
-      await tester.runAsync(
-        () => precacheImage(
-          ResizeImage(FileImage(File(files.thumbnail)), width: 256),
-          tester.element(find.byType(PlayerBackground)),
-        ),
-      );
+      expect(find.byType(PreBlurredCover), findsNothing);
       cache.requests[sourceA]!.complete(files);
+      await tester.pump();
+      expect(find.byType(PreBlurredCover), findsOneWidget);
+      // The cover is blurred once off the frame path; wait for the bitmap.
+      for (var i = 0; i < 40 && find.byType(RawImage).evaluate().isEmpty; i++) {
+        await tester.runAsync(
+          () => Future<void>.delayed(const Duration(milliseconds: 50)),
+        );
+        await tester.pump();
+      }
       await tester.pumpAndSettle();
-      expect(find.byType(ImageFiltered), findsOneWidget);
+      expect(find.byType(ImageFiltered), findsNothing);
+      expect(find.byType(RawImage), findsOneWidget);
       expect(
-        tester.getSize(find.byType(Image)),
+        tester.getSize(find.byType(RawImage)),
         tester.getSize(find.byType(PlayerBackground)),
       );
       expect(find.text('Controls'), findsOneWidget);

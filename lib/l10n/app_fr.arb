@@ -213,5 +213,9 @@
   "surfaceMaterial": "Matière",
   "materialStandard": "Standard",
   "materialGlass": "Verre premium",
-  "surfaceMaterialHint": "Le verre premium rend la barre latérale, les cartes, la barre de lecture et le tiroir translucides, comme du verre dépoli sur une lumière mouvante. Consomme plus d'énergie."
+  "surfaceMaterialHint": "Le verre premium rend la barre latérale, les cartes, la barre de lecture et le tiroir translucides, comme du verre dépoli sur une lumière mouvante. Consomme plus d'énergie.",
+  "settingsPlaybackCore": "Moteur de lecture",
+  "settingsPlaybackCoreHint": "Décodage système (Media3) ou moteur Rust. Redémarrez l'app pour appliquer.",
+  "playbackCoreSystem": "Système (Media3)",
+  "playbackCoreRust": "Moteur Rust"
 }
