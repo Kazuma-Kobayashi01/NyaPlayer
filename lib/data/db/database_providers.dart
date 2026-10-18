@@ -6,8 +6,11 @@ import 'package:nyaplayer/data/db/app_database.dart' show AppDatabase;
 import 'package:nyaplayer/data/library.dart';
 import 'package:nyaplayer/data/library_providers.dart';
 import 'package:nyaplayer/data/repositories/library_repository.dart';
+import 'package:nyaplayer/data/repositories/eq_preset_repository.dart';
 import 'package:nyaplayer/data/repositories/playlist_repository.dart';
+import 'package:nyaplayer/data/repositories/search_repository.dart';
 import 'package:nyaplayer/domain/models.dart';
+import 'package:nyaplayer/services/eq/eq_presets.dart' show SavedEqPreset;
 import 'package:nyaplayer/services/library/library_scanner.dart';
 
 /// `main` overrides this with the on-disk database. The default is an
@@ -20,6 +23,19 @@ final databaseProvider = Provider<AppDatabase>((ref) {
 
 final libraryRepositoryProvider = Provider<LibraryRepository>(
   (ref) => LibraryRepository(ref.watch(databaseProvider)),
+);
+
+final searchRepositoryProvider = Provider<SearchRepository>(
+  (ref) => SearchRepository(ref.watch(databaseProvider)),
+);
+
+final eqPresetRepositoryProvider = Provider<EqPresetRepository>(
+  (ref) => EqPresetRepository(ref.watch(databaseProvider)),
+);
+
+/// Presets the user saved, newest last (EQ-04).
+final savedEqPresetsProvider = StreamProvider<List<SavedEqPreset>>(
+  (ref) => ref.watch(eqPresetRepositoryProvider).watch(),
 );
 
 final playlistRepositoryProvider = Provider<PlaylistRepository>(

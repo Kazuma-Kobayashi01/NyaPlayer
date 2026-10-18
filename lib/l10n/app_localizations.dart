@@ -837,6 +837,12 @@ abstract class AppLocalizations {
   /// **'圆形（旋转）'**
   String get coverShapeDisc;
 
+  /// No description provided for @coverShapeTurntable.
+  ///
+  /// In zh, this message translates to:
+  /// **'唱片机'**
+  String get coverShapeTurntable;
+
   /// No description provided for @expandPlayer.
   ///
   /// In zh, this message translates to:
@@ -1292,6 +1298,108 @@ abstract class AppLocalizations {
   /// In zh, this message translates to:
   /// **'打开系统设置'**
   String get musicPermissionSettings;
+
+  /// No description provided for @settingsMinLength.
+  ///
+  /// In zh, this message translates to:
+  /// **'最短时长'**
+  String get settingsMinLength;
+
+  /// No description provided for @minLengthOff.
+  ///
+  /// In zh, this message translates to:
+  /// **'不过滤，显示全部'**
+  String get minLengthOff;
+
+  /// No description provided for @minLengthSummary.
+  ///
+  /// In zh, this message translates to:
+  /// **'隐藏短于 {duration} 的音频'**
+  String minLengthSummary(String duration);
+
+  /// No description provided for @lengthSeconds.
+  ///
+  /// In zh, this message translates to:
+  /// **'{count} 秒'**
+  String lengthSeconds(int count);
+
+  /// No description provided for @lengthMinutes.
+  ///
+  /// In zh, this message translates to:
+  /// **'{count} 分钟'**
+  String lengthMinutes(int count);
+
+  /// No description provided for @eqSavePreset.
+  ///
+  /// In zh, this message translates to:
+  /// **'保存为预设'**
+  String get eqSavePreset;
+
+  /// No description provided for @eqPresetName.
+  ///
+  /// In zh, this message translates to:
+  /// **'预设名称'**
+  String get eqPresetName;
+
+  /// No description provided for @eqDeletePresetBody.
+  ///
+  /// In zh, this message translates to:
+  /// **'将删除预设“{name}”。'**
+  String eqDeletePresetBody(String name);
+
+  /// No description provided for @notificationPermissionTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'显示播放控制？'**
+  String get notificationPermissionTitle;
+
+  /// No description provided for @notificationPermissionBody.
+  ///
+  /// In zh, this message translates to:
+  /// **'允许通知后，可以在通知栏和锁屏上控制播放。不允许也能正常播放。'**
+  String get notificationPermissionBody;
+
+  /// No description provided for @allow.
+  ///
+  /// In zh, this message translates to:
+  /// **'允许'**
+  String get allow;
+
+  /// No description provided for @flowingLight.
+  ///
+  /// In zh, this message translates to:
+  /// **'流光背景'**
+  String get flowingLight;
+
+  /// No description provided for @flowingLightHint.
+  ///
+  /// In zh, this message translates to:
+  /// **'播放界面背景上有缓慢流动的彩色光，颜色取自封面；Hi-Res 歌曲会多一抹金色。'**
+  String get flowingLightHint;
+
+  /// No description provided for @surfaceMaterial.
+  ///
+  /// In zh, this message translates to:
+  /// **'材质'**
+  String get surfaceMaterial;
+
+  /// No description provided for @materialStandard.
+  ///
+  /// In zh, this message translates to:
+  /// **'标准'**
+  String get materialStandard;
+
+  /// No description provided for @materialGlass.
+  ///
+  /// In zh, this message translates to:
+  /// **'高级玻璃'**
+  String get materialGlass;
+
+  /// No description provided for @surfaceMaterialHint.
+  ///
+  /// In zh, this message translates to:
+  /// **'高级玻璃会让侧栏、卡片、播放条和抽屉变成半透明的磨砂玻璃，背后透出缓缓流动的光。更耗电。'**
+  String get surfaceMaterialHint;
 }
 
 class _AppLocalizationsDelegate

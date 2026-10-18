@@ -14,6 +14,7 @@ import 'package:nyaplayer/features/now_playing/player_menu.dart';
 import 'package:nyaplayer/features/queue/queue_list.dart';
 import 'package:nyaplayer/domain/models.dart';
 import 'package:nyaplayer/features/shared/faded_edges.dart';
+import 'package:nyaplayer/features/shared/glass_surface.dart';
 import 'package:nyaplayer/features/shared/library_builder.dart';
 import 'package:nyaplayer/features/shared/quality_badge.dart';
 import 'package:nyaplayer/l10n/app_localizations.dart';
@@ -37,111 +38,126 @@ class _NowPlayingPanelState extends ConsumerState<NowPlayingPanel> {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     final track = ref.watch(queueProvider.select((s) => s.current));
+    final glass = ref.watch(glassMaterialProvider);
 
     return Builder(
       builder: (context) {
         final scheme = Theme.of(context).colorScheme;
+        final body = PlayerBackground(
+          track: track,
+          translucent: glass,
+          child: track == null
+              ? EmptyState(
+                  icon: Icons.music_off_outlined,
+                  title: l10n.notPlaying,
+                  body: l10n.notPlayingHint,
+                )
+              : Column(
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(28, 16, 12, 0),
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Expanded(
+                            child: Padding(
+                              padding: const EdgeInsets.only(top: 6),
+                              child: _TitleBlock(track: track),
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Padding(
+                            padding: const EdgeInsets.only(top: 4, right: 4),
+                            child: LyricsQueueToggle(
+                              allowNone: true,
+                              selected: switch (_tab) {
+                                _PanelTab.cover => null,
+                                _PanelTab.lyrics => PlayerView.lyrics,
+                                _PanelTab.queue => PlayerView.queue,
+                              },
+                              onChanged: (view) => setState(
+                                () => _tab = switch (view) {
+                                  null => _PanelTab.cover,
+                                  PlayerView.lyrics => _PanelTab.lyrics,
+                                  PlayerView.queue => _PanelTab.queue,
+                                },
+                              ),
+                            ),
+                          ),
+                          IconButton(
+                            tooltip: l10n.expandPlayer,
+                            style: const ButtonStyle(
+                              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                            ),
+                            iconSize: 18,
+                            padding: const EdgeInsets.all(4),
+                            constraints: const BoxConstraints.tightFor(
+                              width: 34,
+                              height: 34,
+                            ),
+                            icon: const Icon(Icons.open_in_full),
+                            onPressed: () => context.push('/now-playing'),
+                          ),
+                        ],
+                      ),
+                    ),
+                    Expanded(
+                      child: AnimatedSwitcher(
+                        duration: Durations.medium2,
+                        child: switch (_tab) {
+                          _PanelTab.cover => _CoverView(
+                            key: const ValueKey('cover'),
+                            track: track,
+                            onLyrics: () =>
+                                setState(() => _tab = _PanelTab.lyrics),
+                          ),
+                          _PanelTab.lyrics => const FadedEdges(
+                            key: ValueKey('lyrics'),
+                            child: LyricsView(),
+                          ),
+                          _PanelTab.queue => const FadedEdges(
+                            key: ValueKey('queue'),
+                            child: QueueList(padding: FadedEdges.fadePadding),
+                          ),
+                        },
+                      ),
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 8),
+                      child: SeekBar(duration: track.duration),
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(12, 0, 12, 20),
+                      child: PlayerControlsRow(
+                        track: track,
+                        transport: const TransportControls(spacing: 12),
+                        menuItems: [
+                          PlayerMenuButton.equalizer(context),
+                          PlayerMenuButton.songInfo(context, track),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+        );
+        const margin = EdgeInsets.fromLTRB(0, 8, 8, 8);
+        if (glass) {
+          return Padding(
+            padding: margin,
+            child: GlassSurface(
+              color: scheme.surface,
+              borderRadius: desktopCardRadius,
+              glassOpacity: 0.6,
+              child: body,
+            ),
+          );
+        }
         return Card.filled(
-          margin: const EdgeInsets.fromLTRB(0, 8, 8, 8),
+          margin: margin,
           color: scheme.surface,
           shape: RoundedRectangleBorder(borderRadius: desktopCardRadius),
           clipBehavior: Clip.antiAlias,
-          child: PlayerBackground(
-            track: track,
-            child: track == null
-                ? EmptyState(
-                    icon: Icons.music_off_outlined,
-                    title: l10n.notPlaying,
-                    body: l10n.notPlayingHint,
-                  )
-                : Column(
-                    children: [
-                      Padding(
-                        padding: const EdgeInsets.fromLTRB(28, 16, 12, 0),
-                        child: Row(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Expanded(
-                              child: Padding(
-                                padding: const EdgeInsets.only(top: 6),
-                                child: _TitleBlock(track: track),
-                              ),
-                            ),
-                            const SizedBox(width: 8),
-                            Padding(
-                              padding: const EdgeInsets.only(top: 4, right: 4),
-                              child: LyricsQueueToggle(
-                                allowNone: true,
-                                selected: switch (_tab) {
-                                  _PanelTab.cover => null,
-                                  _PanelTab.lyrics => PlayerView.lyrics,
-                                  _PanelTab.queue => PlayerView.queue,
-                                },
-                                onChanged: (view) => setState(
-                                  () => _tab = switch (view) {
-                                    null => _PanelTab.cover,
-                                    PlayerView.lyrics => _PanelTab.lyrics,
-                                    PlayerView.queue => _PanelTab.queue,
-                                  },
-                                ),
-                              ),
-                            ),
-                            IconButton(
-                              tooltip: l10n.expandPlayer,
-                              style: const ButtonStyle(
-                                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                              ),
-                              iconSize: 18,
-                              padding: const EdgeInsets.all(4),
-                              constraints: const BoxConstraints.tightFor(
-                                width: 34,
-                                height: 34,
-                              ),
-                              icon: const Icon(Icons.open_in_full),
-                              onPressed: () => context.push('/now-playing'),
-                            ),
-                          ],
-                        ),
-                      ),
-                      Expanded(
-                        child: AnimatedSwitcher(
-                          duration: Durations.medium2,
-                          child: switch (_tab) {
-                            _PanelTab.cover => _CoverView(
-                              key: const ValueKey('cover'),
-                              track: track,
-                              onLyrics: () =>
-                                  setState(() => _tab = _PanelTab.lyrics),
-                            ),
-                            _PanelTab.lyrics => const FadedEdges(
-                              key: ValueKey('lyrics'),
-                              child: LyricsView(),
-                            ),
-                            _PanelTab.queue => const FadedEdges(
-                              key: ValueKey('queue'),
-                              child: QueueList(padding: FadedEdges.fadePadding),
-                            ),
-                          },
-                        ),
-                      ),
-                      Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 8),
-                        child: SeekBar(duration: track.duration),
-                      ),
-                      Padding(
-                        padding: const EdgeInsets.fromLTRB(12, 0, 12, 20),
-                        child: PlayerControlsRow(
-                          track: track,
-                          transport: const TransportControls(spacing: 12),
-                          menuItems: [
-                            PlayerMenuButton.equalizer(context),
-                            PlayerMenuButton.songInfo(context, track),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-          ),
+          child: body,
         );
       },
     );

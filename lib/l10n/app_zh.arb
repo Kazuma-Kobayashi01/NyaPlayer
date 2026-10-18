@@ -155,6 +155,7 @@
   "coverShape": "封面样式",
   "coverShapeSquare": "方形",
   "coverShapeDisc": "圆形（旋转）",
+  "coverShapeTurntable": "唱片机",
   "expandPlayer": "放大播放页",
   "collapsePlayer": "收起",
   "playerMenu": "播放菜单",
@@ -278,5 +279,50 @@
   "folderPickFailed": "无法打开文件夹选择窗口",
   "musicPermissionTitle": "需要读取音乐的权限",
   "musicPermissionBody": "NyaPlayer 只在本机读取你选择的文件夹里的音频文件，不会联网。请允许访问音乐和音频，否则无法扫描曲库。",
-  "musicPermissionSettings": "打开系统设置"
+  "musicPermissionSettings": "打开系统设置",
+  "settingsMinLength": "最短时长",
+  "minLengthOff": "不过滤，显示全部",
+  "minLengthSummary": "隐藏短于 {duration} 的音频",
+  "@minLengthSummary": {
+    "placeholders": {
+      "duration": {
+        "type": "String"
+      }
+    }
+  },
+  "lengthSeconds": "{count} 秒",
+  "@lengthSeconds": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "lengthMinutes": "{count} 分钟",
+  "@lengthMinutes": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "eqSavePreset": "保存为预设",
+  "eqPresetName": "预设名称",
+  "eqDeletePresetBody": "将删除预设“{name}”。",
+  "@eqDeletePresetBody": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "notificationPermissionTitle": "显示播放控制？",
+  "notificationPermissionBody": "允许通知后，可以在通知栏和锁屏上控制播放。不允许也能正常播放。",
+  "allow": "允许",
+  "flowingLight": "流光背景",
+  "flowingLightHint": "播放界面背景上有缓慢流动的彩色光，颜色取自封面；Hi-Res 歌曲会多一抹金色。",
+  "surfaceMaterial": "材质",
+  "materialStandard": "标准",
+  "materialGlass": "高级玻璃",
+  "surfaceMaterialHint": "高级玻璃会让侧栏、卡片、播放条和抽屉变成半透明的磨砂玻璃，背后透出缓缓流动的光。更耗电。"
 }

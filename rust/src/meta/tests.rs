@@ -304,6 +304,65 @@ fn mp3_cjk_tags_and_uslt_with_timestamps_preferred() {
     assert_eq!(m.lyrics.as_deref(), Some("first"));
 }
 
+/// What a legacy tagger wrote: `text` in `encoding`, declared as Latin-1.
+fn legacy_bytes(encoding: &'static encoding_rs::Encoding, text: &str) -> String {
+    let (bytes, _, unmappable) = encoding.encode(text);
+    assert!(!unmappable);
+    bytes.iter().map(|b| char::from(*b)).collect()
+}
+
+fn latin1_frame(id: &'static str, v: &str) -> Frame<'static> {
+    Frame::Text(TextInformationFrame::new(
+        FrameId::Valid(Cow::Borrowed(id)),
+        TextEncoding::Latin1,
+        v.to_string(),
+    ))
+}
+
+#[test]
+fn mp3_legacy_gbk_and_shift_jis_tags_are_repaired() {
+    let mut tag = Id3v2Tag::new();
+    tag.insert(latin1_frame(
+        "TIT2",
+        &legacy_bytes(encoding_rs::GBK, "十年"),
+    ));
+    tag.insert(latin1_frame(
+        "TPE1",
+        &legacy_bytes(encoding_rs::GBK, "陈奕迅"),
+    ));
+    tag.insert(latin1_frame(
+        "TALB",
+        &legacy_bytes(encoding_rs::SHIFT_JIS, "打上花火"),
+    ));
+    tag.insert(Frame::UnsynchronizedText(UnsynchronizedTextFrame::new(
+        TextEncoding::Latin1,
+        *b"chi",
+        String::new(),
+        legacy_bytes(encoding_rs::GBK, "[00:01.00]你好\n[00:02.00]世界"),
+    )));
+    let path = make_mp3("legacy.mp3", Some(tag));
+
+    let m = api::read_metadata(s(&path)).unwrap();
+    assert_eq!(m.title.as_deref(), Some("十年"));
+    assert_eq!(m.artist.as_deref(), Some("陈奕迅"));
+    assert_eq!(m.album.as_deref(), Some("打上花火"));
+    assert_eq!(m.lyrics.as_deref(), Some("[00:01.00]你好\n[00:02.00]世界"));
+}
+
+#[test]
+fn mp3_real_latin1_and_utf8_tags_are_left_alone() {
+    let mut tag = Id3v2Tag::new();
+    tag.insert(latin1_frame("TIT2", "Café Del Mar"));
+    tag.insert(latin1_frame("TPE1", "Señor Coconut"));
+    tag.insert(text_frame("TALB", "打上花火"));
+    let path = make_mp3("latin1.mp3", Some(tag));
+
+    let m = api::read_metadata(s(&path)).unwrap();
+    assert_eq!(m.title.as_deref(), Some("Café Del Mar"));
+    assert_eq!(m.artist.as_deref(), Some("Señor Coconut"));
+    assert_eq!(m.album.as_deref(), Some("打上花火"));
+}
+
 #[test]
 fn mp3_sylt_converted_to_lrc() {
     let mut tag = Id3v2Tag::new();

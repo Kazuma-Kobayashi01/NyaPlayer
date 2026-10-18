@@ -10,11 +10,32 @@ Future<String?> promptPlaylistName(
   String? initial,
   required String title,
   required String confirmLabel,
+}) => promptName(
+  context,
+  initial: initial,
+  title: title,
+  confirmLabel: confirmLabel,
+);
+
+/// Asks for a name (playlist by default, or whatever [label] says). Null
+/// when cancelled or left blank.
+Future<String?> promptName(
+  BuildContext context, {
+  String? initial,
+  required String title,
+  required String confirmLabel,
+  String? label,
+  String? hint,
 }) {
   return showDialog<String>(
     context: context,
-    builder: (context) =>
-        _NameDialog(initial: initial, title: title, confirmLabel: confirmLabel),
+    builder: (context) => _NameDialog(
+      initial: initial,
+      title: title,
+      confirmLabel: confirmLabel,
+      label: label,
+      hint: hint,
+    ),
   );
 }
 
@@ -23,11 +44,15 @@ class _NameDialog extends StatefulWidget {
     required this.initial,
     required this.title,
     required this.confirmLabel,
+    this.label,
+    this.hint,
   });
 
   final String? initial;
   final String title;
   final String confirmLabel;
+  final String? label;
+  final String? hint;
 
   @override
   State<_NameDialog> createState() => _NameDialogState();
@@ -57,8 +82,10 @@ class _NameDialogState extends State<_NameDialog> {
         autofocus: true,
         textInputAction: TextInputAction.done,
         decoration: InputDecoration(
-          labelText: l10n.playlistName,
-          hintText: l10n.playlistNameHint,
+          labelText: widget.label ?? l10n.playlistName,
+          hintText:
+              widget.hint ??
+              (widget.label == null ? l10n.playlistNameHint : null),
         ),
         onSubmitted: (_) => _submit(),
       ),

@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:nyaplayer/data/db/database_providers.dart';
+import 'package:nyaplayer/features/playlists/playlist_dialogs.dart';
 import 'package:nyaplayer/l10n/app_localizations.dart';
 import 'package:nyaplayer/services/eq/eq_state.dart';
 
@@ -26,6 +28,11 @@ class EqualizerPage extends ConsumerWidget {
     final theme = Theme.of(context);
     final eq = ref.watch(eqProvider);
     final controller = ref.read(eqProvider.notifier);
+    final saved = ref.watch(savedEqPresetsProvider).value ?? const [];
+    final selectedSaved = [
+      for (final p in saved)
+        if (p.presetId == eq.presetId) p,
+    ].firstOrNull;
 
     return Scaffold(
       appBar: AppBar(
@@ -44,15 +51,68 @@ class EqualizerPage extends ConsumerWidget {
             onChanged: controller.setEnabled,
           ),
           Padding(
-            padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
-            child: Text(l10n.eqPresets, style: theme.textTheme.titleSmall),
+            padding: const EdgeInsets.fromLTRB(16, 8, 8, 4),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    l10n.eqPresets,
+                    style: theme.textTheme.titleSmall,
+                  ),
+                ),
+                if (selectedSaved != null)
+                  PopupMenuButton<String>(
+                    tooltip: l10n.moreOptions,
+                    onSelected: (action) => _onSavedAction(
+                      context,
+                      controller,
+                      selectedSaved,
+                      action,
+                    ),
+                    itemBuilder: (context) => [
+                      PopupMenuItem(value: 'rename', child: Text(l10n.rename)),
+                      PopupMenuItem(value: 'delete', child: Text(l10n.delete)),
+                    ],
+                  ),
+                TextButton.icon(
+                  onPressed: () => _savePreset(context, controller),
+                  icon: const Icon(Icons.save_outlined, size: 18),
+                  label: Text(l10n.eqSavePreset),
+                ),
+              ],
+            ),
           ),
           SizedBox(
             height: 48,
             child: ListView(
               scrollDirection: Axis.horizontal,
               padding: const EdgeInsets.symmetric(horizontal: 16),
+              // The curve being worked on and the user's own presets come
+              // first, so they are in view without scrolling.
               children: [
+                if (eq.presetId == customPresetId ||
+                    (userPresetIdOf(eq.presetId) != null &&
+                        selectedSaved == null))
+                  Padding(
+                    padding: const EdgeInsets.only(right: 8),
+                    child: ChoiceChip(
+                      label: Text(l10n.eqPresetCustom),
+                      selected: true,
+                      onSelected: null,
+                    ),
+                  ),
+                for (final p in saved)
+                  Padding(
+                    padding: const EdgeInsets.only(right: 8),
+                    child: ChoiceChip(
+                      key: ValueKey('eq-preset-${p.id}'),
+                      label: Text(p.name),
+                      selected: eq.presetId == p.presetId,
+                      onSelected: eq.enabled
+                          ? (_) => controller.selectSaved(p)
+                          : null,
+                    ),
+                  ),
                 for (final p in builtinEqPresets)
                   Padding(
                     padding: const EdgeInsets.only(right: 8),
@@ -63,12 +123,6 @@ class EqualizerPage extends ConsumerWidget {
                           ? (_) => controller.selectPreset(p.id)
                           : null,
                     ),
-                  ),
-                if (eq.presetId == customPresetId)
-                  ChoiceChip(
-                    label: Text(l10n.eqPresetCustom),
-                    selected: true,
-                    onSelected: null,
                   ),
               ],
             ),
@@ -115,6 +169,55 @@ class EqualizerPage extends ConsumerWidget {
       ),
     );
   }
+}
+
+Future<void> _savePreset(BuildContext context, EqController controller) async {
+  final l10n = AppLocalizations.of(context);
+  final name = await promptName(
+    context,
+    title: l10n.eqSavePreset,
+    confirmLabel: l10n.save,
+    label: l10n.eqPresetName,
+  );
+  if (name != null) await controller.saveCurrent(name);
+}
+
+Future<void> _onSavedAction(
+  BuildContext context,
+  EqController controller,
+  SavedEqPreset preset,
+  String action,
+) async {
+  final l10n = AppLocalizations.of(context);
+  if (action == 'rename') {
+    final name = await promptName(
+      context,
+      initial: preset.name,
+      title: l10n.rename,
+      confirmLabel: l10n.save,
+      label: l10n.eqPresetName,
+    );
+    if (name != null) await controller.renameSaved(preset.id, name);
+    return;
+  }
+  final ok = await showDialog<bool>(
+    context: context,
+    builder: (context) => AlertDialog(
+      title: Text(l10n.delete),
+      content: Text(l10n.eqDeletePresetBody(preset.name)),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(false),
+          child: Text(l10n.cancel),
+        ),
+        FilledButton(
+          onPressed: () => Navigator.of(context).pop(true),
+          child: Text(l10n.delete),
+        ),
+      ],
+    ),
+  );
+  if (ok ?? false) await controller.deleteSaved(preset.id);
 }
 
 class _BandSlider extends StatelessWidget {

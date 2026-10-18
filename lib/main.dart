@@ -14,6 +14,7 @@ import 'package:nyaplayer/app/router.dart' show needsOnboardingProvider;
 import 'package:nyaplayer/core/log.dart';
 import 'package:nyaplayer/data/db/app_database.dart';
 import 'package:nyaplayer/data/db/database_providers.dart';
+import 'package:nyaplayer/data/library_filter.dart';
 import 'package:nyaplayer/data/library_providers.dart';
 import 'package:nyaplayer/data/repositories/favorites_repository.dart';
 import 'package:nyaplayer/data/repositories/library_repository.dart';
@@ -23,6 +24,7 @@ import 'package:nyaplayer/services/player/playback_persistence.dart';
 import 'package:nyaplayer/data/sample_library.dart';
 import 'package:nyaplayer/dev/preview_hook.dart';
 import 'package:nyaplayer/services/eq/eq_state.dart';
+import 'package:nyaplayer/services/player/audio_focus_coordinator.dart';
 import 'package:nyaplayer/services/player/fake_player_engine.dart';
 import 'package:nyaplayer/services/player/player_engine.dart';
 import 'package:nyaplayer/services/player/queue_controller.dart';
@@ -91,8 +93,16 @@ Future<void> main() async {
       playerEngineProvider.overrideWithValue(engine),
       databaseProvider.overrideWithValue(database),
       libraryProvider.overrideWith(
-        (ref) => ref.watch(libraryRepositoryProvider).watchLibrary(),
+        (ref) => ref
+            .watch(libraryRepositoryProvider)
+            .watchLibrary(minDuration: ref.watch(minTrackDurationProvider)),
       ),
+      trackSearchProvider.overrideWith((ref) {
+        final repository = ref.watch(searchRepositoryProvider);
+        final library = ref.watch(libraryProvider).value;
+        return (query) async =>
+            library == null ? const [] : repository.tracks(library, query);
+      }),
       needsOnboardingProvider.overrideWithValue(needsOnboarding),
     ];
   }
@@ -130,6 +140,11 @@ Future<void> main() async {
       },
     );
     await lifecycle.initialize();
+  }
+  if (Platform.isAndroid) {
+    // Calls, other players and unplugged headphones (TECH_SPEC §4.6).
+    final session = await SystemAudioFocusSession.create();
+    AudioFocusCoordinator(container, session).start();
   }
   // The equalizer UI writes eqProvider; the engine follows it (TECH_SPEC §5).
   container.listen<EqState>(

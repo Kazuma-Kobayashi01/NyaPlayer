@@ -19,7 +19,10 @@ import 'package:nyaplayer/data/db/database_providers.dart';
 import 'package:nyaplayer/data/library_providers.dart';
 import 'package:nyaplayer/features/lyrics/lyrics_settings.dart';
 import 'package:nyaplayer/features/lyrics/lyrics_view.dart';
+import 'package:nyaplayer/features/now_playing/flowing_light.dart';
+import 'package:nyaplayer/features/now_playing/turntable_cover.dart';
 import 'package:nyaplayer/features/now_playing/now_playing_panel.dart';
+import 'package:nyaplayer/features/shared/ambient_backdrop.dart';
 import 'package:nyaplayer/features/now_playing/player_artwork.dart';
 import 'package:nyaplayer/features/now_playing/now_playing_page.dart';
 import 'package:nyaplayer/features/queue/queue_list.dart';
@@ -251,6 +254,176 @@ void main() {
     } finally {
       debugDefaultTargetPlatformOverride = null;
     }
+  });
+
+  group('player background light and glass material', () {
+    ProviderContainer containerOf(WidgetTester tester) =>
+        ProviderScope.containerOf(tester.element(find.byType(NyaPlayerApp)));
+
+    testWidgets('the flowing light is on by default and can be switched off', (
+      tester,
+    ) async {
+      await _pumpApp(tester, const Size(1400, 900));
+      expect(find.byType(FlowingLight), findsOneWidget);
+
+      containerOf(tester)
+          .read(themeSettingsProvider.notifier)
+          .setFlowingLight(false);
+      await tester.pump(const Duration(milliseconds: 300));
+      expect(find.byType(FlowingLight), findsNothing);
+    });
+
+    testWidgets('the immersive player has the flowing light too', (
+      tester,
+    ) async {
+      await _pumpApp(tester, const Size(400, 800));
+      unawaited(containerOf(tester).read(routerProvider).push('/now-playing'));
+      await tester.pumpAndSettle();
+      expect(find.byType(FlowingLight), findsWidgets);
+    });
+
+    testWidgets('standard material has no glass and no ambient light', (
+      tester,
+    ) async {
+      await _pumpApp(tester, const Size(1400, 900));
+      expect(find.byType(BackdropFilter), findsNothing);
+      expect(find.byType(AmbientBackdrop), findsNothing);
+    });
+
+    testWidgets('premium glass frosts the wide layout over an ambient light', (
+      tester,
+    ) async {
+      await _pumpApp(tester, const Size(1400, 900));
+      containerOf(tester)
+          .read(themeSettingsProvider.notifier)
+          .setMaterial(SurfaceMaterial.glass);
+      await tester.pump(const Duration(milliseconds: 400));
+
+      expect(find.byType(AmbientBackdrop), findsOneWidget);
+      // Sidebar cards, the library card and the player panel.
+      expect(find.byType(BackdropFilter), findsAtLeastNWidgets(4));
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('premium glass frosts the phone layout and its player bar', (
+      tester,
+    ) async {
+      await _pumpApp(tester, const Size(400, 800));
+      containerOf(tester)
+          .read(themeSettingsProvider.notifier)
+          .setMaterial(SurfaceMaterial.glass);
+      await tester.pump(const Duration(milliseconds: 400));
+
+      expect(find.byType(AmbientBackdrop), findsOneWidget);
+      expect(
+        find.descendant(
+          of: find.byType(PlayerBar),
+          matching: find.byType(BackdropFilter),
+        ),
+        findsOneWidget,
+      );
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('both options are in the settings and take effect at once', (
+      tester,
+    ) async {
+      await _pumpApp(tester, const Size(1000, 800));
+      final container = containerOf(tester);
+      container.read(routerProvider).go('/settings');
+      await tester.pumpAndSettle();
+      final scrollable = find
+          .descendant(
+            of: find.byType(SettingsPage),
+            matching: find.byType(Scrollable),
+          )
+          .first;
+
+      final flowing = find.widgetWithText(
+        SwitchListTile,
+        'Flowing light background',
+      );
+      await tester.scrollUntilVisible(flowing, 300, scrollable: scrollable);
+      // Mid-screen, clear of the floating player bar.
+      await Scrollable.ensureVisible(tester.element(flowing), alignment: 0.5);
+      await tester.pumpAndSettle();
+      await tester.tap(flowing);
+      await tester.pumpAndSettle();
+      expect(container.read(themeSettingsProvider).flowingLight, isFalse);
+
+      final glass = find.text('Premium glass');
+      await tester.scrollUntilVisible(glass, -300, scrollable: scrollable);
+      await Scrollable.ensureVisible(tester.element(glass), alignment: 0.5);
+      await tester.pumpAndSettle();
+      await tester.tap(glass);
+      await tester.pumpAndSettle();
+      expect(
+        container.read(themeSettingsProvider).material,
+        SurfaceMaterial.glass,
+      );
+      expect(find.byType(AmbientBackdrop), findsOneWidget);
+    });
+  });
+
+  group('turntable cover style', () {
+    ProviderContainer containerOf(WidgetTester tester) =>
+        ProviderScope.containerOf(tester.element(find.byType(NyaPlayerApp)));
+
+    testWidgets('the desktop panel shows the record player', (tester) async {
+      final engine = await _pumpApp(tester, const Size(1400, 900));
+      await tester.tap(find.text('Afterglow').first);
+      await tester.pump(const Duration(milliseconds: 600));
+      expect(find.byType(TurntableCover), findsNothing);
+
+      containerOf(tester)
+          .read(coverShapeProvider.notifier)
+          .set(CoverShape.turntable);
+      await tester.pump(const Duration(milliseconds: 600));
+      expect(find.byType(TurntableCover), findsOneWidget);
+      expect(tester.takeException(), isNull);
+      await engine.pause();
+      await tester.pump(const Duration(milliseconds: 800));
+    });
+
+    testWidgets('the phone player shows it too and keeps it between songs', (
+      tester,
+    ) async {
+      final engine = await _pumpApp(tester, const Size(400, 800));
+      final container = containerOf(tester);
+      container.read(coverShapeProvider.notifier).set(CoverShape.turntable);
+      await tester.tap(find.text('Afterglow').first);
+      await tester.pump(const Duration(milliseconds: 600));
+      unawaited(container.read(routerProvider).push('/now-playing'));
+      await tester.pumpAndSettle();
+
+      final turntable = tester.state(find.byType(TurntableCover));
+      await container.read(queueProvider.notifier).skipNext();
+      await tester.pumpAndSettle();
+      expect(tester.state(find.byType(TurntableCover)), same(turntable));
+      expect(tester.takeException(), isNull);
+      await engine.pause();
+      await tester.pump(const Duration(milliseconds: 800));
+    });
+
+    testWidgets('it can be chosen in the settings', (tester) async {
+      await _pumpApp(tester, const Size(1000, 800));
+      final container = containerOf(tester);
+      container.read(routerProvider).go('/settings');
+      await tester.pumpAndSettle();
+      final scrollable = find
+          .descendant(
+            of: find.byType(SettingsPage),
+            matching: find.byType(Scrollable),
+          )
+          .first;
+      final option = find.text('Turntable');
+      await tester.scrollUntilVisible(option, 300, scrollable: scrollable);
+      await Scrollable.ensureVisible(tester.element(option), alignment: 0.5);
+      await tester.pumpAndSettle();
+      await tester.tap(option);
+      await tester.pumpAndSettle();
+      expect(container.read(coverShapeProvider), CoverShape.turntable);
+    });
   });
 
   testWidgets('desktop sidebar stays expanded and library stops widening', (
@@ -619,6 +792,17 @@ void main() {
     container.read(routerProvider).go('/settings');
     await tester.pumpAndSettle();
     final toggle = find.widgetWithText(SwitchListTile, 'Use built-in fonts');
+    // The settings list builds lazily; scroll until the row exists.
+    await tester.scrollUntilVisible(
+      toggle,
+      300,
+      scrollable: find
+          .descendant(
+            of: find.byType(SettingsPage),
+            matching: find.byType(Scrollable),
+          )
+          .first,
+    );
     await tester.ensureVisible(toggle);
     await tester.pumpAndSettle();
     await tester.tap(toggle);
@@ -1239,7 +1423,7 @@ void main() {
     }),
   );
 
-  test('Hi-Res needs lossless, 24-bit and 96 kHz', () {
+  test('Hi-Res is lossless and better than CD quality', () {
     Track make(String codec, int bits, int rate) => Track(
       id: 1,
       title: 't',
@@ -1256,13 +1440,21 @@ void main() {
       addedAt: DateTime(2024),
       coverSeed: 0,
     );
+    // CD quality, 16-bit / 44.1 kHz, is the line.
+    expect(isHiRes(make('FLAC', 16, 44100)), isFalse);
+    expect(isHiRes(make('FLAC', 16, 32000)), isFalse);
+    // Anything above it in either direction is Hi-Res.
+    expect(isHiRes(make('FLAC', 24, 44100)), isTrue);
+    expect(isHiRes(make('FLAC', 16, 48000)), isTrue);
+    expect(isHiRes(make('FLAC', 24, 48000)), isTrue);
     expect(isHiRes(make('FLAC', 24, 96000)), isTrue);
     expect(isHiRes(make('FLAC', 24, 192000)), isTrue);
-    expect(isHiRes(make('FLAC', 24, 48000)), isFalse);
-    expect(isHiRes(make('FLAC', 16, 96000)), isFalse);
+    // Lossy is never Hi-Res, however high the numbers.
     expect(isHiRes(make('MP3', 24, 96000)), isFalse);
+    expect(isHiRes(make('MP3', 16, 48000)), isFalse);
     expect(trackQualityLabel(make('FLAC', 24, 96000)), startsWith('Hi-Res'));
-    expect(trackQualityLabel(make('FLAC', 24, 48000)), startsWith('FLAC'));
+    expect(trackQualityLabel(make('FLAC', 24, 48000)), startsWith('Hi-Res'));
+    expect(trackQualityLabel(make('FLAC', 16, 44100)), startsWith('FLAC'));
   });
 
   for (final size in const [Size(400, 800), Size(1000, 800), Size(1500, 900)]) {

@@ -18,19 +18,38 @@ class LibraryRepository {
 
   /// Emits the whole library whenever tracks or albums change. Bursts (a scan
   /// writes many batches) are coalesced.
+  ///
+  /// Tracks with a known duration under [minDuration] are left out, and so are
+  /// albums that would be empty without them (LIB-11).
   Stream<Library> watchLibrary({
     Duration debounce = const Duration(milliseconds: 250),
+    Duration minDuration = Duration.zero,
   }) {
     final changes = _db
         .customSelect('SELECT 1', readsFrom: {_db.tracks, _db.albums})
         .watch();
-    return _debounced(changes, debounce).asyncMap((_) => loadLibrary());
+    return _debounced(
+      changes,
+      debounce,
+    ).asyncMap((_) => loadLibrary(minDuration: minDuration));
   }
 
-  Future<Library> loadLibrary() async {
-    final trackRows = await _db.select(_db.tracks).get();
-    final albumRows = await _db.select(_db.albums).get();
-    final rowById = {for (final t in trackRows) t.id: t};
+  Future<Library> loadLibrary({Duration minDuration = Duration.zero}) async {
+    final allTrackRows = await _db.select(_db.tracks).get();
+    final minMs = minDuration.inMilliseconds;
+    // An unknown duration (0) is not "short": the file may just be unreadable.
+    final trackRows = minMs <= 0
+        ? allTrackRows
+        : [
+            for (final t in allTrackRows)
+              if (t.durationMs <= 0 || t.durationMs >= minMs) t,
+          ];
+    final shown = {for (final t in trackRows) ?t.albumId};
+    final albumRows = [
+      for (final a in await _db.select(_db.albums).get())
+        if (minMs <= 0 || shown.contains(a.id)) a,
+    ];
+    final rowById = {for (final t in allTrackRows) t.id: t};
 
     final covers = <int, CoverSource>{};
     final albums = <Album>[];

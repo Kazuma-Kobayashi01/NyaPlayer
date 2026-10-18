@@ -872,6 +872,7 @@ version = "1.0.1"
 dependencies = [
  "anyhow",
  "biquad",
+ "encoding_rs",
  "flutter_rust_bridge",
  "jni",
  "lofty",

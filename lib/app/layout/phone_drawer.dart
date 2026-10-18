@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:nyaplayer/app/theme/theme_settings.dart';
 import 'package:nyaplayer/data/library_providers.dart';
+import 'package:nyaplayer/features/shared/glass_surface.dart';
 import 'package:nyaplayer/l10n/app_localizations.dart';
 
 /// One entry of the phone navigation drawer.
@@ -43,18 +44,41 @@ class PhoneDrawer extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Drawer(
-      width: 304,
-      backgroundColor: Theme.of(context).colorScheme.surfaceContainer,
-      child: SafeArea(
-        child: NavigationPanel(
-          destinations: destinations,
-          settings: settings,
-          selectedIndex: selectedIndex,
-          onSelect: onSelect,
-          onClose: () => Navigator.of(context).pop(),
-        ),
+    final scheme = Theme.of(context).colorScheme;
+    final panel = SafeArea(
+      child: NavigationPanel(
+        destinations: destinations,
+        settings: settings,
+        selectedIndex: selectedIndex,
+        onSelect: onSelect,
+        onClose: () => Navigator.of(context).pop(),
       ),
+    );
+    return Consumer(
+      builder: (context, ref, _) {
+        if (!ref.watch(glassMaterialProvider)) {
+          return Drawer(
+            width: 304,
+            backgroundColor: scheme.surfaceContainer,
+            child: panel,
+          );
+        }
+        // The page stays visible, blurred, through the drawer.
+        return Drawer(
+          width: 304,
+          backgroundColor: Colors.transparent,
+          elevation: 0,
+          child: GlassSurface(
+            color: scheme.surfaceContainer,
+            borderRadius: const BorderRadius.horizontal(
+              right: Radius.circular(16),
+            ),
+            glassOpacity: 0.6,
+            blur: 36,
+            child: panel,
+          ),
+        );
+      },
     );
   }
 }
@@ -142,10 +166,10 @@ class _Card extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Material(
+    return GlassSurface(
       color: color,
       borderRadius: BorderRadius.circular(24),
-      clipBehavior: Clip.antiAlias,
+      glassOpacity: 0.5,
       child: Padding(padding: const EdgeInsets.all(6), child: child),
     );
   }

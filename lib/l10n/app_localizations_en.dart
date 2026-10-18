@@ -396,6 +396,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get coverShapeDisc => 'Round (spinning)';
 
   @override
+  String get coverShapeTurntable => 'Turntable';
+
+  @override
   String get expandPlayer => 'Expand player';
 
   @override
@@ -655,6 +658,68 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get musicPermissionSettings => 'Open system settings';
+
+  @override
+  String get settingsMinLength => 'Minimum track length';
+
+  @override
+  String get minLengthOff => 'Show all tracks';
+
+  @override
+  String minLengthSummary(String duration) {
+    return 'Hide tracks shorter than $duration';
+  }
+
+  @override
+  String lengthSeconds(int count) {
+    return '$count sec';
+  }
+
+  @override
+  String lengthMinutes(int count) {
+    return '$count min';
+  }
+
+  @override
+  String get eqSavePreset => 'Save as preset';
+
+  @override
+  String get eqPresetName => 'Preset name';
+
+  @override
+  String eqDeletePresetBody(String name) {
+    return 'Delete preset “$name”?';
+  }
+
+  @override
+  String get notificationPermissionTitle => 'Show playback controls?';
+
+  @override
+  String get notificationPermissionBody =>
+      'Allow notifications to control playback from the notification shade and lock screen. Playback works either way.';
+
+  @override
+  String get allow => 'Allow';
+
+  @override
+  String get flowingLight => 'Flowing light background';
+
+  @override
+  String get flowingLightHint =>
+      'Soft coloured light drifts across the player background, taking its colours from the cover. Hi-Res songs get a touch of gold.';
+
+  @override
+  String get surfaceMaterial => 'Material';
+
+  @override
+  String get materialStandard => 'Standard';
+
+  @override
+  String get materialGlass => 'Premium glass';
+
+  @override
+  String get surfaceMaterialHint =>
+      'Premium glass turns the sidebar, cards, player bar and drawer into translucent frosted glass over a softly moving light. Uses more power.';
 }
 
 /// The translations for English, as used in the United Kingdom (`en_GB`).

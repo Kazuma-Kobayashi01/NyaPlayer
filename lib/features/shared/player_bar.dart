@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:nyaplayer/domain/models.dart';
 import 'package:nyaplayer/features/shared/cover_art.dart';
+import 'package:nyaplayer/features/shared/glass_surface.dart';
 import 'package:nyaplayer/l10n/app_localizations.dart';
 import 'package:nyaplayer/services/player/queue_controller.dart';
 
@@ -24,19 +25,27 @@ class PlayerBar extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final track = ref.watch(queueProvider.select((s) => s.current));
+    final glass = ref.watch(glassMaterialProvider);
     return Builder(
       builder: (context) {
         final scheme = Theme.of(context).colorScheme;
         final content = track == null
             ? const _IdleBar()
             : _ActiveBar(track: track);
+        // The blurred cover is the whole background of the opaque bar; on
+        // glass it only tints what shows through.
+        Widget cover(Track t) => Positioned.fill(
+          child: glass
+              ? Opacity(opacity: 0.45, child: _BlurredCover(track: t))
+              : _BlurredCover(track: t),
+        );
         if (!floating) {
-          return Material(
+          return GlassSurface(
             color: scheme.surfaceContainer,
+            borderRadius: BorderRadius.zero,
             child: Stack(
               children: [
-                if (track != null)
-                  Positioned.fill(child: _BlurredCover(track: track)),
+                if (track != null) cover(track),
                 SafeArea(top: false, child: content),
               ],
             ),
@@ -47,20 +56,13 @@ class PlayerBar extends ConsumerWidget {
           minimum: const EdgeInsets.only(bottom: 12),
           child: Padding(
             padding: const EdgeInsets.fromLTRB(12, 0, 12, 0),
-            child: Material(
+            child: GlassSurface(
               color: scheme.surfaceContainerHigh,
               elevation: 4,
-              shadowColor: scheme.shadow,
               borderRadius: BorderRadius.circular(28),
-              clipBehavior: Clip.antiAlias,
               child: track == null
                   ? content
-                  : Stack(
-                      children: [
-                        Positioned.fill(child: _BlurredCover(track: track)),
-                        content,
-                      ],
-                    ),
+                  : Stack(children: [cover(track), content]),
             ),
           ),
         );

@@ -398,6 +398,9 @@ class AppLocalizationsDe extends AppLocalizations {
   String get coverShapeDisc => 'Rund (rotierend)';
 
   @override
+  String get coverShapeTurntable => 'Plattenspieler';
+
+  @override
   String get expandPlayer => 'Player vergrößern';
 
   @override
@@ -660,4 +663,66 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get musicPermissionSettings => 'Systemeinstellungen öffnen';
+
+  @override
+  String get settingsMinLength => 'Mindestlänge';
+
+  @override
+  String get minLengthOff => 'Alle Titel anzeigen';
+
+  @override
+  String minLengthSummary(String duration) {
+    return 'Titel unter $duration ausblenden';
+  }
+
+  @override
+  String lengthSeconds(int count) {
+    return '$count Sek.';
+  }
+
+  @override
+  String lengthMinutes(int count) {
+    return '$count Min.';
+  }
+
+  @override
+  String get eqSavePreset => 'Als Preset speichern';
+
+  @override
+  String get eqPresetName => 'Preset-Name';
+
+  @override
+  String eqDeletePresetBody(String name) {
+    return 'Preset „$name“ löschen?';
+  }
+
+  @override
+  String get notificationPermissionTitle => 'Wiedergabesteuerung anzeigen?';
+
+  @override
+  String get notificationPermissionBody =>
+      'Erlaube Benachrichtigungen, um die Wiedergabe über die Benachrichtigungsleiste und den Sperrbildschirm zu steuern. Die Wiedergabe funktioniert auch ohne.';
+
+  @override
+  String get allow => 'Erlauben';
+
+  @override
+  String get flowingLight => 'Fließender Lichthintergrund';
+
+  @override
+  String get flowingLightHint =>
+      'Weiches farbiges Licht wandert über den Player-Hintergrund und übernimmt die Farben des Covers. Hi-Res-Titel bekommen einen Hauch Gold.';
+
+  @override
+  String get surfaceMaterial => 'Material';
+
+  @override
+  String get materialStandard => 'Standard';
+
+  @override
+  String get materialGlass => 'Premium-Glas';
+
+  @override
+  String get surfaceMaterialHint =>
+      'Premium-Glas macht Seitenleiste, Karten, Player-Leiste und Menü zu durchscheinendem Milchglas über einem sanft bewegten Licht. Verbraucht mehr Strom.';
 }

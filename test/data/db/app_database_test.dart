@@ -3,6 +3,7 @@ import 'package:drift/native.dart';
 import 'package:drift_dev/api/migrations_native.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:nyaplayer/data/db/app_database.dart';
+import 'package:nyaplayer/data/db/search_index.dart';
 
 import 'generated/schema.dart';
 
@@ -12,17 +13,23 @@ void main() {
   setUpAll(() => verifier = SchemaVerifier(GeneratedHelper()));
 
   group('schema', () {
+    // The FTS5 search index is created with plain SQL, so the snapshot does
+    // not list it (or its shadow tables): extra tables are expected.
     test(
-      'a database created fresh matches the committed v2 snapshot',
+      'a database created fresh matches the committed v3 snapshot',
       () async {
-        final connection = await verifier.startAt(2);
+        final connection = await verifier.startAt(3);
         final db = AppDatabase(connection);
         addTearDown(db.close);
-        await verifier.migrateAndValidate(db, 2);
+        await verifier.migrateAndValidate(
+          db,
+          3,
+          options: const ValidationOptions(validateDropped: false),
+        );
       },
     );
 
-    test('v1 upgrades to v2 and keeps its rows', () async {
+    test('v1 upgrades to v3, keeps its rows and indexes them', () async {
       final schema = await verifier.schemaAt(1);
       schema.rawDatabase.execute(
         "INSERT INTO tracks (path, size, mtime, title) VALUES ('/a.flac', 5, 123, 'Kept')",
@@ -33,7 +40,11 @@ void main() {
       final db = AppDatabase(schema.newConnection());
       addTearDown(db.close);
 
-      await verifier.migrateAndValidate(db, 2);
+      await verifier.migrateAndValidate(
+        db,
+        3,
+        options: const ValidationOptions(validateDropped: false),
+      );
 
       final track = (await db.select(db.tracks).get()).single;
       expect(track.title, 'Kept');
@@ -41,6 +52,120 @@ void main() {
       expect(track.mtime, -1);
       expect((await db.select(db.playlists).get()).single.name, 'p');
       expect(await db.select(db.favorites).get(), isEmpty);
+      // The search index was built from the rows that were already there.
+      expect(db.searchIndexed, isTrue);
+      expect(await searchTrackIds(db, 'Kept', indexed: true), [track.id]);
+    });
+
+    test('v2 upgrades to v3 with a search index', () async {
+      final schema = await verifier.schemaAt(2);
+      schema.rawDatabase.execute(
+        "INSERT INTO tracks (path, size, mtime, title, artist) VALUES ('/b.flac', 5, 1, '打上花火', 'DAOKO')",
+      );
+      final db = AppDatabase(schema.newConnection());
+      addTearDown(db.close);
+
+      await verifier.migrateAndValidate(
+        db,
+        3,
+        options: const ValidationOptions(validateDropped: false),
+      );
+
+      expect(db.searchIndexed, isTrue);
+      expect(await searchTrackIds(db, '上花火', indexed: true), hasLength(1));
+      // Every file is read again, so repaired tags (META-06) are picked up.
+      expect((await db.select(db.tracks).get()).single.mtime, -1);
+    });
+  });
+
+  group('search index', () {
+    late AppDatabase db;
+
+    setUp(() => db = AppDatabase(NativeDatabase.memory()));
+    tearDown(() => db.close());
+
+    Future<int> add(String title, {String artist = '', String album = ''}) => db
+        .into(db.tracks)
+        .insert(
+          TracksCompanion.insert(
+            path: '/$title-$artist-$album',
+            title: Value(title),
+            artist: Value(artist),
+            album: Value(album),
+          ),
+        );
+
+    Future<List<int>> find(String q) async {
+      // Touching the database first runs the migration that builds the index.
+      await db.select(db.tracks).get();
+      return searchTrackIds(db, q, indexed: db.searchIndexed);
+    }
+
+    test('FTS5 with the trigram tokenizer is available', () async {
+      await db.select(db.tracks).get();
+      expect(db.searchIndexed, isTrue);
+    });
+
+    test(
+      'finds CJK substrings and ignores case, in title, artist and album',
+      () async {
+        final a = await add('打上花火', artist: 'DAOKO/米津玄師');
+        final b = await add('Blue', album: 'Thank You Blue');
+        await add('Other');
+
+        expect(await find('上花火'), [a]);
+        expect(await find('米津玄'), [a]);
+        expect(await find('daoko'), [a]);
+        expect(await find('thank you'), [b]);
+        expect(await find('BLUE'), [b]);
+        expect(await find('nothing here'), isEmpty);
+      },
+    );
+
+    test('one and two character queries fall back to LIKE', () async {
+      final a = await add('十年', artist: '陈奕迅');
+      await add('Other');
+      expect(await find('十年'), [a]);
+      expect(await find('十'), [a]);
+      expect(await find('迅'), [a]);
+    });
+
+    test('quotes and wildcards in the query are plain text', () async {
+      final a = await add('100% "Real" _love_');
+      await add('Other');
+      expect(await find('"Real"'), [a]);
+      expect(await find('100%'), [a]);
+      expect(await find('_love_'), [a]);
+      expect(await find('%'), [a]);
+      expect(await find('AND OR NOT'), isEmpty);
+    });
+
+    test('follows updates and deletions of tracks', () async {
+      final id = await add('Old title');
+      expect(await find('Old title'), [id]);
+
+      await (db.update(db.tracks)..where((t) => t.id.equals(id))).write(
+        const TracksCompanion(title: Value('Brand new')),
+      );
+      expect(await find('Old title'), isEmpty);
+      expect(await find('Brand new'), [id]);
+
+      await (db.delete(db.tracks)..where((t) => t.id.equals(id))).go();
+      expect(await find('Brand new'), isEmpty);
+    });
+
+    test('built-in EQ presets are written once and kept up to date', () async {
+      final rows = await db.select(db.eqPresets).get();
+      expect(rows.where((r) => r.builtin).map((r) => r.name), [
+        'flat',
+        'pop',
+        'rock',
+        'jazz',
+        'classical',
+        'vocal',
+        'bassBoost',
+        'trebleBoost',
+      ]);
     });
   });
 

@@ -400,6 +400,9 @@ class AppLocalizationsRu extends AppLocalizations {
   String get coverShapeDisc => 'Круглая (вращается)';
 
   @override
+  String get coverShapeTurntable => 'Проигрыватель';
+
+  @override
   String get expandPlayer => 'Развернуть плеер';
 
   @override
@@ -665,4 +668,67 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get musicPermissionSettings => 'Открыть настройки системы';
+
+  @override
+  String get settingsMinLength => 'Минимальная длительность';
+
+  @override
+  String get minLengthOff => 'Показывать все треки';
+
+  @override
+  String minLengthSummary(String duration) {
+    return 'Скрывать треки короче $duration';
+  }
+
+  @override
+  String lengthSeconds(int count) {
+    return '$count с';
+  }
+
+  @override
+  String lengthMinutes(int count) {
+    return '$count мин';
+  }
+
+  @override
+  String get eqSavePreset => 'Сохранить как пресет';
+
+  @override
+  String get eqPresetName => 'Название пресета';
+
+  @override
+  String eqDeletePresetBody(String name) {
+    return 'Удалить пресет «$name»?';
+  }
+
+  @override
+  String get notificationPermissionTitle =>
+      'Показывать элементы управления воспроизведением?';
+
+  @override
+  String get notificationPermissionBody =>
+      'Разрешите уведомления, чтобы управлять воспроизведением из шторки и с экрана блокировки. Воспроизведение работает и без них.';
+
+  @override
+  String get allow => 'Разрешить';
+
+  @override
+  String get flowingLight => 'Текучий световой фон';
+
+  @override
+  String get flowingLightHint =>
+      'Мягкий цветной свет медленно перемещается по фону плеера, повторяя цвета обложки. У Hi-Res-треков добавляется золотой оттенок.';
+
+  @override
+  String get surfaceMaterial => 'Материал';
+
+  @override
+  String get materialStandard => 'Стандартный';
+
+  @override
+  String get materialGlass => 'Премиум-стекло';
+
+  @override
+  String get surfaceMaterialHint =>
+      'Премиум-стекло превращает боковую панель, карточки, панель плеера и меню в полупрозрачное матовое стекло поверх плавно движущегося света. Расходует больше энергии.';
 }

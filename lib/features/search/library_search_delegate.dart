@@ -21,13 +21,15 @@ class LibrarySearchDelegate extends SearchDelegate<void> {
   ];
 
   Widget _results(BuildContext context) => Consumer(
-    builder: (context, ref, _) => ListView(
-      children: librarySearchSuggestions(
+    builder: (context, ref, _) => FutureBuilder<List<Widget>>(
+      future: librarySearchSuggestions(
         context,
         ref,
         query,
         () => close(context, null),
       ),
+      builder: (context, snapshot) =>
+          ListView(children: snapshot.data ?? const <Widget>[]),
     ),
   );
 

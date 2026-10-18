@@ -120,6 +120,7 @@
   "coverShape": "Cover style",
   "coverShapeSquare": "Square",
   "coverShapeDisc": "Round (spinning)",
+  "coverShapeTurntable": "Turntable",
   "expandPlayer": "Expand player",
   "collapsePlayer": "Collapse",
   "playerMenu": "Player menu",
@@ -233,5 +234,50 @@
   "folderPickFailed": "Could not open the folder chooser",
   "musicPermissionTitle": "Permission to read music",
   "musicPermissionBody": "NyaPlayer only reads audio files in the folders you choose, on this device, and never goes online. Allow access to music and audio, or the library cannot be scanned.",
-  "musicPermissionSettings": "Open system settings"
+  "musicPermissionSettings": "Open system settings",
+  "settingsMinLength": "Minimum track length",
+  "minLengthOff": "Show all tracks",
+  "minLengthSummary": "Hide tracks shorter than {duration}",
+  "@minLengthSummary": {
+    "placeholders": {
+      "duration": {
+        "type": "String"
+      }
+    }
+  },
+  "lengthSeconds": "{count} sec",
+  "@lengthSeconds": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "lengthMinutes": "{count} min",
+  "@lengthMinutes": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "eqSavePreset": "Save as preset",
+  "eqPresetName": "Preset name",
+  "eqDeletePresetBody": "Delete preset “{name}”?",
+  "@eqDeletePresetBody": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "notificationPermissionTitle": "Show playback controls?",
+  "notificationPermissionBody": "Allow notifications to control playback from the notification shade and lock screen. Playback works either way.",
+  "allow": "Allow",
+  "flowingLight": "Flowing light background",
+  "flowingLightHint": "Soft coloured light drifts across the player background, taking its colours from the cover. Hi-Res songs get a touch of gold.",
+  "surfaceMaterial": "Material",
+  "materialStandard": "Standard",
+  "materialGlass": "Premium glass",
+  "surfaceMaterialHint": "Premium glass turns the sidebar, cards, player bar and drawer into translucent frosted glass over a softly moving light. Uses more power."
 }

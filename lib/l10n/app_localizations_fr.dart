@@ -397,6 +397,9 @@ class AppLocalizationsFr extends AppLocalizations {
   String get coverShapeDisc => 'Ronde (rotative)';
 
   @override
+  String get coverShapeTurntable => 'Platine';
+
+  @override
   String get expandPlayer => 'Agrandir le lecteur';
 
   @override
@@ -657,4 +660,67 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get musicPermissionSettings => 'Ouvrir les réglages du système';
+
+  @override
+  String get settingsMinLength => 'Durée minimale des titres';
+
+  @override
+  String get minLengthOff => 'Tout afficher';
+
+  @override
+  String minLengthSummary(String duration) {
+    return 'Masquer les titres de moins de $duration';
+  }
+
+  @override
+  String lengthSeconds(int count) {
+    return '$count s';
+  }
+
+  @override
+  String lengthMinutes(int count) {
+    return '$count min';
+  }
+
+  @override
+  String get eqSavePreset => 'Enregistrer comme préréglage';
+
+  @override
+  String get eqPresetName => 'Nom du préréglage';
+
+  @override
+  String eqDeletePresetBody(String name) {
+    return 'Supprimer le préréglage « $name » ?';
+  }
+
+  @override
+  String get notificationPermissionTitle =>
+      'Afficher les commandes de lecture ?';
+
+  @override
+  String get notificationPermissionBody =>
+      'Autorisez les notifications pour contrôler la lecture depuis le panneau de notifications et l\'écran de verrouillage. La lecture fonctionne dans les deux cas.';
+
+  @override
+  String get allow => 'Autoriser';
+
+  @override
+  String get flowingLight => 'Arrière-plan lumineux animé';
+
+  @override
+  String get flowingLightHint =>
+      'Une lumière colorée et douce dérive sur l\'arrière-plan du lecteur, aux couleurs de la pochette. Les titres Hi-Res reçoivent une touche d\'or.';
+
+  @override
+  String get surfaceMaterial => 'Matière';
+
+  @override
+  String get materialStandard => 'Standard';
+
+  @override
+  String get materialGlass => 'Verre premium';
+
+  @override
+  String get surfaceMaterialHint =>
+      'Le verre premium rend la barre latérale, les cartes, la barre de lecture et le tiroir translucides, comme du verre dépoli sur une lumière mouvante. Consomme plus d\'énergie.';
 }

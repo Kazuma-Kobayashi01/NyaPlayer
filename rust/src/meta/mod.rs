@@ -22,6 +22,7 @@ use lofty::tag::{Accessor, ItemKey, Tag};
 
 use crate::api::meta::{MetaResult, TrackMeta};
 
+mod encoding;
 #[cfg(test)]
 mod tests;
 
@@ -276,7 +277,16 @@ fn tags_in_priority(tf: &lofty::file::TaggedFile) -> Vec<&Tag> {
 
 fn build_meta(c: Collected) -> TrackMeta {
     let tags = &c.tags;
-    let text = |key: ItemKey| tags.iter().find_map(|t| joined(t, key));
+    // Old MP3 tags declare Latin-1 but may hold GBK / Shift-JIS (META-06).
+    let mp3 = c.file_type == FileType::Mpeg;
+    let fix = |s: String| {
+        if mp3 {
+            encoding::repair_legacy_text(&s).unwrap_or(s)
+        } else {
+            s
+        }
+    };
+    let text = |key: ItemKey| tags.iter().find_map(|t| joined(t, key)).map(fix);
     let number = |key: ItemKey| {
         tags.iter()
             .find_map(|t| t.get_strings(key).find_map(parse_leading_number))
@@ -293,13 +303,16 @@ fn build_meta(c: Collected) -> TrackMeta {
             })
     });
 
-    let lyrics = c.lyrics.or_else(|| {
-        tags.iter().find_map(|t| {
-            [ItemKey::Lyrics, ItemKey::UnsyncLyrics]
-                .into_iter()
-                .find_map(|k| t.get_strings(k).find_map(clean_lyrics))
+    let lyrics = c
+        .lyrics
+        .or_else(|| {
+            tags.iter().find_map(|t| {
+                [ItemKey::Lyrics, ItemKey::UnsyncLyrics]
+                    .into_iter()
+                    .find_map(|k| t.get_strings(k).find_map(clean_lyrics))
+            })
         })
-    });
+        .map(fix);
 
     let codec = match c.file_type {
         FileType::Flac => "FLAC".to_string(),

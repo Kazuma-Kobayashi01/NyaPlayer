@@ -2,8 +2,10 @@ import 'package:drift/drift.dart' hide isNotNull, isNull;
 import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:nyaplayer/data/db/app_database.dart';
+import 'package:nyaplayer/data/repositories/eq_preset_repository.dart';
 import 'package:nyaplayer/data/repositories/library_repository.dart';
 import 'package:nyaplayer/data/repositories/playlist_repository.dart';
+import 'package:nyaplayer/data/repositories/search_repository.dart';
 
 void main() {
   late AppDatabase db;
@@ -105,6 +107,127 @@ void main() {
     await sub.cancel();
     expect(counts.first, 0);
     expect(counts.last, 1);
+  });
+
+  group('minimum track length (LIB-11)', () {
+    Future<int> addTimed(String path, int ms, {int? albumId}) => db
+        .into(db.tracks)
+        .insert(
+          TracksCompanion.insert(
+            path: path,
+            title: Value(path),
+            durationMs: Value(ms),
+            albumId: Value(albumId),
+          ),
+        );
+
+    test('hides tracks that are shorter, keeps unknown durations', () async {
+      await addTimed('/short', 20000);
+      await addTimed('/exact', 60000);
+      await addTimed('/long', 200000);
+      await addTimed('/unknown', 0);
+
+      final all = await library.loadLibrary();
+      expect(all.tracks, hasLength(4));
+
+      final filtered = await library.loadLibrary(
+        minDuration: const Duration(minutes: 1),
+      );
+      expect(filtered.tracks.map((t) => t.title).toSet(), {
+        '/exact',
+        '/long',
+        '/unknown',
+      });
+    });
+
+    test('an album left without tracks disappears too', () async {
+      final shortOnly = await db
+          .into(db.albums)
+          .insert(AlbumsCompanion.insert(albumKey: 'a'));
+      final mixed = await db
+          .into(db.albums)
+          .insert(AlbumsCompanion.insert(albumKey: 'b'));
+      await addTimed('/s1', 10000, albumId: shortOnly);
+      await addTimed('/s2', 10000, albumId: mixed);
+      await addTimed('/l2', 180000, albumId: mixed);
+
+      final filtered = await library.loadLibrary(
+        minDuration: const Duration(minutes: 1),
+      );
+      expect(filtered.albums.map((a) => a.id), [mixed]);
+    });
+  });
+
+  group('track search (LIB-09)', () {
+    test('finds tracks through the index, best match first', () async {
+      await addTrack('/1', title: 'Blue Sky');
+      await addTrack('/2', title: 'Sky High');
+      await addTrack('/3', title: 'Other');
+      // Touch the database so the index exists, then search the loaded
+      // library the way the app does.
+      final lib = await library.loadLibrary();
+      final hits = await SearchRepository(db).tracks(lib, 'sky');
+      expect(hits.map((t) => t.title), ['Sky High', 'Blue Sky']);
+    });
+
+    test('tracks the library hides are not returned', () async {
+      await db
+          .into(db.tracks)
+          .insert(
+            TracksCompanion.insert(
+              path: '/s',
+              title: const Value('Tiny jingle'),
+              durationMs: const Value(5000),
+            ),
+          );
+      final lib = await library.loadLibrary(
+        minDuration: const Duration(minutes: 1),
+      );
+      expect(await SearchRepository(db).tracks(lib, 'jingle'), isEmpty);
+    });
+  });
+
+  group('EQ presets (EQ-04)', () {
+    test('saves, renames and deletes user presets only', () async {
+      final repo = EqPresetRepository(db);
+      // Opening the database seeded the built-in rows; they are not listed.
+      await db.select(db.eqPresets).get();
+      expect(await repo.watch().first, isEmpty);
+
+      final gains = [for (var i = 0; i < 10; i++) i - 5.0];
+      final id = await repo.add('Mine', gains, -2);
+      expect(id, greaterThanOrEqualTo(100));
+
+      var list = await repo.watch().first;
+      expect(list.single.name, 'Mine');
+      expect(list.single.gains, gains);
+      expect(list.single.preamp, -2);
+      expect(list.single.presetId, 'user:$id');
+
+      await repo.rename(id, 'Renamed');
+      expect((await repo.watch().first).single.name, 'Renamed');
+
+      // Built-in rows cannot be renamed or deleted through the repository.
+      await repo.rename(1, 'Hacked');
+      await repo.delete(1);
+      final flat = await (db.select(
+        db.eqPresets,
+      )..where((p) => p.id.equals(1))).getSingle();
+      expect(flat.name, 'flat');
+
+      await repo.delete(id);
+      list = await repo.watch().first;
+      expect(list, isEmpty);
+    });
+
+    test('ids of new presets never collide with the built-in ones', () async {
+      final repo = EqPresetRepository(db);
+      await db.select(db.eqPresets).get();
+      final a = await repo.add('A', List.filled(10, 0), 0);
+      final b = await repo.add('B', List.filled(10, 0), 0);
+      expect(b, a + 1);
+      expect(a, greaterThanOrEqualTo(100));
+    });
   });
 
   group('playlists', () {

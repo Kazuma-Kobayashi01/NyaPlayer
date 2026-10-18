@@ -139,13 +139,11 @@
 
 ## 5. PLAN 进度（以 `docs/PLAN.md` 复选框为准，下面是补充）
 
-> **剩余量（按顶层复选框统计，2026-10-18）**：MVP 的 M0–M6 共 65 项，20 项已勾选，45 项未勾选；分项：M0 13、M1 3、M2 6、M3 6、M4 5、M5 7、M6 5。整个计划（再含 M7/M8）共 83 项，23 项已勾选，60 项未勾选。该数字用于看清待验收清单，不能当成工作量百分比：未勾选项中有部分代码或子项已完成，条件任务 M0-10 也不一定需要实施。
+> 任务清单与验收状态以 `docs/PLAN.md` 的复选框及每项注释为准；下面的较早进度记录不再代表当前状态。未勾选项可能已有部分实现，但仍缺计划中列出的覆盖或验收。
 
-- **M0**：M0-1、M0-R1、M0-R2 已勾选。M0-2/3/4 的 macOS 部分已有实测结果（`SPIKE_REPORT.md`），因 Android 等覆盖未完成，整项保持未勾选。
-  - 待做：M0-2 更多格式规格及 Android、M0-3 Android EQ 与完整预设覆盖、M0-4 MP3 gapless/真实连续专辑与 Android、M0-5 后台/通知栏/耳机键、M0-6 音频焦点、M0-7 输出设备切换（含 Android 真机）、M0-8 Android 文件权限（只给 `READ_MEDIA_AUDIO`）、M0-9 标签（lofty 已验证两首真实文件；还要用开发者更多真实曲库样本、粗测 1000 文件耗时）、M0-11 FTS5、M0-12 M3 Expressive 调研、M0-14 Release 包体与 192k 在 Android 的 CPU、M0-13 补全 `docs/SPIKE_REPORT.md`（已有阶段记录，尚非最终验收报告）。
-- **M1**：外壳、路由、日志、主题大部分、i18n 骨架、macOS window_manager 和关闭拦截已做；未做：drift 数据库（M1-5）、设置/收藏持久化（M1-6）、Android 曲库访问授权流程及真机验证（M1-3 媒体服务清单/audio_service 已配置）、ja 语言。
-- **M2 曲库**：M2-6 的提取、缓存和显示已完成，数据库状态/清理待接；真实扫描与 drift 未做。**M3 播放核心**、M4 系统集成、M5 歌词加载、M6 持久化等仍待推进；M3/M6 的 Rust 部分已超前完成。
-- **M4 本次验收边界**：macOS 关窗后台播放、Dock/菜单栏恢复、菜单控制及 ⌘Q 退出均已由开发者实测；⌘Q 后声音停止、菜单栏图标消失。M4-5 仍需 M3-9 的持久化后才能满足“退出前保存状态”；M4-6 的控制中心/第三方软件已通过，物理媒体键仍待核对。Android 系统服务已接线但本轮按要求没有编译或上真机，M4 父任务不勾选。
+- **已完成的基础设施**：M1 数据库、主题/设置持久化；M2 扫描器、FTS5 搜索、最短时长过滤；M3 播放状态持久化；M4 音频焦点协调器、Android 通知权限流程；M5 MP3 标签编码回退；M6 内置及用户 EQ 预设。具体范围见 `docs/PLAN.md` 和本文件后续记录。
+- **仍需优先收尾**：M0 的 Android 真机/更多格式/音频设备等验证、真实曲库标签检查、M3 Expressive 调研与最终 Spike 报告；M2 的封面状态持久化、SQL 查询与歌曲信息页；M3 的队列页及完整播放/队列体验验收；M4 的 Android 真机和锁屏/媒体键验证；M5 的歌词加载器与视图验收；M6 的 EQ 滤镜构建和控制器完善。
+- **验收边界**：API 37 模拟器上的 Android 验证不等于真机验证；真实 GBK/Shift-JIS MP3 样本尚未核验；macOS 物理媒体键仍待检查。各项细节与条件任务见 `docs/PLAN.md`。
 
 ## 6. 待开发者决定 / 授权
 
@@ -161,7 +159,7 @@
 2. 之后按 MVP 依赖顺序推进 M0 收尾 → M1 drift/设置持久化 → M2 曲库扫描与查询 → M3 队列接入/状态恢复 → M4 Android 系统媒体验证 → M5 歌词加载和视图 → M6 EQ 控制与预设。
 3. Android 编译与真机验证仍按之前约定延后；进入 Android 验收前先完成 macOS UI 与当前 M0 可做部分。
 
-> 这是一份待执行计划，不代表 10 月 19 日的工作已经完成。全计划仍有 71 个未勾选顶层任务，其中 MVP 范围 M0–M6 有 55 项；按里程碑拆分见 §5 的剩余量统计。
+> 这是一份 2026-10-19 的历史待执行计划；后续进度以 `docs/PLAN.md` 当前复选框为准。
 
 1. 先完成 M0 剩余验证并收尾 `docs/SPIKE_REPORT.md`、回填 TECH_SPEC：优先整理已有 macOS 证据，再补 Android 真机格式/EQ/后台/音频焦点/设备切换/文件权限/CPU 与 Release 检查；条件项 M0-10 根据 M0-9 结果决定。
 2. 按既定要求，Android 暂不编译；开始 Android 编译或真机验证前先完成 macOS 这一轮工作，运行时带 `LANG=en_US.UTF-8`。
@@ -202,7 +200,7 @@
 - 本轮试听期间曾有独立 5 秒 `engine_smoke` 与应用同时出声，开发者反馈重复音轨；该进程结束后，开发者确认单独运行应用时 EQ 调整正常。该次测试存在并行音源干扰，不作为内核故障复现。后续听感测试只保留一路音源，不在用户试听时另起出声诊断。
 - **macOS Debug 原生崩溃（未修复）**：恢复真实曲库后调试连接断开；系统报告 `nyaplayer-2026-10-18-002343.ips` 为主线程 SIGSEGV，首帧是 Flutter `AccessibilityBridge::CreateRemoveReparentedNodesUpdate`，此前持续报 `Failed to update ui::AXTree`。UI 自动化也曾出现陈旧窗口绑定。不能把它当作普通日志提示或归因为 Rust 音频错误；后续应单独排查无障碍树/页面切换。暂不再用 UI 自动化读取语义树，保持系统无障碍设置不变。
 - `meta`：`lofty` 读 MP3 一定会把整个 ID3v2 标签（含封面）读进内存；FLAC 里仅靠 Vorbis 注释内嵌的封面（`METADATA_BLOCK_PICTURE`）在 `has_cover` 上会被判为 false（`read_cover` 仍可取到）。
-- Android 输出设备切换（拔耳机/蓝牙）后的流重建逻辑已写（`recover_device`），**未在真机验证**；系统媒体服务和共享 AudioHandler 已接入，但尚未进行本轮 Android 编译/真机验证。`AudioFocusCoordinator` 仍未实现（M4-2）。
+- Android 输出设备切换（拔耳机/蓝牙）后的流重建逻辑已写（`recover_device`），**未在真机验证**；系统媒体服务和共享 AudioHandler 已接入，`AudioFocusCoordinator` 已实现并有单元测试，但模拟器/真机覆盖仍见 `docs/PLAN.md` M4 注释。
 - Rust 引擎目前没有 `audioParams` 事件（TECH_SPEC §4.2 草案里有，实现时未包含），"歌曲信息"页的采样率/位深来自元数据而非实时输出参数。
 - 曲库、扫描位置、歌单、收藏、设置、EQ 当前状态以及播放队列/位置均已持久化（重启后队列暂停恢复）。
 - 播放位置在 macOS 上用 Dart 每 200ms 拉取；播放页歌词用 `positionProvider`，后台时是否节流未处理（NFR-07）。
@@ -239,3 +237,44 @@
 - 现象（API 37 平板模拟器 2560×1600）：宽屏三栏布局被状态栏盖住顶部，底部手势条压在卡片上。原因：`SystemUiMode.edgeToEdge` 下手机布局靠 Scaffold/AppBar 避让，而 `AdaptiveShell` 的宽屏分支是按 macOS 画的——卡片刻意顶到窗口上沿、与红绿灯并排，把顶部内边距清零。
 - 修法（`lib/app/layout/adaptive_shell.dart`）：非桌面平台（Android 等）把 `MediaQuery.padding` 作为整个宽屏布局的外边距，内部 MediaQuery 的内边距清零（页面和 `PlayerBar` 的 SafeArea 不会重复避让）；macOS/Windows/Linux 行为不变。新增两个测试：平板上侧栏/播放面板在状态栏与手势条之间；macOS 上卡片仍与标题栏并排。
 - 已在平板模拟器上看过：状态栏、手势条都在卡片之外。
+
+### 2026-10-18 M4 系统集成 / FTS5 搜索 / 编码修复 / EQ 预设 / 最短时长（分支 1.1.0.alpha）
+
+- **最短时长过滤（LIB-11）**：默认 1 分钟，设置里选 关/15/30/60/120/300 秒；`LibraryRepository.loadLibrary(minDuration:)` 过滤，时长未知（0）的不算短，空了的专辑一并隐藏；搜索结果与队列恢复之外的所有页面都走过滤后的曲库。不做文件夹封面回退（开发者决定：封面就用内置占位）。
+- **FTS5 搜索（M2-9、M0-11）**：schema v3，`track_fts` 外部内容表 + 触发器；搜索页改为异步（`trackSearchProvider`，`main` 里接 FTS，测试/示例模式仍是内存搜索）；Android 模拟器上实测可用。
+- **编码修复（M5-2、M5-6）**：Rust `encoding_rs`，见 TECH_SPEC §7.4；schema v3 迁移会置 `mtime=-1` 让旧曲重读。**没有真实的 GBK/Shift-JIS MP3 样本**，只有 cargo 里构造的字节测试，需要开发者用真实旧 MP3 看一遍。
+- **EQ 预设（M6-3、M6-5）**：内置入库、用户预设保存/重命名/删除，用户预设排最前。
+- **M4**：`AudioFocusCoordinator`（M4-2）、通知权限提示（M4-3）、清单补 `POST_NOTIFICATIONS`、M4-1/M4-4 在 API 37 模拟器核对，详见 PLAN 各项注释。**没验证的**：压低音量（只有单元测试）、拔耳机/蓝牙断开、锁屏、真机、Android 12 分支。
+- 测试：Dart 293 项、cargo 42 项；Android 上的验证用无窗口模拟器（`emulator -avd Pixel_10_Pro_Fold -no-window`），`adb emu gsm call/cancel` 可模拟来电。
+- 坑：`pumpAndSettle` 在均衡器页永远返回不了（滑块一直有帧），用手动 `pump`；Riverpod 3 会暂停没人监听的 StreamProvider，测试里要先 `listen`；`flutter test` 被管道截断输出时看不到卡在哪，输出写文件再读。
+
+### 2026-10-18 Windows 适配评估（只评估，未动手）
+
+- **结论**：可行，核心（Rust 引擎、数据库、扫描、界面）基本不用改；要补的是 Windows 原生外壳和系统媒体控制。Flutter 3.47 的 Windows 目标含 Arm64（`flutter build windows` 输出在 `build\windows\arm64\`），cargokit 已映射 `aarch64-pc-windows-msvc`，`rust_builder/windows/CMakeLists.txt` 已存在。
+- **依赖包**：支持 Windows——`window_manager`、`file_picker`（只能选单个文件夹，现有 `GenericFolderPicker` 已按此写）、`dynamic_color`（取系统强调色）、`sqlite3` 3.x 构建 hook（需要 MSVC）、`permission_handler`（空操作）；**不支持**——`audio_service`、`audio_session`（只有 Android/iOS/macOS），代码里本来就只在 macOS/Android 初始化。Rust 侧 cpal 走 WASAPI、rodio/lofty/encoding_rs 平台无关；`jni`/`ndk-context` 只在 Android 目标编译。
+- **缺口，按工作量排**：① 系统媒体控制 SMTC + 媒体键（候选：pub 包 `smtc_windows` 1.1.0，FFI 插件，**未声明 arm64，需实测**；或在 `nya_core` 里用 `windows` crate 自己做，要 HWND）约 1–2 天；② 生成 `windows/` 工程（仓库里没有），首次编译与环境搭建约 0.5–1 天；③ 窗口与退出语义：macOS 是“关窗留后台 + 菜单栏图标”（原生通道 `nyaplayer/lifecycle|window|commands`），Windows 先用默认标题栏、关窗即退出最省事，要托盘需新增依赖（`tray_manager` 之类，要先记附录 A）约 1 天；④ 快捷键：现在只在 macOS 注册且帮助文字写死 ⌘，需 Ctrl 版本和文案 约 0.5 天；⑤ 系统字体回退（关闭内置字体时 serif 的回退列表没有 Windows 分支）、路径分隔符与大小写不敏感文件系统的回归 约 0.5 天；⑥ 打包（MSIX 要签名，或 Inno Setup / 压缩包）另算。
+- **虚拟机**：Parallels “Windows 11”，ARM64、8 vCPU、6GB 内存、256GB 磁盘，当前是停止状态。在 VM 内构建需要 Flutter（Windows ARM64）、Visual Studio 2022 生成工具（含 ARM64 组件）、Rust `aarch64-pc-windows-msvc`、Git；仓库放共享文件夹或克隆进去。6GB 内存做 MSVC + Rust 偏紧，建议加到 8GB。macOS 上无法交叉编译 Windows。
+- **风险**：ARM64 VM 里音频走 Parallels 虚拟声卡，时延/重采样表现不代表真机；WASAPI 共享模式的缓冲区取值（`output_buffer_size`）要实测；`smtc_windows` 与我们的 FRB 同为 FRB+cargokit，两个 Rust 动态库并存要实测。
+
+### 2026-10-18 Hi-Res 徽章、流光背景、高级玻璃（分支 1.1.0.alpha）
+
+- **徽章统一**：手机播放页原来用扁平的 `tonal` 徽章，现在与桌面一致（带波形图标的 `ActionChip`），`QualityBadge` 不再有 `tonal` 参数；`QualityBadge.height = 34` 是布局预留高度（手机封面页按它算歌词行数，原来写死 28 会溢出 0.18px）。
+- **Hi-Res 判定**（开发者按维基百科定义要求）：无损且（位深 > 16 或采样率 > 44.1 kHz）。注意 24-bit/48 kHz、16-bit/48 kHz 现在都算 Hi-Res；有损格式永远不是。
+- **Hi-Res 徽章样式**：黑底、细金边（与普通标签同为圆角 8、1px 描边）、象牙金文字；一小段暗淡的亮光沿边缘绕行（6 秒一圈），前半圈里有一道很淡的光带掠过，后半圈静止；不再有外发光。配色集中在 `HiResColors` 主题扩展（`lib/app/theme/hires_colors.dart`）——金色是 Hi-Res 标志本身的品牌色，不是 ColorScheme 角色，所以是 CLAUDE.md “不硬编码颜色”的明确例外，且只在主题里定义。系统“减少动画”时静止，文字在窄空间里会省略而不是溢出。
+- **流光背景**（`lib/features/now_playing/flowing_light.dart`）：4 团径向渐变（不需要每帧算模糊）沿各自闭合路径漂移，整数圈数保证循环无缝；颜色取封面缩到 4×4 后的四象限均值，抬高饱和度并把亮度限在 0.36–0.64（灰色封面保持灰色）；切歌 700ms 过渡；Hi-Res 歌曲多一团淡金光。接在共用的 `PlayerBackground` 里，所以手机播放页、桌面展开页、桌面面板都有。
+- **高级玻璃**：`GlassSurface`（标准模式下与原来的 Material 卡片完全一致，玻璃模式下半透明 + `BackdropFilter` + 顶部亮边 + 细描边）用于播放条、导航卡片、手机抽屉、桌面页面卡片和桌面播放面板；`AmbientBackdrop` 给玻璃提供可模糊的底光；`SeeThroughPages` 让页内 Scaffold/AppBar 透明；设置页的分组行也半透明（不叠模糊）。**范围**：设置页、均衡器页等从壳外 push 的路由页本身仍是实心 Scaffold，只有壳内的页面和卡片是玻璃。
+- **设置**：`player.flowingLight`（默认 true）、`theme.material`（默认 standard，“高级玻璃”需要用户主动选）。
+- **测试环境**：`test/flutter_test_config.dart` 对所有测试打开系统“减少动画”，否则无限循环的动画会让 `pumpAndSettle` 永远等不到结束；测动画本身的用例自己再把它关掉。
+- 已在 API 37 模拟器（折叠屏展开态）看过：徽章两帧对比亮弧确实在转；玻璃模式下侧栏、页面卡片、播放条半透明且无异常日志。**手机竖屏的玻璃抽屉与播放条只有组件测试，没在设备上看。** 动画帧率/耗电未测。
+
+### 2026-10-18 唱片机封面样式（分支 1.1.0.alpha）
+
+- **做了什么**：`lib/features/now_playing/turntable_cover.dart`；`CoverShape` 新增 `turntable`，`PlayerArtwork` 里接入，所以手机播放页、桌面展开页、桌面面板的封面处都能用；设置“封面样式”现在三项（方形 / 圆形（旋转）/ 唱片机），**三项都去掉了图标**（三项带图标在窄屏装不下）。
+- **几何**（`TurntableGeometry`，都是占正方形边长的比例）：唱片半径 0.43、圆心 (0.45, 0.56)；标签（封面）半径 0.265；主轴孔半径 0.026；唱臂转轴 (0.88, 0.10)、臂长 0.58。唱针落点由余弦定理从“转轴–圆心–唱针”三角形算出：从外圈 0.405 随进度移到内圈 0.30，摆幅约 20°；休止角 74°，唱针停在唱片外。整体仍在原封面的正方形里，只是唱臂占了原来空着的右上角。
+- **打孔**：`TurntableHoleClipper` 用 `Path.combine(difference)` 把整块唱片（沟槽、标签、高光）按“圆减孔”裁剪，孔是真正透出背景的；阴影在孔的位置被挖掉，孔边另画一圈细线表示标签厚度。
+- **动作**：唱片用 `AnimationController.unbounded` + 恒速模拟，暂停时换成 `FrictionSimulation` 减速而不是突然停；唱臂用另一个控制器（落下 850ms / 抬起 650ms，easeInOut）；切歌时唱臂抬起（280ms）再落下，封面在标签里交叉淡入，**同一个唱片机不重建**（`ValueKey('turntable')`）。唱臂只在自己的 `Consumer` 里监听播放位置，位置每 200ms 变化时只重绘唱臂。
+- **颜色**：黑胶的黑与高光的白是“物体的颜色”不是界面色，定义在文件顶部两个常量里（与 Hi-Res 金色同类的 CLAUDE.md 例外）；唱臂用 ColorScheme 的 outline / outlineVariant / inverseSurface / primary，明暗两种主题都看过渲染图。
+- **测试**：`test/features/now_playing/turntable_cover_test.dart`（几何、孔、标签居中、落针/抬起/切歌/暂停停转/减少动画）、设置持久化、桌面面板与手机播放页的集成。
+- **没做/没测**：没在设备上看动起来的样子（只有渲染成图片的静态检查和组件测试里对角度、控制器值的断言）；帧率/耗电没测；唱片转一圈 4.5 秒、唱臂摆幅都是凭感觉定的，可能要调。
+
+- **改动（同日追加）**：中心孔半径 0.026 → 0.034；唱片半径 0.43 → 0.405，外面加一圈黑色封套边框（`frameRadius` 0.43，`_FramePainter`，同样打孔）；唱针外圈落点 0.405 → 0.37 以留在唱片内。阴影改按边框画。

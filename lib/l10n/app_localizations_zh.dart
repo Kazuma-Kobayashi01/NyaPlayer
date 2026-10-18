@@ -380,6 +380,9 @@ class AppLocalizationsZh extends AppLocalizations {
   String get coverShapeDisc => '圆形（旋转）';
 
   @override
+  String get coverShapeTurntable => '唱片机';
+
+  @override
   String get expandPlayer => '放大播放页';
 
   @override
@@ -621,6 +624,66 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get musicPermissionSettings => '打开系统设置';
+
+  @override
+  String get settingsMinLength => '最短时长';
+
+  @override
+  String get minLengthOff => '不过滤，显示全部';
+
+  @override
+  String minLengthSummary(String duration) {
+    return '隐藏短于 $duration 的音频';
+  }
+
+  @override
+  String lengthSeconds(int count) {
+    return '$count 秒';
+  }
+
+  @override
+  String lengthMinutes(int count) {
+    return '$count 分钟';
+  }
+
+  @override
+  String get eqSavePreset => '保存为预设';
+
+  @override
+  String get eqPresetName => '预设名称';
+
+  @override
+  String eqDeletePresetBody(String name) {
+    return '将删除预设“$name”。';
+  }
+
+  @override
+  String get notificationPermissionTitle => '显示播放控制？';
+
+  @override
+  String get notificationPermissionBody => '允许通知后，可以在通知栏和锁屏上控制播放。不允许也能正常播放。';
+
+  @override
+  String get allow => '允许';
+
+  @override
+  String get flowingLight => '流光背景';
+
+  @override
+  String get flowingLightHint => '播放界面背景上有缓慢流动的彩色光，颜色取自封面；Hi-Res 歌曲会多一抹金色。';
+
+  @override
+  String get surfaceMaterial => '材质';
+
+  @override
+  String get materialStandard => '标准';
+
+  @override
+  String get materialGlass => '高级玻璃';
+
+  @override
+  String get surfaceMaterialHint =>
+      '高级玻璃会让侧栏、卡片、播放条和抽屉变成半透明的磨砂玻璃，背后透出缓缓流动的光。更耗电。';
 }
 
 /// The translations for Chinese, using the Han script (`zh_Hant`).
@@ -998,6 +1061,9 @@ class AppLocalizationsZhHant extends AppLocalizationsZh {
   String get coverShapeDisc => '圓形（旋轉）';
 
   @override
+  String get coverShapeTurntable => '唱片機';
+
+  @override
   String get expandPlayer => '放大播放頁';
 
   @override
@@ -1239,6 +1305,66 @@ class AppLocalizationsZhHant extends AppLocalizationsZh {
 
   @override
   String get musicPermissionSettings => '開啟系統設定';
+
+  @override
+  String get settingsMinLength => '最短時長';
+
+  @override
+  String get minLengthOff => '不過濾，顯示全部';
+
+  @override
+  String minLengthSummary(String duration) {
+    return '隱藏短於 $duration 的音訊';
+  }
+
+  @override
+  String lengthSeconds(int count) {
+    return '$count 秒';
+  }
+
+  @override
+  String lengthMinutes(int count) {
+    return '$count 分鐘';
+  }
+
+  @override
+  String get eqSavePreset => '儲存為預設';
+
+  @override
+  String get eqPresetName => '預設名稱';
+
+  @override
+  String eqDeletePresetBody(String name) {
+    return '將刪除預設「$name」。';
+  }
+
+  @override
+  String get notificationPermissionTitle => '顯示播放控制？';
+
+  @override
+  String get notificationPermissionBody => '允許通知後，可在通知列與鎖定畫面控制播放。不允許也能正常播放。';
+
+  @override
+  String get allow => '允許';
+
+  @override
+  String get flowingLight => '流光背景';
+
+  @override
+  String get flowingLightHint => '播放介面背景上有緩慢流動的彩色光，顏色取自封面；Hi-Res 歌曲會多一抹金色。';
+
+  @override
+  String get surfaceMaterial => '材質';
+
+  @override
+  String get materialStandard => '標準';
+
+  @override
+  String get materialGlass => '高級玻璃';
+
+  @override
+  String get surfaceMaterialHint =>
+      '高級玻璃會讓側邊欄、卡片、播放列和抽屜變成半透明的霧面玻璃，背後透出緩緩流動的光。較耗電。';
 }
 
 /// The translations for Chinese, as used in Hong Kong, using the Han script (`zh_Hant_HK`).
@@ -1616,6 +1742,9 @@ class AppLocalizationsZhHantHk extends AppLocalizationsZh {
   String get coverShapeDisc => '圓形（旋轉）';
 
   @override
+  String get coverShapeTurntable => '唱片機';
+
+  @override
   String get expandPlayer => '放大播放頁';
 
   @override
@@ -1857,4 +1986,64 @@ class AppLocalizationsZhHantHk extends AppLocalizationsZh {
 
   @override
   String get musicPermissionSettings => '開啟系統設定';
+
+  @override
+  String get settingsMinLength => '最短時長';
+
+  @override
+  String get minLengthOff => '不過濾，顯示全部';
+
+  @override
+  String minLengthSummary(String duration) {
+    return '隱藏短於 $duration 的音頻';
+  }
+
+  @override
+  String lengthSeconds(int count) {
+    return '$count 秒';
+  }
+
+  @override
+  String lengthMinutes(int count) {
+    return '$count 分鐘';
+  }
+
+  @override
+  String get eqSavePreset => '儲存為預設';
+
+  @override
+  String get eqPresetName => '預設名稱';
+
+  @override
+  String eqDeletePresetBody(String name) {
+    return '將刪除預設「$name」。';
+  }
+
+  @override
+  String get notificationPermissionTitle => '顯示播放控制？';
+
+  @override
+  String get notificationPermissionBody => '允許通知後，可在通知欄與鎖定畫面控制播放。不允許也能正常播放。';
+
+  @override
+  String get allow => '允許';
+
+  @override
+  String get flowingLight => '流光背景';
+
+  @override
+  String get flowingLightHint => '播放介面背景上有緩慢流動嘅彩色光，顏色取自封面；Hi-Res 歌曲會多一抹金色。';
+
+  @override
+  String get surfaceMaterial => '質感';
+
+  @override
+  String get materialStandard => '標準';
+
+  @override
+  String get materialGlass => '高級玻璃';
+
+  @override
+  String get surfaceMaterialHint =>
+      '高級玻璃會令側邊欄、卡片、播放列同抽屜變成半透明嘅磨砂玻璃，背後透出緩緩流動嘅光。較耗電。';
 }

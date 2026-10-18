@@ -13,6 +13,15 @@ final libraryProvider = StreamProvider<Library>((ref) async* {
   yield sampleLibrary;
 });
 
+/// Finds tracks for a search query. In-memory by default; `main` overrides it
+/// with the FTS5 index of the database (LIB-09).
+typedef TrackSearch = Future<List<Track>> Function(String query);
+
+final trackSearchProvider = Provider<TrackSearch>((ref) {
+  final library = ref.watch(libraryProvider).value;
+  return (query) async => library?.searchTracks(query) ?? const <Track>[];
+});
+
 /// Parsed lyrics for a track, cached per track id.
 final lyricsProvider = Provider.family<Lyrics, Track>((ref, track) {
   final raw = ref.watch(rawLyricsProvider(track)).value;

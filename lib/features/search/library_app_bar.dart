@@ -85,19 +85,20 @@ class LibrarySearchAnchor extends ConsumerWidget {
 }
 
 /// Shared results for the in-page search anchor and the macOS global shortcut.
-List<Widget> librarySearchSuggestions(
+Future<List<Widget>> librarySearchSuggestions(
   BuildContext context,
   WidgetRef ref,
   String query,
   VoidCallback close,
-) {
+) async {
   final l10n = AppLocalizations.of(context);
   final router = GoRouter.of(context);
   final queue = ref.read(queueProvider.notifier);
   final library = ref.read(libraryProvider).value;
   if (library == null || query.trim().isEmpty) return const <Widget>[];
 
-  final tracks = library.searchTracks(query);
+  final tracks = await ref.read(trackSearchProvider)(query);
+  if (!context.mounted) return const <Widget>[];
   final albums = library.searchAlbums(query);
   final artists = library.searchArtists(query);
   if (tracks.isEmpty && albums.isEmpty && artists.isEmpty) {

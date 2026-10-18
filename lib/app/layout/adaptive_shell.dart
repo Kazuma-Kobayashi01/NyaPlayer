@@ -5,6 +5,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:nyaplayer/app/layout/phone_drawer.dart';
+import 'package:nyaplayer/features/settings/notification_prompt.dart';
+import 'package:nyaplayer/features/shared/ambient_backdrop.dart';
+import 'package:nyaplayer/features/shared/glass_surface.dart';
 import 'package:nyaplayer/app/window_chrome.dart';
 import 'package:nyaplayer/data/library_providers.dart';
 import 'package:nyaplayer/features/now_playing/now_playing_panel.dart';
@@ -168,27 +171,41 @@ class _AdaptiveShellState extends ConsumerState<AdaptiveShell> {
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context) =>
+      NotificationPrompt(child: _buildShell(context));
+
+  Widget _buildShell(BuildContext context) {
     final media = MediaQuery.of(context);
     final scheme = Theme.of(context).colorScheme;
+    // Premium glass: an ambient light behind everything, see-through pages
+    // and frosted cards over it.
+    final glass = ref.watch(glassMaterialProvider);
 
     if (!useDesktopLayout(media.size)) {
-      return Scaffold(
+      // Pages pad their scrollables by the floating card's height.
+      Widget pages = MediaQuery(
+        data: media.copyWith(
+          padding: media.padding.copyWith(
+            bottom: media.padding.bottom + PlayerBar.floatingInset,
+          ),
+        ),
+        child: widget.navigationShell,
+      );
+      if (glass) {
+        pages = ColoredBox(
+          color: scheme.surface.withValues(alpha: 0.66),
+          child: SeeThroughPages(child: pages),
+        );
+      }
+      final phone = Scaffold(
         key: _scaffoldKey,
+        backgroundColor: glass ? Colors.transparent : null,
         drawer: _navigation(modal: true),
         body: ShellScope(
           openNavigation: () => _scaffoldKey.currentState?.openDrawer(),
           child: Stack(
             children: [
-              // Pages pad their scrollables by the floating card's height.
-              MediaQuery(
-                data: media.copyWith(
-                  padding: media.padding.copyWith(
-                    bottom: media.padding.bottom + PlayerBar.floatingInset,
-                  ),
-                ),
-                child: widget.navigationShell,
-              ),
+              pages,
               const Positioned(
                 left: 0,
                 right: 0,
@@ -199,6 +216,12 @@ class _AdaptiveShellState extends ConsumerState<AdaptiveShell> {
           ),
         ),
       );
+      return glass
+          ? Stack(
+              fit: StackFit.expand,
+              children: [const AmbientBackdrop(), phone],
+            )
+          : phone;
     }
 
     final showPanel = useSidePanel(media.size);
@@ -224,8 +247,8 @@ class _AdaptiveShellState extends ConsumerState<AdaptiveShell> {
     );
     // Desktop layout: the sidebar sits on the container colour and the page
     // floats on top of it as a rounded surface, like Google's desktop apps.
-    return Scaffold(
-      backgroundColor: scheme.surfaceContainer,
+    final wide = Scaffold(
+      backgroundColor: glass ? Colors.transparent : scheme.surfaceContainer,
       key: _scaffoldKey,
       body: Padding(
         padding: systemInsets,
@@ -261,8 +284,9 @@ class _AdaptiveShellState extends ConsumerState<AdaptiveShell> {
                               // otherwise the floating player bar sits on top of it.
                               8,
                             ),
-                            child: ClipRRect(
-                              borderRadius: desktopCardRadius,
+                            child: _pageCard(
+                              glass: glass,
+                              color: scheme.surface,
                               // Pages pad their scrollables by the floating card.
                               child: MediaQuery(
                                 data: inner.copyWith(
@@ -303,6 +327,27 @@ class _AdaptiveShellState extends ConsumerState<AdaptiveShell> {
           ),
         ),
       ),
+    );
+    return glass
+        ? Stack(fit: StackFit.expand, children: [const AmbientBackdrop(), wide])
+        : wide;
+  }
+
+  /// The rounded card the current page floats on: opaque and clipped, or
+  /// frosted glass with see-through pages.
+  Widget _pageCard({
+    required bool glass,
+    required Color color,
+    required Widget child,
+  }) {
+    if (!glass) {
+      return ClipRRect(borderRadius: desktopCardRadius, child: child);
+    }
+    return GlassSurface(
+      color: color,
+      borderRadius: desktopCardRadius,
+      glassOpacity: 0.6,
+      child: SeeThroughPages(child: child),
     );
   }
 }

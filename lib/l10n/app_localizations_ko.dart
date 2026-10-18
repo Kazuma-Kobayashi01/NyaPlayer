@@ -382,6 +382,9 @@ class AppLocalizationsKo extends AppLocalizations {
   String get coverShapeDisc => '원형(회전)';
 
   @override
+  String get coverShapeTurntable => '턴테이블';
+
+  @override
   String get expandPlayer => '플레이어 확대';
 
   @override
@@ -624,4 +627,66 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get musicPermissionSettings => '시스템 설정 열기';
+
+  @override
+  String get settingsMinLength => '최소 재생 시간';
+
+  @override
+  String get minLengthOff => '모두 표시';
+
+  @override
+  String minLengthSummary(String duration) {
+    return '$duration보다 짧은 곡 숨기기';
+  }
+
+  @override
+  String lengthSeconds(int count) {
+    return '$count초';
+  }
+
+  @override
+  String lengthMinutes(int count) {
+    return '$count분';
+  }
+
+  @override
+  String get eqSavePreset => '프리셋으로 저장';
+
+  @override
+  String get eqPresetName => '프리셋 이름';
+
+  @override
+  String eqDeletePresetBody(String name) {
+    return '프리셋 “$name”을(를) 삭제할까요?';
+  }
+
+  @override
+  String get notificationPermissionTitle => '재생 컨트롤을 표시할까요?';
+
+  @override
+  String get notificationPermissionBody =>
+      '알림을 허용하면 알림 창과 잠금 화면에서 재생을 제어할 수 있습니다. 허용하지 않아도 재생은 됩니다.';
+
+  @override
+  String get allow => '허용';
+
+  @override
+  String get flowingLight => '흐르는 빛 배경';
+
+  @override
+  String get flowingLightHint =>
+      '재생 화면 배경에 앨범 커버 색을 따른 부드러운 빛이 천천히 흐릅니다. Hi-Res 곡에는 금빛이 살짝 더해집니다.';
+
+  @override
+  String get surfaceMaterial => '재질';
+
+  @override
+  String get materialStandard => '표준';
+
+  @override
+  String get materialGlass => '프리미엄 유리';
+
+  @override
+  String get surfaceMaterialHint =>
+      '사이드바, 카드, 재생 바, 서랍이 반투명 젖빛 유리로 바뀌고 그 뒤로 천천히 움직이는 빛이 비칩니다. 전력을 더 사용합니다.';
 }

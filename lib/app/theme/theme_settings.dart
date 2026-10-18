@@ -11,6 +11,10 @@ enum PlayerBackgroundStyle { gradient, blurredCover }
 
 enum ProgressStyle { material, classic, slim, wave }
 
+/// How the app's surfaces are made: opaque Material surfaces, or translucent
+/// frosted glass over a soft ambient light.
+enum SurfaceMaterial { standard, glass }
+
 /// Selectable fixed seed colours (SET-02). These are theme inputs, not UI colours.
 const seedColorChoices = <Color>[
   Color(0xFF6750A4),
@@ -32,6 +36,8 @@ class ThemeSettings {
     this.playerBackground = PlayerBackgroundStyle.blurredCover,
     this.progressStyle = ProgressStyle.material,
     this.useBundledFonts = true,
+    this.flowingLight = true,
+    this.material = SurfaceMaterial.standard,
   });
 
   final ThemeMode mode;
@@ -45,6 +51,12 @@ class ThemeSettings {
   /// Noto Serif SC) instead of the system's (SET-06).
   final bool useBundledFonts;
 
+  /// Slowly drifting coloured light over the player background (UI-19).
+  final bool flowingLight;
+
+  /// Opaque surfaces or frosted glass (UI-18).
+  final SurfaceMaterial material;
+
   ThemeSettings copyWith({
     ThemeMode? mode,
     ColorSource? source,
@@ -53,6 +65,8 @@ class ThemeSettings {
     PlayerBackgroundStyle? playerBackground,
     ProgressStyle? progressStyle,
     bool? useBundledFonts,
+    bool? flowingLight,
+    SurfaceMaterial? material,
   }) {
     return ThemeSettings(
       mode: mode ?? this.mode,
@@ -62,6 +76,8 @@ class ThemeSettings {
       playerBackground: playerBackground ?? this.playerBackground,
       progressStyle: progressStyle ?? this.progressStyle,
       useBundledFonts: useBundledFonts ?? this.useBundledFonts,
+      flowingLight: flowingLight ?? this.flowingLight,
+      material: material ?? this.material,
     );
   }
 }
@@ -95,6 +111,12 @@ class ThemeSettingsController extends Notifier<ThemeSettings> {
         if (previous?.useBundledFonts != next.useBundledFonts) {
           save('theme.bundledFonts', '${next.useBundledFonts}');
         }
+        if (previous?.flowingLight != next.flowingLight) {
+          save('player.flowingLight', '${next.flowingLight}');
+        }
+        if (previous?.material != next.material) {
+          save('theme.material', next.material.name);
+        }
       }),
     );
     const defaults = ThemeSettings();
@@ -127,6 +149,15 @@ class ThemeSettingsController extends Notifier<ThemeSettings> {
         store.get('theme.bundledFonts'),
         defaults.useBundledFonts,
       ),
+      flowingLight: boolOr(
+        store.get('player.flowingLight'),
+        defaults.flowingLight,
+      ),
+      material: enumByName(
+        SurfaceMaterial.values,
+        store.get('theme.material'),
+        defaults.material,
+      ),
     );
   }
 
@@ -140,6 +171,10 @@ class ThemeSettingsController extends Notifier<ThemeSettings> {
       state = state.copyWith(progressStyle: style);
   void setUseBundledFonts(bool value) =>
       state = state.copyWith(useBundledFonts: value);
+  void setFlowingLight(bool value) =>
+      state = state.copyWith(flowingLight: value);
+  void setMaterial(SurfaceMaterial value) =>
+      state = state.copyWith(material: value);
 }
 
 /// `null` follows the system language.

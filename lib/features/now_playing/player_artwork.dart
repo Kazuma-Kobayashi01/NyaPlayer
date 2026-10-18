@@ -2,10 +2,11 @@ import 'package:nyaplayer/data/repositories/settings_repository.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:nyaplayer/domain/models.dart';
+import 'package:nyaplayer/features/now_playing/turntable_cover.dart';
 import 'package:nyaplayer/features/shared/cover_art.dart';
 import 'package:nyaplayer/services/player/queue_controller.dart';
 
-enum CoverShape { square, disc }
+enum CoverShape { square, disc, turntable }
 
 /// Player cover style, chosen in settings.
 final coverShapeProvider = NotifierProvider<CoverShapeController, CoverShape>(
@@ -31,8 +32,8 @@ class CoverShapeController extends Notifier<CoverShape> {
   void set(CoverShape shape) => state = shape;
 }
 
-/// The large cover shown by the players: a rounded square, or a disc that
-/// spins while music plays.
+/// The large cover shown by the players: a rounded square, a disc that spins
+/// while music plays, or a record player with the cover as the record's label.
 class PlayerArtwork extends ConsumerWidget {
   const PlayerArtwork({super.key, required this.track, this.maxSize = 440});
 
@@ -60,6 +61,14 @@ class PlayerArtwork extends ConsumerWidget {
                 key: ValueKey(('disc', track.albumId)),
                 track: track,
                 spinning: playing,
+              ),
+              // One turntable for every song: the arm lifts and comes down
+              // when the song changes, instead of a whole new player fading
+              // in.
+              CoverShape.turntable => TurntableCover(
+                key: const ValueKey('turntable'),
+                track: track,
+                playing: playing,
               ),
             },
           ),

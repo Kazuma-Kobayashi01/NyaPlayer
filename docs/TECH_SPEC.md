@@ -249,7 +249,8 @@ Rust 内核（cpal）不负责系统音频会话，必须自己用 `audio_sessio
   - `begin + duck` → `setVolume(0.3)`；`end + duck` → 恢复音量；
   - `end + pause` 且 `resumeAfterInterruption` → 继续播放。
 - `becomingNoisyEventStream` → 暂停（拔耳机/蓝牙断开）。
-- 🔍 M0 需确认 cpal/Oboe 在 Android 上**没有**自行申请音频焦点（预期没有），并确认 AAudio 流的 usage 为 media。
+- 🔍 M0 需确认 cpal/Oboe 在 Android 上**没有**自行申请音频焦点（预期没有），并确认 AAudio 流的 usage 为 media。**2026-10-18 已确认**（API 37 模拟器）：播放时焦点栈只有 audio_session 申请的 `GAIN`（`USAGE_MEDIA` / `CONTENT_TYPE_MUSIC`）一条。
+- **2026-10-18 实现**（`lib/services/player/audio_focus_coordinator.dart`，仅 Android 启用）：监听 `QueueState.playing`，开始播放后 `setActive(true)`，被拒则立刻暂停；用户暂停时 `setActive(false)`。**被打断期间不释放焦点**，否则系统不会再通知“焦点回来了”，也就无法自动恢复。`unknown`（永久丢失）只暂停、不自动恢复；用户在打断期间自己按了播放则取消自动恢复。实测来电暂停、挂断恢复。
 
 ## 5. 均衡器（EQ）
 
@@ -400,6 +401,8 @@ Android 11+ 的分区存储下，`READ_MEDIA_AUDIO` 只能读音频文件，**�
 3. 否则分别尝试 Shift-JIS 和 GBK 解码，选"非法字节更少、且出现假名则偏向 Shift-JIS"的那个。
 4. 设置中可指定"遇到不确定时优先 Shift-JIS / GBK"。
 
+> **2026-10-18 实现与偏离**：开发者同意改用 **Rust `encoding_rs`**（附录 A），在 `rust/src/meta/encoding.rs` 修复，而不是纯 Dart 包或原生通道。lofty 把声明为 Latin-1 的 ID3 文本逐字节变成同值字符，这个映射无损，所以可以还原字节再按 GBK / Shift-JIS 解码；只对 **MP3** 的标题、艺术家、专辑艺术家、专辑、流派和歌词做（FLAC 的 Vorbis 注释本就是 UTF-8）。判定：含大于 U+00FF 的字符则已是 Unicode，不动；两种解码都合法时，有全角假名且无半角片假名 → Shift-JIS，否则字节全落在 GB2312 区 → GBK，否则 → Shift-JIS；结果须含至少 2 个汉字/假名（或整串都是高位字节且至少 1 个），以免把 “Señor” 这类真正的 Latin-1 误判。没有 BOM/UTF-16 分支（lofty 已处理）、没有“不确定时优先 Shift-JIS/GBK”的设置、没有 `.lrc` 外挂文件探测（外挂歌词已不在范围内）。
+
 GBK / Shift-JIS 解码实现 🔍 M0 选型：优先找纯 Dart 包（候选 `charset`）；没有可靠的包时，走 platform channel（Android 用 `java.nio.charset.Charset`，macOS 用 `NSString` 的编码转换），两端各十几行代码。
 
 ## 8. 歌词
@@ -461,9 +464,10 @@ scan_errors(path PK, message, at)
 ```
 
 - 索引：`tracks(album_id)`、`tracks(title)`、`tracks(artist)`、`tracks(added_at)`。
-- 搜索（`LIB-09`）：建立 FTS5 虚表索引 title/artist/album，分词器使用 `trigram`，以支持中日文子串搜索。🔍 M0 确认 `sqlite3_flutter_libs` 自带的 SQLite 版本支持 FTS5 trigram（需 ≥ 3.34）。
+- 搜索（`LIB-09`）：建立 FTS5 虚表索引 title/artist/album，分词器使用 `trigram`，以支持中日文子串搜索。🔍 M0 确认 `sqlite3_flutter_libs` 自带的 SQLite 版本支持 FTS5 trigram（需 ≥ 3.34）。**2026-10-18 已确认并实现**（`lib/data/db/search_index.dart`）：`track_fts` 是外部内容表（`content='tracks'`），由三个触发器与 `tracks` 同步，用普通 SQL 创建而不是 drift 表，所以 schema 快照里没有它，迁移测试用 `validateDropped: false`。trigram 只能匹配 ≥3 个字符的子串，所以 1–2 个字符的查询（两个字的歌名很常见）退回 `LIKE`；FTS5 不可用时整体降级为 `LIKE`。专辑/艺术家搜索仍在内存里做。
+- 内置 EQ 预设写入 `eq_presets`（`builtin = true`，行 id 1–8，`name` 存预设键，每次打开数据库按代码更新）；用户预设 id 从 100 起，选中状态在 `EqState.presetId` 里写作 `user:<id>`。最短时长过滤（`LIB-11`）是显示层过滤，存 `library.minDurationSec`（默认 60），不改 `tracks` 表。
 - 数据库在后台 isolate 运行（`drift_flutter` 默认即可）。文件位于 `getApplicationSupportDirectory()/nyaplayer.sqlite`（`drift_flutter` 默认的“文档目录”在 macOS 上是用户的 ~/Documents，故显式改用应用支持目录）。
-- Schema 变更必须写迁移，不允许直接删库重建（会丢播放列表）。当前 schemaVersion = 2：v1→v2 新增 `favorites`，并把所有 `tracks.mtime` 置 -1，使下次扫描重读全部文件、按新专辑规则重新归类。
+- Schema 变更必须写迁移，不允许直接删库重建（会丢播放列表）。当前 schemaVersion = 3：v1→v2 新增 `favorites`，并把所有 `tracks.mtime` 置 -1，使下次扫描重读全部文件、按新专辑规则重新归类；v2→v3 建 FTS5 搜索索引并再次置 `mtime = -1`，让旧 MP3 的 GBK / Shift-JIS 标签被重新读取修复。
 - `settings` 表键：`theme.mode/source/seed/font`、`player.background/progressStyle/coverShape`、`ui.locale/startPage`、`lyrics.fontSize/lineHeight/centered/showTranslation`、`eq.state`（JSON）。启动时整表读入内存，写入走后台串行队列；只在值真正变化时写，不写默认值。
 
 ## 10. UI 与主题
@@ -566,6 +570,7 @@ scan_errors(path PK, message, at)
 | 2026-10-18 | M1-5 加入 `drift`、`drift_flutter`；dev：`drift_dev`、`build_runner`。随后按开发者“sqlite 用主流版本”的指示**不直接依赖 `sqlite3_flutter_libs`**（已移除；它被 `drift_flutter` 传递引入，但 0.6.0+eol 版本是不含原生代码的空壳），SQLite 由 `sqlite3` 3.x 官方构建 hook 内置（macOS 实测 `sqlite3` 与 drift 正常工作）。加入 `file_picker` ^13.1.0 | 均在 §1.3 清单内。`file_picker` 用于“添加音乐文件夹”（SET-01、LIB-01）。FTS5 trigram 是否可用仍待 M0-11 验证。 |
 | 2026-10-18 | 开发者已授权：将锁文件已有的间接依赖 `crypto` 3.0.7 声明为直接依赖；加入 `image` ^4.12.0、`path_provider` ^2.1.6 | M2-6 按 §7.3 使用 SHA-1 专辑键命名、在 isolate 生成缩略图、存到应用支持目录。`crypto` 复用锁定版本；后两项原已在 §1.3 清单内。 |
 | 2026-10-18 | Rust 新增仅 Android 目标的直接依赖 `jni` 0.22、`ndk-context` 0.1（开发者已同意）；新增 `NyaCore.kt` | 实测：cpal 的 AAudio 后端首次开流时因 `android context was not initialized` panic，引擎线程退出，播放无声且一直是暂停状态。必须把 Application Context 经 JNI 传给 `ndk_context`。两者本就是 cpal 的传递依赖（版本相同，不增加编译量），只是改为直接依赖以便调用。 |
+| 2026-10-18 | Rust 新增直接依赖 `encoding_rs` 0.8（开发者已同意；本就在 Cargo.lock，由 symphonia 间接引入） | M5-2/M5-6：修复旧 MP3 标签里被当作 Latin-1 的 GBK / Shift-JIS，见 §7.4。比 §7.4 原文的纯 Dart 包/原生通道更省事，且各平台一致、可用 `cargo test` 验证。 |
 | 2026-10-17 | 初始依赖列表 | 见 §1 |
 | 2026-10-17 | 主工程已加入：`flutter_riverpod`、`go_router`、`dynamic_color`、`path`、`intl`、`flutter_localizations`、`mocktail`（dev） | 均在 §1.3 表内，M1 骨架使用 |
 | 2026-10-17 | 移除计划中的 `media_kit`、`media_kit_libs_audio`、`audio_metadata_reader`；新增 Dart `flutter_rust_bridge` 2.13.0，Rust `symphonia`、`rodio`、`biquad`、`lofty`、`flutter_rust_bridge`、`anyhow`、`log` | 播放内核改为 Rust（附录 B 第 3 条），开发者已同意 |

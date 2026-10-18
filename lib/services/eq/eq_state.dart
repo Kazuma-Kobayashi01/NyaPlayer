@@ -1,46 +1,14 @@
+import 'package:nyaplayer/data/db/database_providers.dart'
+    show eqPresetRepositoryProvider;
 import 'package:nyaplayer/data/repositories/settings_repository.dart';
+import 'package:nyaplayer/services/eq/eq_presets.dart';
+
+export 'package:nyaplayer/services/eq/eq_presets.dart';
 
 import 'dart:convert';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-
-/// 10-band centre frequencies in Hz (REQUIREMENTS EQ-01).
-const eqBandFrequencies = <int>[
-  31,
-  62,
-  125,
-  250,
-  500,
-  1000,
-  2000,
-  4000,
-  8000,
-  16000,
-];
-const eqMaxGain = 12.0;
-
-@immutable
-class EqPreset {
-  const EqPreset(this.id, this.gains);
-
-  final String id;
-  final List<double> gains;
-}
-
-const customPresetId = 'custom';
-
-/// TECH_SPEC §5.3. Display names are localized by id in the UI.
-const builtinEqPresets = <EqPreset>[
-  EqPreset('flat', [0, 0, 0, 0, 0, 0, 0, 0, 0, 0]),
-  EqPreset('pop', [-1, 1, 3, 4, 3, 0, -1, -1, 1, 2]),
-  EqPreset('rock', [4, 3, 2, 0, -1, -1, 1, 3, 4, 4]),
-  EqPreset('jazz', [3, 2, 1, 2, -1, -1, 0, 1, 2, 3]),
-  EqPreset('classical', [3, 2, 1, 0, 0, 0, 0, 1, 2, 3]),
-  EqPreset('vocal', [-2, -2, -1, 1, 3, 4, 3, 1, 0, -1]),
-  EqPreset('bassBoost', [6, 5, 4, 2, 0, 0, 0, 0, 0, 0]),
-  EqPreset('trebleBoost', [0, 0, 0, 0, 0, 1, 2, 4, 5, 6]),
-];
 
 @immutable
 class EqState {
@@ -169,6 +137,35 @@ class EqController extends Notifier<EqState> {
   void selectPreset(String id) {
     final preset = builtinEqPresets.firstWhere((p) => p.id == id);
     state = state.copyWith(presetId: id, gains: List.of(preset.gains));
+  }
+
+  /// Applies a preset the user saved earlier.
+  void selectSaved(SavedEqPreset preset) => state = state.copyWith(
+    presetId: preset.presetId,
+    gains: List.of(preset.gains),
+    preamp: preset.preamp,
+  );
+
+  /// Saves the current curve under [name] and selects it (EQ-04).
+  Future<void> saveCurrent(String name) async {
+    final gains = List.of(state.gains);
+    final preamp = state.preamp;
+    final id = await ref
+        .read(eqPresetRepositoryProvider)
+        .add(name, gains, preamp);
+    state = state.copyWith(presetId: '$userPresetPrefix$id');
+  }
+
+  Future<void> renameSaved(int id, String name) =>
+      ref.read(eqPresetRepositoryProvider).rename(id, name);
+
+  /// Deletes a saved preset. If it was selected the curve stays as it is,
+  /// now unnamed.
+  Future<void> deleteSaved(int id) async {
+    await ref.read(eqPresetRepositoryProvider).delete(id);
+    if (userPresetIdOf(state.presetId) == id) {
+      state = state.copyWith(presetId: customPresetId);
+    }
   }
 
   void setGain(int band, double value) {

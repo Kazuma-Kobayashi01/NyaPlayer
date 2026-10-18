@@ -354,7 +354,7 @@ class _CoverAndLyrics extends ConsumerWidget {
     );
     return LayoutBuilder(
       builder: (context, constraints) {
-        const pillBlock = 12.0 + 28;
+        const pillBlock = 12.0 + QualityBadge.height;
         const gap = 12.0;
         final room =
             constraints.maxHeight -
@@ -372,7 +372,7 @@ class _CoverAndLyrics extends ConsumerWidget {
               child: PlayerArtwork(track: track, maxSize: size),
             ),
             const SizedBox(height: 12),
-            QualityBadge(track: track, tonal: true),
+            QualityBadge(track: track),
             const SizedBox(height: gap),
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 28),

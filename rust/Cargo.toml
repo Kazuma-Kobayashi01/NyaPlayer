@@ -13,6 +13,7 @@ anyhow = "1"
 log = "0.4"
 biquad = "0.6"
 lofty = "0.25"
+encoding_rs = "0.8"
 
 # cpal's AAudio backend needs the Android Context; see src/android_context.rs.
 # Both are already in the tree through cpal (same versions).

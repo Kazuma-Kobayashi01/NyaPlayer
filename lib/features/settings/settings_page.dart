@@ -11,6 +11,9 @@ import 'package:nyaplayer/features/now_playing/progress_slider.dart';
 import 'package:nyaplayer/features/search/library_app_bar.dart';
 import 'package:nyaplayer/features/settings/language_dialog.dart';
 import 'package:nyaplayer/features/settings/library_folders.dart';
+import 'package:nyaplayer/features/settings/min_length_tile.dart';
+import 'package:nyaplayer/features/shared/glass_surface.dart'
+    show glassMaterialProvider;
 import 'package:nyaplayer/l10n/app_localizations.dart';
 
 const _appVersion = '0.1.0';
@@ -45,7 +48,7 @@ class SettingsPage extends ConsumerWidget {
               _SectionTitle(l10n.settingsGeneral),
               const _Group(children: [_StartPageTile()]),
               _SectionTitle(l10n.settingsLibrary),
-              const _Group(children: [LibraryFoldersTile()]),
+              const _Group(children: [LibraryFoldersTile(), MinLengthTile()]),
               _SectionTitle(l10n.settingsAppearance),
               _Group(
                 children: [
@@ -131,6 +134,27 @@ class SettingsPage extends ConsumerWidget {
                     value: settings.useBundledFonts,
                     onChanged: controller.setUseBundledFonts,
                   ),
+                  _Labeled(
+                    label: l10n.surfaceMaterial,
+                    hint: l10n.surfaceMaterialHint,
+                    child: SegmentedButton<SurfaceMaterial>(
+                      segments: [
+                        ButtonSegment(
+                          value: SurfaceMaterial.standard,
+                          icon: const Icon(Icons.crop_square),
+                          label: Text(l10n.materialStandard),
+                        ),
+                        ButtonSegment(
+                          value: SurfaceMaterial.glass,
+                          icon: const Icon(Icons.blur_on),
+                          label: Text(l10n.materialGlass),
+                        ),
+                      ],
+                      selected: {settings.material},
+                      onSelectionChanged: (s) =>
+                          controller.setMaterial(s.first),
+                    ),
+                  ),
                   const LanguageTile(),
                 ],
               ),
@@ -173,19 +197,28 @@ class SettingsPage extends ConsumerWidget {
                           controller.setPlayerBackground(s.first),
                     ),
                   ),
+                  SwitchListTile(
+                    secondary: const Icon(Icons.auto_awesome),
+                    title: Text(l10n.flowingLight),
+                    subtitle: Text(l10n.flowingLightHint),
+                    value: settings.flowingLight,
+                    onChanged: controller.setFlowingLight,
+                  ),
                   _Labeled(
                     label: l10n.coverShape,
                     child: SegmentedButton<CoverShape>(
                       segments: [
                         ButtonSegment(
                           value: CoverShape.square,
-                          icon: const Icon(Icons.crop_square),
                           label: Text(l10n.coverShapeSquare),
                         ),
                         ButtonSegment(
                           value: CoverShape.disc,
-                          icon: const Icon(Icons.album),
                           label: Text(l10n.coverShapeDisc),
+                        ),
+                        ButtonSegment(
+                          value: CoverShape.turntable,
+                          label: Text(l10n.coverShapeTurntable),
                         ),
                       ],
                       selected: {ref.watch(coverShapeProvider)},
@@ -352,21 +385,26 @@ class _SectionTitle extends StatelessWidget {
 
 /// Rounded group of settings rows, each row on its own tile separated by a
 /// small gap (current Android settings style).
-class _Group extends StatelessWidget {
+class _Group extends ConsumerWidget {
   const _Group({required this.children});
 
   final List<Widget> children;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final scheme = Theme.of(context).colorScheme;
+    // On glass the rows let the light behind the page show through (no blur
+    // of their own: the page card already frosts it).
+    final glass = ref.watch(glassMaterialProvider);
     return Column(
       children: [
         for (var i = 0; i < children.length; i++)
           Padding(
             padding: EdgeInsets.only(top: i == 0 ? 0 : 2),
             child: Material(
-              color: scheme.surfaceContainer,
+              color: glass
+                  ? scheme.surfaceContainer.withValues(alpha: 0.5)
+                  : scheme.surfaceContainer,
               clipBehavior: Clip.antiAlias,
               borderRadius: BorderRadius.vertical(
                 top: Radius.circular(i == 0 ? 24 : 4),

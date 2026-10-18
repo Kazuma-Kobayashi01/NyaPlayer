@@ -5,6 +5,9 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:nyaplayer/app/start_page.dart';
 import 'package:nyaplayer/app/theme/theme_settings.dart';
 import 'package:nyaplayer/data/db/app_database.dart' hide Track;
+import 'package:nyaplayer/data/db/database_providers.dart'
+    show savedEqPresetsProvider;
+import 'package:nyaplayer/data/library_filter.dart';
 import 'package:nyaplayer/data/library_providers.dart';
 import 'package:nyaplayer/data/repositories/favorites_repository.dart';
 import 'package:nyaplayer/data/repositories/settings_repository.dart';
@@ -85,7 +88,7 @@ void main() {
         ..setProgressStyle(ProgressStyle.wave);
       first.read(localeProvider.notifier).set(const Locale('en'));
       first.read(startPageProvider.notifier).set(StartPage.albums);
-      first.read(coverShapeProvider.notifier).set(CoverShape.disc);
+      first.read(coverShapeProvider.notifier).set(CoverShape.turntable);
 
       final second = container();
       final theme = second.read(themeSettingsProvider);
@@ -97,7 +100,7 @@ void main() {
       expect(theme.progressStyle, ProgressStyle.wave);
       expect(second.read(localeProvider), const Locale('en'));
       expect(second.read(startPageProvider), StartPage.albums);
-      expect(second.read(coverShapeProvider), CoverShape.disc);
+      expect(second.read(coverShapeProvider), CoverShape.turntable);
     });
 
     test('"follow the system language" is remembered as such', () {
@@ -106,6 +109,74 @@ void main() {
       first.read(localeProvider.notifier).set(null);
 
       expect(container().read(localeProvider), isNull);
+    });
+
+    test('flowing light is on and the material standard until changed', () {
+      final defaults = container().read(themeSettingsProvider);
+      expect(defaults.flowingLight, isTrue);
+      expect(defaults.material, SurfaceMaterial.standard);
+
+      container().read(themeSettingsProvider.notifier)
+        ..setFlowingLight(false)
+        ..setMaterial(SurfaceMaterial.glass);
+      final restored = container().read(themeSettingsProvider);
+      expect(restored.flowingLight, isFalse);
+      expect(restored.material, SurfaceMaterial.glass);
+
+      store.put('theme.material', 'marble');
+      expect(
+        container().read(themeSettingsProvider).material,
+        SurfaceMaterial.standard,
+        reason: 'an unknown value falls back to the default',
+      );
+    });
+
+    test('the minimum track length is one minute until changed', () {
+      expect(
+        container().read(minTrackDurationProvider),
+        const Duration(minutes: 1),
+      );
+
+      container().read(minTrackDurationProvider.notifier).set(Duration.zero);
+      expect(container().read(minTrackDurationProvider), Duration.zero);
+
+      store.put('library.minDurationSec', 'garbage');
+      expect(
+        container().read(minTrackDurationProvider),
+        const Duration(minutes: 1),
+      );
+    });
+
+    test('saved EQ presets: save, select, edit, delete', () async {
+      final c = container();
+      // Riverpod pauses a stream provider nobody listens to.
+      c.listen(savedEqPresetsProvider, (_, _) {});
+      final eq = c.read(eqProvider.notifier);
+      eq.setGain(0, 5);
+      expect(c.read(eqProvider).presetId, customPresetId);
+
+      await eq.saveCurrent('Mine');
+      final id = userPresetIdOf(c.read(eqProvider).presetId)!;
+      await pumpEventQueue();
+      final saved = c.read(savedEqPresetsProvider).value!.single;
+      expect((saved.id, saved.name, saved.gains[0]), (id, 'Mine', 5));
+
+      eq.selectPreset('rock');
+      expect(c.read(eqProvider).gains[0], 4);
+      eq.selectSaved(saved);
+      expect(c.read(eqProvider).presetId, saved.presetId);
+      expect(c.read(eqProvider).gains[0], 5);
+
+      // Touching a band leaves the saved preset: the curve is now unnamed.
+      eq.setGain(1, 3);
+      expect(c.read(eqProvider).presetId, customPresetId);
+
+      eq.selectSaved(saved);
+      await eq.deleteSaved(id);
+      expect(c.read(eqProvider).presetId, customPresetId);
+      expect(c.read(eqProvider).gains[0], 5, reason: 'the curve is kept');
+      await pumpEventQueue();
+      expect(c.read(savedEqPresetsProvider).value, isEmpty);
     });
 
     test('lyrics display options', () {

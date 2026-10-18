@@ -381,6 +381,9 @@ class AppLocalizationsJa extends AppLocalizations {
   String get coverShapeDisc => '円形（回転）';
 
   @override
+  String get coverShapeTurntable => 'ターンテーブル';
+
+  @override
   String get expandPlayer => 'プレーヤーを拡大';
 
   @override
@@ -622,4 +625,66 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get musicPermissionSettings => 'システム設定を開く';
+
+  @override
+  String get settingsMinLength => '最短の長さ';
+
+  @override
+  String get minLengthOff => 'すべて表示';
+
+  @override
+  String minLengthSummary(String duration) {
+    return '$duration未満の曲を非表示';
+  }
+
+  @override
+  String lengthSeconds(int count) {
+    return '$count秒';
+  }
+
+  @override
+  String lengthMinutes(int count) {
+    return '$count分';
+  }
+
+  @override
+  String get eqSavePreset => 'プリセットとして保存';
+
+  @override
+  String get eqPresetName => 'プリセット名';
+
+  @override
+  String eqDeletePresetBody(String name) {
+    return 'プリセット「$name」を削除しますか？';
+  }
+
+  @override
+  String get notificationPermissionTitle => '再生コントロールを表示しますか？';
+
+  @override
+  String get notificationPermissionBody =>
+      '通知を許可すると、通知パネルやロック画面から再生を操作できます。許可しなくても再生はできます。';
+
+  @override
+  String get allow => '許可';
+
+  @override
+  String get flowingLight => '流れる光の背景';
+
+  @override
+  String get flowingLightHint =>
+      'プレーヤーの背景に、ジャケットの色をもとにした柔らかな光がゆっくり流れます。Hi-Res の曲には金色が少し加わります。';
+
+  @override
+  String get surfaceMaterial => 'マテリアル';
+
+  @override
+  String get materialStandard => '標準';
+
+  @override
+  String get materialGlass => 'プレミアムガラス';
+
+  @override
+  String get surfaceMaterialHint =>
+      'サイドバー、カード、プレーヤーバー、ドロワーが半透明のすりガラスになり、背後でゆっくり動く光が透けて見えます。消費電力が増えます。';
 }

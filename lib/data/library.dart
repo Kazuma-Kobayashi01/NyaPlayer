@@ -101,18 +101,20 @@ class Library {
   List<Track> tracksInFolder(String path) =>
       sortTracks(tracks.where((t) => t.folder == path), SongSort.title);
 
-  /// Case-insensitive substring search over title / artist / album.
+  /// Case-insensitive substring search over title / artist / album, best
+  /// matches first (see [rankSearchResults]).
   List<Track> searchTracks(String query) {
     final q = query.trim().toLowerCase();
     if (q.isEmpty) return const [];
-    return tracks
-        .where(
-          (t) =>
-              t.title.toLowerCase().contains(q) ||
-              t.artist.toLowerCase().contains(q) ||
-              t.album.toLowerCase().contains(q),
-        )
-        .toList();
+    return rankSearchResults(
+      tracks.where(
+        (t) =>
+            t.title.toLowerCase().contains(q) ||
+            t.artist.toLowerCase().contains(q) ||
+            t.album.toLowerCase().contains(q),
+      ),
+      query,
+    );
   }
 
   List<Album> searchAlbums(String query) {
@@ -132,4 +134,28 @@ class Library {
     if (q.isEmpty) return const [];
     return artists.where((a) => a.name.toLowerCase().contains(q)).toList();
   }
+}
+
+/// Orders search hits so the likeliest come first: titles starting with the
+/// query, then titles containing it, then artists, then albums. Stable, so
+/// equal hits keep their incoming order.
+List<Track> rankSearchResults(Iterable<Track> hits, String query) {
+  final q = query.trim().toLowerCase();
+  int rank(Track t) {
+    final title = t.title.toLowerCase();
+    if (title.startsWith(q)) return 0;
+    if (title.contains(q)) return 1;
+    if (t.artist.toLowerCase().contains(q)) return 2;
+    return 3;
+  }
+
+  final list = hits.toList();
+  final ranks = {for (final t in list) t: rank(t)};
+  // List.sort is not stable; sort indexes with the position as tie-break.
+  final order = {for (var i = 0; i < list.length; i++) list[i]: i};
+  list.sort((a, b) {
+    final byRank = ranks[a]!.compareTo(ranks[b]!);
+    return byRank != 0 ? byRank : order[a]!.compareTo(order[b]!);
+  });
+  return list;
 }

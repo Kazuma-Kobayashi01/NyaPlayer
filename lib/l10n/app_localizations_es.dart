@@ -399,6 +399,9 @@ class AppLocalizationsEs extends AppLocalizations {
   String get coverShapeDisc => 'Redonda (giratoria)';
 
   @override
+  String get coverShapeTurntable => 'Tocadiscos';
+
+  @override
   String get expandPlayer => 'Ampliar el reproductor';
 
   @override
@@ -660,4 +663,67 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get musicPermissionSettings => 'Abrir los ajustes del sistema';
+
+  @override
+  String get settingsMinLength => 'Duración mínima';
+
+  @override
+  String get minLengthOff => 'Mostrar todas las canciones';
+
+  @override
+  String minLengthSummary(String duration) {
+    return 'Ocultar canciones de menos de $duration';
+  }
+
+  @override
+  String lengthSeconds(int count) {
+    return '$count s';
+  }
+
+  @override
+  String lengthMinutes(int count) {
+    return '$count min';
+  }
+
+  @override
+  String get eqSavePreset => 'Guardar como preajuste';
+
+  @override
+  String get eqPresetName => 'Nombre del preajuste';
+
+  @override
+  String eqDeletePresetBody(String name) {
+    return '¿Eliminar el preajuste «$name»?';
+  }
+
+  @override
+  String get notificationPermissionTitle =>
+      '¿Mostrar los controles de reproducción?';
+
+  @override
+  String get notificationPermissionBody =>
+      'Permite las notificaciones para controlar la reproducción desde el panel de notificaciones y la pantalla de bloqueo. La reproducción funciona igualmente sin ellas.';
+
+  @override
+  String get allow => 'Permitir';
+
+  @override
+  String get flowingLight => 'Fondo de luz fluida';
+
+  @override
+  String get flowingLightHint =>
+      'Una luz suave de colores se desplaza por el fondo del reproductor, con los colores de la carátula. Las canciones Hi-Res reciben un toque dorado.';
+
+  @override
+  String get surfaceMaterial => 'Material';
+
+  @override
+  String get materialStandard => 'Estándar';
+
+  @override
+  String get materialGlass => 'Cristal premium';
+
+  @override
+  String get surfaceMaterialHint =>
+      'El cristal premium convierte la barra lateral, las tarjetas, la barra del reproductor y el panel en cristal esmerilado translúcido sobre una luz en movimiento. Consume más energía.';
 }

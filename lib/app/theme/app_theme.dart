@@ -1,3 +1,4 @@
+import 'package:nyaplayer/app/theme/hires_colors.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:nyaplayer/app/theme/theme_settings.dart';
@@ -132,7 +133,10 @@ ThemeData buildTheme(
     colorScheme: scheme,
     fontFamily: plan.family,
     fontFamilyFallback: plan.fallback,
-    extensions: [FontTuning(sizeFactor: plan.sizeFactor)],
+    extensions: [
+      FontTuning(sizeFactor: plan.sizeFactor),
+      HiResColors.standard,
+    ],
     visualDensity: VisualDensity.standard,
     scaffoldBackgroundColor: scheme.surface,
     // The top bar keeps the page colour while content scrolls under it; the
