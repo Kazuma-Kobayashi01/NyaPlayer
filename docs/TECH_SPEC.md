@@ -565,6 +565,7 @@ scan_errors(path PK, message, at)
 | 2026-10-18 | 新增打包字体资源（非 Dart 依赖）：HarmonyOS Sans SC ×3、EB Garamond ×4、Noto Serif SC ×2 及三份协议文本 | 开发者要求内置字体；许可与取舍见 §10 “字体”。 |
 | 2026-10-18 | M1-5 加入 `drift`、`drift_flutter`；dev：`drift_dev`、`build_runner`。随后按开发者“sqlite 用主流版本”的指示**不直接依赖 `sqlite3_flutter_libs`**（已移除；它被 `drift_flutter` 传递引入，但 0.6.0+eol 版本是不含原生代码的空壳），SQLite 由 `sqlite3` 3.x 官方构建 hook 内置（macOS 实测 `sqlite3` 与 drift 正常工作）。加入 `file_picker` ^13.1.0 | 均在 §1.3 清单内。`file_picker` 用于“添加音乐文件夹”（SET-01、LIB-01）。FTS5 trigram 是否可用仍待 M0-11 验证。 |
 | 2026-10-18 | 开发者已授权：将锁文件已有的间接依赖 `crypto` 3.0.7 声明为直接依赖；加入 `image` ^4.12.0、`path_provider` ^2.1.6 | M2-6 按 §7.3 使用 SHA-1 专辑键命名、在 isolate 生成缩略图、存到应用支持目录。`crypto` 复用锁定版本；后两项原已在 §1.3 清单内。 |
+| 2026-10-18 | Rust 新增仅 Android 目标的直接依赖 `jni` 0.22、`ndk-context` 0.1（开发者已同意）；新增 `NyaCore.kt` | 实测：cpal 的 AAudio 后端首次开流时因 `android context was not initialized` panic，引擎线程退出，播放无声且一直是暂停状态。必须把 Application Context 经 JNI 传给 `ndk_context`。两者本就是 cpal 的传递依赖（版本相同，不增加编译量），只是改为直接依赖以便调用。 |
 | 2026-10-17 | 初始依赖列表 | 见 §1 |
 | 2026-10-17 | 主工程已加入：`flutter_riverpod`、`go_router`、`dynamic_color`、`path`、`intl`、`flutter_localizations`、`mocktail`（dev） | 均在 §1.3 表内，M1 骨架使用 |
 | 2026-10-17 | 移除计划中的 `media_kit`、`media_kit_libs_audio`、`audio_metadata_reader`；新增 Dart `flutter_rust_bridge` 2.13.0，Rust `symphonia`、`rodio`、`biquad`、`lofty`、`flutter_rust_bridge`、`anyhow`、`log` | 播放内核改为 Rust（附录 B 第 3 条），开发者已同意 |

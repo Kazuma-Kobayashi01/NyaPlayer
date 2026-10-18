@@ -7,5 +7,7 @@ pub fn core_version() -> String {
 
 #[flutter_rust_bridge::frb(init)]
 pub fn init_app() {
+    #[cfg(target_os = "android")]
+    crate::android_log::init();
     flutter_rust_bridge::setup_default_user_utils();
 }

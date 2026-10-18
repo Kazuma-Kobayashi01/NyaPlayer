@@ -484,8 +484,8 @@ class _ImmersivePlayerState extends State<_ImmersivePlayer> {
   }
 }
 
-/// Cover + caption on the left. Desktop lyrics extend to the caption's bottom;
-/// queues and mobile lyrics keep the cover's height.
+/// Cover + caption on the left. Lyrics extend to the caption's bottom unless
+/// the window is short (landscape phone); queues keep the cover's height.
 class _Stage extends StatelessWidget {
   const _Stage({required this.track, required this.pane, required this.short});
 
@@ -510,7 +510,10 @@ class _Stage extends StatelessWidget {
       delegate: _StageLayout(
         gap: _gap,
         titleGap: titleGap,
-        extendLyrics: desktop && pane == _Pane.lyrics,
+        // Anything but a short window (landscape phone) has room for the
+        // lyrics to run down to the caption, tablets and unfolded foldables
+        // included.
+        extendLyrics: pane == _Pane.lyrics && (desktop || !short),
       ),
       children: [
         LayoutId(

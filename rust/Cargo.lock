@@ -873,8 +873,10 @@ dependencies = [
  "anyhow",
  "biquad",
  "flutter_rust_bridge",
+ "jni",
  "lofty",
  "log",
+ "ndk-context",
  "rodio",
 ]
 

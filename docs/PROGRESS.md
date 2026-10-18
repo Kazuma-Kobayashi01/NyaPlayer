@@ -211,3 +211,31 @@
 
 - GoRouter 的 `push` 默认不更新浏览器式 URL；判断最上层设置页应读取 `routerDelegate.currentConfiguration.last.route.path`，不能使用 `routeInformationProvider.value.uri.path`。入口同时用标志防止路由解析期间快速重复调用。
 - 设置列表为惰性 ListView，组件测试需滚动构建屏幕外选项，再断言或点击。
+
+### 2026-10-18 Android 编译（只支持 arm64-v8a）
+
+- 明确不支持 x86、x86_64、armeabi-v7a：不编译、不打包。命令：`flutter build apk --debug|--release --target-platform android-arm64`（debug/release 均已编译通过，APK 内只有 `lib/arm64-v8a/`）。`flutter run` 在 arm64 模拟器上同样只会构建 arm64。
+- 为此改了三处：`android/app/build.gradle.kts` 加 `ndk.abiFilters` 和 `packaging.jniLibs.excludes`（`jni` 插件会为所有 ABI 建 `libdartjni.so`，abiFilters 挡不住）；`rust_builder/cargokit/gradle/plugin.gradle` 删掉 debug 时自动追加的 x86/x64 目标（这是 cargokit 的 vendored 文件，升级 flutter_rust_bridge 模板时要重新应用）。
+- `permission_handler_android` 要求 compileSdk 37：`app/build.gradle.kts` 改为 `compileSdk = 37`，`gradle.properties` 加 `android.suppressUnsupportedCompileSdk=37`（AGP 9.1 只推荐到 36）。本机 SDK 管理器装出来的目录是 `platforms/android-37.0`，AGP 找 `android-37`，已在 SDK 目录里建符号链接 `android-37 -> android-37.0`（换机器要重做）。
+- 坑：切换 ABI 配置后要删 `build/nya_core/jniLibs` 和 `build/jni`，否则旧 ABI 的残留 `.so` 会继续打进 APK。
+- 模拟器镜像只有 arm64-v8a（android-36.1 / 37.2），与此配置一致。
+
+### 2026-10-18 Android 模拟器首次运行（API 37 模拟器，非真机）
+
+- 已验证：启动、Rust 内核加载、数据库、系统媒体会话；空曲库引导页；点“添加文件夹”弹出 `READ_MEDIA_AUDIO` 系统权限框，允许后进入系统目录选择器（SAF），选 `Music` 并授权后，扫描得到 3 首 FLAC，标题/艺术家/专辑/时长/内嵌封面/歌词都读到了（**dart:io 能列目录、Rust 能按路径读**——M0-8 的核心问题在模拟器上成立）；重启后队列恢复；播放、暂停、进度、歌词滚动正常，AAudio 流进入 STARTED。
+- **坑（已修）**：首次开流时 cpal 的 AAudio 后端 panic：`android context was not initialized`（`ndk-context`），引擎线程随之退出，表现为点歌无声、状态一直暂停、没有任何 Dart 侧错误。修法：`NyaCore.kt` 在 `configureFlutterEngine` 里把 Application Context 经 JNI 传给 `rust/src/android_context.rs`，由 `ndk_context::initialize_android_context` 保存（直接依赖 `jni` 0.22、`ndk-context` 0.1，已记 TECH_SPEC 附录 A）。
+- 新增 `rust/src/android_log.rs`：Android 上把 `log` 记录和 panic 写进 logcat（tag `nya_core`），之前这些全部丢失，是定位上面那个 panic 花时间的原因。`LyraAudioHandler` 现在会把引擎 `Error` 事件打到 Dart 日志（`[warning] player:`）。
+- 调试方法：`adb logcat -s nya_core flutter`；往模拟器放音乐用 `adb push test_music/. /sdcard/Music/`。
+- 仍未验证：真机（M0-8 要求的 Android 13+ 真机）、Android 12 的权限分支、拒绝/永久拒绝权限的降级流程、通知栏与封面（M4-1）、音频焦点（M4-2）、设备切换。模拟器日志里的 `android.hardware.uwb` / `nfc` SIGABRT 是模拟器自带 HAL 的噪音，与本应用无关。
+
+### 2026-10-18 折叠屏展开态歌词区
+
+- 开发者在折叠屏模拟器（2076×2152，约 850×880dp）上反馈歌词区太小：此前只有桌面端让歌词列延伸到标题下沿，Android 一律与封面等高。改为除“矮窗口”（高度 < 500dp 的横屏手机）外都延伸（`_Stage.extendLyrics = lyrics && (desktop || !short)`）。同一台设备上歌词可见行数约从 5 行增加到 9 行；队列面板仍与封面等高。
+- 折叠屏外屏（合上，1080×2364）走手机布局，已看过，正常；平板竖屏的沉浸式播放页尚未检查。若仍嫌小，下一步是让歌词列在大屏上占满整个舞台高度（目前与“封面 + 标题”整体等高并垂直居中，上下仍有空白）。
+- adb 截折叠屏要带 `-d <display id>`（`dumpsys SurfaceFlinger --display-id` 查），否则警告文字会混进 PNG。
+
+### 2026-10-18 Android 平板：系统栏与应用重叠
+
+- 现象（API 37 平板模拟器 2560×1600）：宽屏三栏布局被状态栏盖住顶部，底部手势条压在卡片上。原因：`SystemUiMode.edgeToEdge` 下手机布局靠 Scaffold/AppBar 避让，而 `AdaptiveShell` 的宽屏分支是按 macOS 画的——卡片刻意顶到窗口上沿、与红绿灯并排，把顶部内边距清零。
+- 修法（`lib/app/layout/adaptive_shell.dart`）：非桌面平台（Android 等）把 `MediaQuery.padding` 作为整个宽屏布局的外边距，内部 MediaQuery 的内边距清零（页面和 `PlayerBar` 的 SafeArea 不会重复避让）；macOS/Windows/Linux 行为不变。新增两个测试：平板上侧栏/播放面板在状态栏与手势条之间；macOS 上卡片仍与标题栏并排。
+- 已在平板模拟器上看过：状态栏、手势条都在卡片之外。

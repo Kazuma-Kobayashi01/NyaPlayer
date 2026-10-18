@@ -6,7 +6,8 @@ plugins {
 
 android {
     namespace = "com.kazuma.nyaplayer"
-    compileSdk = flutter.compileSdkVersion
+    // permission_handler_android requires compileSdk 37 (newer than AGP 9.1 recommends).
+    compileSdk = 37
     ndkVersion = flutter.ndkVersion
 
     compileOptions {
@@ -27,6 +28,17 @@ android {
         // flag during build.
         versionCode = flutter.versionCode
         versionName = flutter.versionName
+        // arm64-v8a only: x86, x86_64 and armeabi-v7a are not supported.
+        ndk {
+            abiFilters += "arm64-v8a"
+        }
+    }
+
+    packaging {
+        jniLibs {
+            // Plugins (jni) build every ABI; keep only arm64-v8a in the APK.
+            excludes += setOf("lib/armeabi-v7a/**", "lib/x86/**", "lib/x86_64/**")
+        }
     }
 
     buildTypes {

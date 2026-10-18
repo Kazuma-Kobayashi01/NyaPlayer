@@ -1,5 +1,6 @@
 import 'dart:math' as math;
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -201,6 +202,21 @@ class _AdaptiveShellState extends ConsumerState<AdaptiveShell> {
     }
 
     final showPanel = useSidePanel(media.size);
+    // The wide layout is drawn for desktop windows, where only the top inset
+    // (the macOS title bar) matters and the cards sit beside it. On a tablet
+    // the system bars and cutouts surround the whole layout, so it is padded
+    // by them and the content below sees no insets, the same as the phone
+    // layout's Scaffold does for its pages.
+    final desktopPlatform = switch (defaultTargetPlatform) {
+      TargetPlatform.macOS ||
+      TargetPlatform.windows ||
+      TargetPlatform.linux => true,
+      _ => false,
+    };
+    final systemInsets = desktopPlatform ? EdgeInsets.zero : media.padding;
+    final inner = desktopPlatform
+        ? media
+        : media.copyWith(padding: EdgeInsets.zero);
     final available = media.size.width - sidebarWidth;
     final libraryWidth = math.min(
       libraryMaxWidth,
@@ -211,72 +227,80 @@ class _AdaptiveShellState extends ConsumerState<AdaptiveShell> {
     return Scaffold(
       backgroundColor: scheme.surfaceContainer,
       key: _scaffoldKey,
-      body: ShellScope(
-        openNavigation: null,
-        child: Row(
-          children: [
-            // The sidebar starts below the traffic lights (macOS); the cards
-            // on the right sit beside them and need no top inset.
-            SizedBox(
-              width: sidebarWidth,
-              child: Padding(
-                padding: EdgeInsets.only(top: media.padding.top),
-                child: _navigation(modal: false),
-              ),
-            ),
-            Flexible(
-              flex: showPanel ? 0 : 1,
-              fit: showPanel ? FlexFit.loose : FlexFit.tight,
-              child: SizedBox(
-                width: showPanel ? libraryWidth : null,
-                child: Stack(
-                  children: [
-                    Positioned.fill(
-                      child: Padding(
-                        padding: EdgeInsets.fromLTRB(
-                          0,
-                          8,
-                          showPanel ? 8 : 12,
-                          // With the panel the page ends above the window edge;
-                          // otherwise the floating player bar sits on top of it.
-                          8,
-                        ),
-                        child: ClipRRect(
-                          borderRadius: desktopCardRadius,
-                          // Pages pad their scrollables by the floating card.
-                          child: MediaQuery(
-                            data: media.copyWith(
-                              padding: media.padding.copyWith(
-                                top: 0,
-                                bottom: showPanel
-                                    ? media.padding.bottom
-                                    : PlayerBar.floatingInset - 8,
+      body: Padding(
+        padding: systemInsets,
+        child: MediaQuery(
+          data: inner,
+          child: ShellScope(
+            openNavigation: null,
+            child: Row(
+              children: [
+                // The sidebar starts below the traffic lights (macOS); the cards
+                // on the right sit beside them and need no top inset.
+                SizedBox(
+                  width: sidebarWidth,
+                  child: Padding(
+                    padding: EdgeInsets.only(top: inner.padding.top),
+                    child: _navigation(modal: false),
+                  ),
+                ),
+                Flexible(
+                  flex: showPanel ? 0 : 1,
+                  fit: showPanel ? FlexFit.loose : FlexFit.tight,
+                  child: SizedBox(
+                    width: showPanel ? libraryWidth : null,
+                    child: Stack(
+                      children: [
+                        Positioned.fill(
+                          child: Padding(
+                            padding: EdgeInsets.fromLTRB(
+                              0,
+                              8,
+                              showPanel ? 8 : 12,
+                              // With the panel the page ends above the window edge;
+                              // otherwise the floating player bar sits on top of it.
+                              8,
+                            ),
+                            child: ClipRRect(
+                              borderRadius: desktopCardRadius,
+                              // Pages pad their scrollables by the floating card.
+                              child: MediaQuery(
+                                data: inner.copyWith(
+                                  padding: inner.padding.copyWith(
+                                    top: 0,
+                                    bottom: showPanel
+                                        ? inner.padding.bottom
+                                        : PlayerBar.floatingInset - 8,
+                                  ),
+                                ),
+                                child: widget.navigationShell,
                               ),
                             ),
-                            child: widget.navigationShell,
                           ),
                         ),
-                      ),
+                        if (!showPanel)
+                          const Positioned(
+                            left: 0,
+                            right: 12,
+                            bottom: 0,
+                            child: PlayerBar(floating: true),
+                          ),
+                      ],
                     ),
-                    if (!showPanel)
-                      const Positioned(
-                        left: 0,
-                        right: 12,
-                        bottom: 0,
-                        child: PlayerBar(floating: true),
+                  ),
+                ),
+                if (showPanel)
+                  Expanded(
+                    child: MediaQuery(
+                      data: inner.copyWith(
+                        padding: inner.padding.copyWith(top: 0),
                       ),
-                  ],
-                ),
-              ),
+                      child: const NowPlayingPanel(),
+                    ),
+                  ),
+              ],
             ),
-            if (showPanel)
-              Expanded(
-                child: MediaQuery(
-                  data: media.copyWith(padding: media.padding.copyWith(top: 0)),
-                  child: const NowPlayingPanel(),
-                ),
-              ),
-          ],
+          ),
         ),
       ),
     );

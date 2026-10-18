@@ -216,6 +216,43 @@ void main() {
     await tester.pump(const Duration(milliseconds: 800));
   });
 
+  testWidgets('tablet: the wide layout stays clear of the system bars', (
+    tester,
+  ) async {
+    tester.view.padding = const FakeViewPadding(top: 48, bottom: 32);
+    tester.view.viewPadding = const FakeViewPadding(top: 48, bottom: 32);
+    addTearDown(tester.view.resetPadding);
+    addTearDown(tester.view.resetViewPadding);
+    await _pumpApp(tester, const Size(1400, 900));
+    // Flutter tests run as Android: sidebar, list and panel sit between the
+    // status bar and the gesture bar.
+    expect(tester.getTopLeft(find.byType(NavigationPanel)).dy, 48);
+    final panel = tester.getRect(find.byType(NowPlayingPanel));
+    expect(panel.top, greaterThanOrEqualTo(48));
+    expect(panel.bottom, lessThanOrEqualTo(900 - 32));
+  });
+
+  testWidgets('macOS: the cards sit beside the title bar, not below it', (
+    tester,
+  ) async {
+    debugDefaultTargetPlatformOverride = TargetPlatform.macOS;
+    try {
+      tester.view.padding = const FakeViewPadding(top: 28);
+      tester.view.viewPadding = const FakeViewPadding(top: 28);
+      addTearDown(tester.view.resetPadding);
+      addTearDown(tester.view.resetViewPadding);
+      await _pumpApp(tester, const Size(1400, 900));
+      // The sidebar starts below the traffic lights.
+      expect(
+        tester.getTopLeft(find.byType(NavigationPanel)).dy,
+        greaterThanOrEqualTo(28),
+      );
+      expect(tester.getRect(find.byType(NowPlayingPanel)).top, lessThan(28));
+    } finally {
+      debugDefaultTargetPlatformOverride = null;
+    }
+  });
+
   testWidgets('desktop sidebar stays expanded and library stops widening', (
     tester,
   ) async {

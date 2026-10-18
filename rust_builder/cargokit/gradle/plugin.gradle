@@ -144,11 +144,8 @@ class CargoKitPlugin implements Plugin<Project> {
                 platforms = plugin.getTargetPlatforms().collect()
             }
 
-            // Same thing addFlutterDependencies does in flutter.gradle
-            if (buildType == "debug") {
-                platforms.add("android-x86")
-                platforms.add("android-x64")
-            }
+            // NyaPlayer ships arm64-v8a only. Upstream cargokit adds the x86 and
+            // x64 targets to debug builds (for emulators); we deliberately don't.
 
             // The task name depends on plugin properties, which are not available
             // at this point

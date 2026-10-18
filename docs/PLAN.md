@@ -51,7 +51,7 @@
 - [ ] M0-5 **后台**：最小 `AudioHandler` 包住 `RustPlayerEngine`，验证 Android 通知栏控制、锁屏后持续播放 10 分钟、蓝牙耳机按键；macOS 媒体键和控制中心显示（检查是否出现重复条目）。
 - [ ] M0-6 **音频焦点**：Android 上播放时打一个电话 / 打开另一个音乐 App，确认 cpal/Oboe 不自行处理焦点，`audio_session` 处理生效。
 - [ ] M0-7 **输出设备切换**：播放中拔插有线耳机、连接/断开蓝牙耳机，Android 与 macOS 上输出流能重建且不崩溃。
-- [ ] M0-8 **Android 文件访问**：Android 13+ 真机上**只授予 `READ_MEDIA_AUDIO`**（方案 C），确认 `dart:io` 能递归列出音乐目录，Rust 能按路径打开播放；失败再测方案 A（"所有文件访问权限"）。
+- [ ] M0-8 **Android 文件访问**：Android 13+ 真机上**只授予 `READ_MEDIA_AUDIO`**（方案 C），确认 `dart:io` 能递归列出音乐目录，Rust 能按路径打开播放；失败再测方案 A（"所有文件访问权限"）。（2026-10-18：API 37 模拟器上方案 C 通过——授予 `READ_MEDIA_AUDIO` + SAF 选目录后能列目录并由 Rust 播放；仍需真机确认，故暂不勾选。）
 - [ ] M0-9 **标签**（歌词是唯一来源，最关键）：用**开发者真实曲库中的样本**检查 Rust `lofty` 能否读出：中日英标签、内嵌封面、FLAC `LYRICS`/`UNSYNCEDLYRICS`、MP3 `USLT`（并确认有无 `SYLT` 同步歌词）、采样率/位深/码率；归纳出开发者歌词的实际形态；粗测 1000 个文件的读取耗时。
 - [ ] M0-10 **编码**（降为 P2，仅在 M0-9 发现内嵌歌词/标签有乱码时才做）：选定 GBK / Shift-JIS 解码方案（Rust `encoding_rs`）。
 - [ ] M0-11 **FTS5**：在 `sqlite3` 3.x（官方构建 hook 内置的 SQLite，当前 macOS 实测 3.43 级别）上创建 `trigram` 分词的 FTS5 表并查询中日文子串。

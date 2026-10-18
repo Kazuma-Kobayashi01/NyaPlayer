@@ -14,5 +14,11 @@ log = "0.4"
 biquad = "0.6"
 lofty = "0.25"
 
+# cpal's AAudio backend needs the Android Context; see src/android_context.rs.
+# Both are already in the tree through cpal (same versions).
+[target.'cfg(target_os = "android")'.dependencies]
+jni = "0.22"
+ndk-context = "0.1"
+
 [lints.rust]
 unexpected_cfgs = { level = "warn", check-cfg = ['cfg(frb_expand)'] }

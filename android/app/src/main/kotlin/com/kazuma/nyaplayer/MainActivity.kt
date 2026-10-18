@@ -8,6 +8,8 @@ import io.flutter.plugin.common.MethodChannel
 class MainActivity : AudioServiceActivity() {
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
+        // The Rust audio backend needs the Context before the first playback.
+        NyaCore.initAndroid(applicationContext)
         // The Android version decides which storage permission applies
         // (see AndroidMusicPermission in Dart).
         MethodChannel(flutterEngine.dartExecutor.binaryMessenger, "nyaplayer/platform")

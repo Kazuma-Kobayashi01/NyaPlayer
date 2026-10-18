@@ -26,6 +26,7 @@ class LyraAudioHandler extends BaseAudioHandler with QueueHandler, SeekHandler {
         _publish();
       }),
       engine.errors.listen((error) {
+        Log.w('player', error);
         _error = error;
         _publish();
       }),
