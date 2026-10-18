@@ -670,7 +670,8 @@ class AppLocalizationsZh extends AppLocalizations {
   String get flowingLight => '流光背景';
 
   @override
-  String get flowingLightHint => '播放界面背景上有缓慢流动的彩色光，颜色取自封面；Hi-Res 歌曲会多一抹金色。';
+  String get flowingLightHint =>
+      '播放界面背景上有彩色光斑，颜色取自封面，每次换歌会换一个位置；Hi-Res 歌曲会多一抹金色。';
 
   @override
   String get surfaceMaterial => '材质';
@@ -683,7 +684,7 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get surfaceMaterialHint =>
-      '高级玻璃会让侧栏、卡片、播放条和抽屉变成半透明的磨砂玻璃，背后透出缓缓流动的光。更耗电。';
+      '高级玻璃会让侧栏、卡片、播放条和抽屉变成半透明的磨砂玻璃，背后透出柔和的彩色光。更耗电。';
 
   @override
   String get settingsPlaybackCore => '播放内核';
@@ -1363,7 +1364,8 @@ class AppLocalizationsZhHant extends AppLocalizationsZh {
   String get flowingLight => '流光背景';
 
   @override
-  String get flowingLightHint => '播放介面背景上有緩慢流動的彩色光，顏色取自封面；Hi-Res 歌曲會多一抹金色。';
+  String get flowingLightHint =>
+      '播放介面背景上有彩色光斑，顏色取自封面，每次換歌會換一個位置；Hi-Res 歌曲會多一抹金色。';
 
   @override
   String get surfaceMaterial => '材質';
@@ -1376,7 +1378,7 @@ class AppLocalizationsZhHant extends AppLocalizationsZh {
 
   @override
   String get surfaceMaterialHint =>
-      '高級玻璃會讓側邊欄、卡片、播放列和抽屜變成半透明的霧面玻璃，背後透出緩緩流動的光。較耗電。';
+      '高級玻璃會讓側邊欄、卡片、播放列和抽屜變成半透明的霧面玻璃，背後透出柔和的彩色光。較耗電。';
 
   @override
   String get settingsPlaybackCore => '播放核心';
@@ -2057,7 +2059,8 @@ class AppLocalizationsZhHantHk extends AppLocalizationsZh {
   String get flowingLight => '流光背景';
 
   @override
-  String get flowingLightHint => '播放介面背景上有緩慢流動嘅彩色光，顏色取自封面；Hi-Res 歌曲會多一抹金色。';
+  String get flowingLightHint =>
+      '播放介面背景上有彩色光斑，顏色取自封面，每次換歌會換個位置；Hi-Res 歌曲會多一抹金色。';
 
   @override
   String get surfaceMaterial => '質感';
@@ -2070,7 +2073,7 @@ class AppLocalizationsZhHantHk extends AppLocalizationsZh {
 
   @override
   String get surfaceMaterialHint =>
-      '高級玻璃會令側邊欄、卡片、播放列同抽屜變成半透明嘅磨砂玻璃，背後透出緩緩流動嘅光。較耗電。';
+      '高級玻璃會令側邊欄、卡片、播放列同抽屜變成半透明嘅磨砂玻璃，背後透出柔和嘅彩色光。較耗電。';
 
   @override
   String get settingsPlaybackCore => '播放核心';

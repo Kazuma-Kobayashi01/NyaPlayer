@@ -1374,7 +1374,7 @@ abstract class AppLocalizations {
   /// No description provided for @flowingLightHint.
   ///
   /// In zh, this message translates to:
-  /// **'播放界面背景上有缓慢流动的彩色光，颜色取自封面；Hi-Res 歌曲会多一抹金色。'**
+  /// **'播放界面背景上有彩色光斑，颜色取自封面，每次换歌会换一个位置；Hi-Res 歌曲会多一抹金色。'**
   String get flowingLightHint;
 
   /// No description provided for @surfaceMaterial.
@@ -1398,7 +1398,7 @@ abstract class AppLocalizations {
   /// No description provided for @surfaceMaterialHint.
   ///
   /// In zh, this message translates to:
-  /// **'高级玻璃会让侧栏、卡片、播放条和抽屉变成半透明的磨砂玻璃，背后透出缓缓流动的光。更耗电。'**
+  /// **'高级玻璃会让侧栏、卡片、播放条和抽屉变成半透明的磨砂玻璃，背后透出柔和的彩色光。更耗电。'**
   String get surfaceMaterialHint;
 
   /// No description provided for @settingsPlaybackCore.

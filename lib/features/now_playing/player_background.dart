@@ -126,6 +126,7 @@ class PlayerBackground extends ConsumerWidget {
           Positioned.fill(
             child: FlowingLight(
               colors: lightColors,
+              seed: track?.id,
               accent: track != null && isHiRes(track!)
                   ? HiResColors.of(context).gold
                   : null,

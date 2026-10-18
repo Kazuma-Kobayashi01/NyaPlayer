@@ -706,7 +706,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get flowingLightHint =>
-      'Soft coloured light drifts across the player background, taking its colours from the cover. Hi-Res songs get a touch of gold.';
+      'Soft coloured light sits on the player background, taking its colours from the cover and moving to a new spot with each song. Hi-Res songs get a touch of gold.';
 
   @override
   String get surfaceMaterial => 'Material';
@@ -719,7 +719,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get surfaceMaterialHint =>
-      'Premium glass turns the sidebar, cards, player bar and drawer into translucent frosted glass over a softly moving light. Uses more power.';
+      'Premium glass turns the sidebar, cards, player bar and drawer into translucent frosted glass over a soft coloured light. Uses more power.';
 
   @override
   String get settingsPlaybackCore => 'Playback core';

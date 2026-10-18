@@ -94,10 +94,16 @@ void main() {
       required List<Color> colors,
       bool animate = true,
       Color? accent,
+      int? seed,
     }) => tester.pumpWidget(
       MaterialApp(
         home: SizedBox.expand(
-          child: FlowingLight(colors: colors, animate: animate, accent: accent),
+          child: FlowingLight(
+            colors: colors,
+            animate: animate,
+            accent: accent,
+            seed: seed,
+          ),
         ),
       ),
     );
@@ -106,28 +112,43 @@ void main() {
         tester.platformDispatcher.accessibilityFeaturesTestValue =
             FakeAccessibilityFeatures(disableAnimations: reduced);
 
-    testWidgets('keeps drawing frames while it flows', (tester) async {
+    testWidgets('stands still while a song plays', (tester) async {
       motion(tester, reduced: false);
-      await pump(tester, colors: const [Colors.red, Colors.blue]);
+      await pump(tester, colors: const [Colors.red, Colors.blue], seed: 7);
       await tester.pump(const Duration(seconds: 1));
-      expect(tester.binding.hasScheduledFrame, isTrue);
+      // No ticker is left running: the backdrop costs no frames at rest.
+      expect(tester.binding.hasScheduledFrame, isFalse);
     });
 
-    testWidgets('stands still when motion is reduced or switched off', (
+    testWidgets('a new song moves the lights once, then they rest', (
+      tester,
+    ) async {
+      motion(tester, reduced: false);
+      const colors = [Colors.red, Colors.blue];
+      await pump(tester, colors: colors, seed: 1);
+      await tester.pump(const Duration(seconds: 1));
+      await pump(tester, colors: colors, seed: 2);
+      await tester.pump(const Duration(milliseconds: 200));
+      expect(tester.binding.hasScheduledFrame, isTrue);
+      await tester.pump(const Duration(seconds: 3));
+      expect(tester.binding.hasScheduledFrame, isFalse);
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('reduced motion or animate off jumps without frames', (
       tester,
     ) async {
       motion(tester, reduced: true);
-      await pump(tester, colors: const [Colors.red, Colors.blue]);
-      await tester.pump(const Duration(seconds: 1));
+      const colors = [Colors.red, Colors.blue];
+      await pump(tester, colors: colors, seed: 1);
+      await pump(tester, colors: colors, seed: 2);
+      await tester.pump(const Duration(milliseconds: 50));
       expect(tester.binding.hasScheduledFrame, isFalse);
 
       motion(tester, reduced: false);
-      await pump(
-        tester,
-        colors: const [Colors.red, Colors.blue],
-        animate: false,
-      );
-      await tester.pump(const Duration(seconds: 1));
+      await pump(tester, colors: colors, animate: false, seed: 3);
+      await pump(tester, colors: colors, animate: false, seed: 4);
+      await tester.pump(const Duration(milliseconds: 50));
       expect(tester.binding.hasScheduledFrame, isFalse);
     });
 

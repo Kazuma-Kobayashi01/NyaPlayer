@@ -72,14 +72,15 @@ Color vividLight(Color color) {
       .toColor();
 }
 
-/// Soft coloured lights drifting slowly over a surface, like light through
-/// moving water. Each blob is a radial gradient (so no blur has to be
-/// computed per frame) travelling on its own closed path; the paths use
-/// whole numbers of laps so the motion loops without a seam. Passing new
-/// [colors] fades from the old ones.
+/// Soft coloured lights over a surface, like light through water. Each blob
+/// is a radial gradient (so no blur has to be computed per frame) placed on
+/// its own closed path. The lights stand still: they only move when [seed]
+/// changes (a new song), easing to a new arrangement and then stopping, so
+/// the backdrop costs nothing while a song plays. Passing new [colors] fades
+/// from the old ones.
 ///
-/// Stands still when [animate] is false or the system asks for reduced
-/// motion.
+/// With [animate] false or when the system asks for reduced motion the new
+/// arrangement appears at once.
 class FlowingLight extends StatefulWidget {
   const FlowingLight({
     super.key,
@@ -87,6 +88,7 @@ class FlowingLight extends StatefulWidget {
     this.accent,
     this.animate = true,
     this.strength = 1,
+    this.seed,
   });
 
   /// One to four colours; blobs take them in turn.
@@ -95,6 +97,10 @@ class FlowingLight extends StatefulWidget {
   /// An extra, slower light (the gold of a Hi-Res track).
   final Color? accent;
   final bool animate;
+
+  /// Identifies what is playing. Each change moves the lights to a new
+  /// arrangement; the same seed always gives the same one.
+  final int? seed;
 
   /// Scales the opacity of every light.
   final double strength;
@@ -105,12 +111,19 @@ class FlowingLight extends StatefulWidget {
 
 class _FlowingLightState extends State<FlowingLight>
     with TickerProviderStateMixin {
-  /// One full lap of the slowest light; the others do 2–3 laps in this time.
-  static const _lap = Duration(seconds: 48);
+  /// How long the lights take to settle into a new arrangement.
+  static const _shift = Duration(milliseconds: 1400);
 
-  late final AnimationController _flow = AnimationController(
+  /// Where the lights sit for [seed], as a point on their closed paths. The
+  /// golden-ratio step spreads consecutive ids far apart.
+  static double _phaseFor(int? seed) =>
+      seed == null ? 0.31 : (seed * 0.6180339887498949) % 1.0;
+
+  // Unbounded: the paths repeat every whole lap, so the phase only ever
+  // moves forward and never has to wrap.
+  late final AnimationController _flow = AnimationController.unbounded(
     vsync: this,
-    duration: _lap,
+    value: _phaseFor(widget.seed),
   );
   late final AnimationController _fade = AnimationController(
     vsync: this,
@@ -121,20 +134,6 @@ class _FlowingLightState extends State<FlowingLight>
   late List<Color> _to = widget.colors;
 
   @override
-  void initState() {
-    super.initState();
-    // Start somewhere other than the origin so the first frame is already
-    // spread out.
-    _flow.value = 0.31;
-  }
-
-  @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    _sync();
-  }
-
-  @override
   void didUpdateWidget(FlowingLight old) {
     super.didUpdateWidget(old);
     if (!listEquals(old.colors, widget.colors)) {
@@ -142,15 +141,17 @@ class _FlowingLightState extends State<FlowingLight>
       _to = widget.colors;
       _fade.forward(from: 0);
     }
-    _sync();
+    if (old.seed != widget.seed) _moveLights();
   }
 
-  void _sync() {
-    final moving = widget.animate && !MediaQuery.disableAnimationsOf(context);
-    if (moving && !_flow.isAnimating) {
-      _flow.repeat();
-    } else if (!moving && _flow.isAnimating) {
-      _flow.stop();
+  /// Advances the lights by a song-dependent amount (at least a fifth of a
+  /// lap, so a change is always visible) and lets them come to rest.
+  void _moveLights() {
+    final target = _flow.value + 0.2 + 0.6 * _phaseFor(widget.seed);
+    if (widget.animate && !MediaQuery.disableAnimationsOf(context)) {
+      _flow.animateTo(target, duration: _shift, curve: Curves.easeInOutCubic);
+    } else {
+      _flow.value = target;
     }
   }
 

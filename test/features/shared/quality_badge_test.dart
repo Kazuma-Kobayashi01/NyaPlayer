@@ -4,11 +4,12 @@ import 'package:nyaplayer/domain/models.dart';
 import 'package:nyaplayer/features/shared/quality_badge.dart';
 
 Track _track({
+  int id = 1,
   String codec = 'FLAC',
   int bitDepth = 16,
   int sampleRate = 44100,
 }) => Track(
-  id: 1,
+  id: id,
   title: 't',
   artist: 'a',
   albumId: 1,
@@ -88,6 +89,29 @@ void main() {
     await tester.pumpWidget(const MaterialApp(home: SizedBox()));
     await _pump(tester, _track(bitDepth: 24, sampleRate: 192000), width: 600);
     await tester.pump(const Duration(seconds: 1));
+    expect(tester.binding.hasScheduledFrame, isFalse);
+  });
+
+  testWidgets('the Hi-Res light plays once per song, then no ticker runs', (
+    tester,
+  ) async {
+    tester.platformDispatcher.accessibilityFeaturesTestValue =
+        const FakeAccessibilityFeatures();
+    Future<void> hiRes(int id) => _pump(
+      tester,
+      _track(id: id, bitDepth: 24, sampleRate: 96000),
+      width: 600,
+    );
+    await hiRes(1);
+    await tester.pump(const Duration(seconds: 1));
+    expect(tester.binding.hasScheduledFrame, isTrue);
+    await tester.pump(const Duration(seconds: 7)); // past the 6 s lap
+    expect(tester.binding.hasScheduledFrame, isFalse);
+
+    await hiRes(2);
+    await tester.pump(const Duration(seconds: 1));
+    expect(tester.binding.hasScheduledFrame, isTrue, reason: 'new song');
+    await tester.pump(const Duration(seconds: 7));
     expect(tester.binding.hasScheduledFrame, isFalse);
   });
 

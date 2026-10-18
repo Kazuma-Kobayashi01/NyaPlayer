@@ -42,6 +42,7 @@ class AmbientBackdrop extends ConsumerWidget {
         ColoredBox(color: scheme.surfaceContainer),
         FlowingLight(
           colors: colors,
+          seed: track?.id,
           animate: animate,
           strength: 0.85,
           accent: track != null && isHiRes(track)

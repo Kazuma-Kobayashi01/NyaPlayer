@@ -423,3 +423,15 @@
 - 修复：新增 `lib/features/now_playing/pre_blurred_cover.dart`。封面缩到 160px 解码、只模糊一次生成 `ui.Image`（sigma 7px，约等于原来的 48dp），之后背景只是一张双线性拉伸的位图。换歌时重新生成，生成前显示渐变底色。`cover_art_test.dart` 相应改为检查 `PreBlurredCover` 与 `RawImage`。339 项测试通过。
 - 另外（上一节）：页面保活与预构建、队列浮层局部重建与弹簧松手，对“模糊开 + 流光开”的改善有限（均值 16.5→15.4ms），真正的收益来自预模糊。
 - 注意：测试结束时手机上的“模糊封面”和“流光背景”都保持开启（应用默认值），开发者原来是手动关掉的。
+
+#### 播放页常驻动画造成整页 120fps 重绘（同日，三星 S9180，release）
+
+- 发现：全屏播放页静置（甚至暂停）时，SurfaceFlinger 呈现约 100–120fps；歌曲列表页只有 4–5fps。播放时进程 CPU 约 62–70%（单核计），其中 `1.raster` 28–40%，解码线程（`ExoPlayer` + `MediaCodec`）合计不到 8%。也就是说发热主要来自界面渲染，不是解码。
+- 原因：只要有一个 `Ticker` 在运行（流光的 `repeat()`、Hi-Res 徽章的 `repeat()`），Flutter 就会在每个 vsync 提交整帧；Impeller（Vulkan）本机日志显示 `enable_vulkan_partial_repaint:0`，没有局部重绘，整页（全屏模糊位图、渐变、歌词）每帧都被重新光栅化。
+- 无效的尝试：给两个动画的画布加 `ThrottledListenable` 限到 30Hz / 1Hz，出帧率与 CPU 都没降（Ticker 仍在每帧触发提交），已撤销。
+- 修复（开发者决定“流光改成静态装饰，每次换歌换一下”）：
+  1. `FlowingLight` 去掉循环动画，灯光相位由歌曲 id 决定（黄金比例步进），换歌时 1.4 秒缓动到新位置后停下；减少动画或 `animate: false` 时直接跳到新位置。播放页背景与毛玻璃环境光（`ambient_backdrop.dart`）都传入 `seed: track?.id`。
+  2. Hi-Res 徽章的扫光改为出现或换歌时播放一圈（6 秒）后停下，不再常驻。
+  3. 设置里 `flowingLightHint` 与 `surfaceMaterialHint` 的中文、英文说明已改成“光斑、换歌换位置”；**日、韩、德、西、法、俄的说明仍是旧的“缓慢流动”，待校对后更新**。
+- 复测（同一首歌、播放中、播放页）：出帧率 ~100–120fps → 4–5fps；进程 CPU 约 62–70% → 约 19%（`raster` 28–40% → 3.9%，解码线程合计约 7%）。
+- 教训：Flutter 页面上的任何“常驻小动画”都会让整页持续重绘，不能靠限制画布重绘频率解决，只能让 Ticker 停下来。

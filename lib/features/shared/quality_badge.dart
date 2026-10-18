@@ -63,9 +63,11 @@ class QualityBadge extends StatelessWidget {
 }
 
 /// The Hi-Res badge: black with a gold hairline edge, in the same shape as
-/// the plain chip. A short, dim highlight travels around the edge and a faint
-/// band of light crosses the body now and then. Standing still (one frame, no
-/// ticker) when the system asks for reduced motion.
+/// the plain chip. When it appears, or the song changes, a short, dim
+/// highlight travels once round the edge and a faint band of light crosses
+/// the body; then it rests with no ticker running. (A badge that animated
+/// forever kept the whole player page redrawing on every vsync.) Standing
+/// still from the start when the system asks for reduced motion.
 class _HiResBadge extends StatefulWidget {
   const _HiResBadge({required this.track});
 
@@ -85,6 +87,8 @@ class _HiResBadgeState extends State<_HiResBadge>
   /// One lap of the edge highlight; the band crosses in the first half.
   static const _lap = Duration(milliseconds: 6000);
 
+  bool _played = false;
+
   late final AnimationController _flow = AnimationController(
     vsync: this,
     duration: _lap,
@@ -98,8 +102,18 @@ class _HiResBadgeState extends State<_HiResBadge>
       _flow
         ..stop()
         ..value = 0.1;
-    } else if (!_flow.isAnimating) {
-      _flow.repeat();
+    } else if (!_played) {
+      _played = true;
+      _flow.forward(from: 0);
+    }
+  }
+
+  @override
+  void didUpdateWidget(_HiResBadge old) {
+    super.didUpdateWidget(old);
+    if (old.track.id != widget.track.id &&
+        !MediaQuery.disableAnimationsOf(context)) {
+      _flow.forward(from: 0);
     }
   }
 
