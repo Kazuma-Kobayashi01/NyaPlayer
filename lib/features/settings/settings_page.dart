@@ -12,14 +12,13 @@ import 'package:nyaplayer/features/now_playing/progress_slider.dart';
 import 'package:nyaplayer/features/search/library_app_bar.dart';
 import 'package:nyaplayer/features/settings/language_dialog.dart';
 import 'package:nyaplayer/features/settings/library_folders.dart';
+import 'package:nyaplayer/app/app_version.dart';
 import 'package:nyaplayer/features/settings/min_length_tile.dart';
 import 'package:nyaplayer/features/settings/super_resolution_tile.dart';
 import 'package:nyaplayer/services/player/playback_core.dart';
 import 'package:nyaplayer/features/shared/glass_surface.dart'
     show glassMaterialProvider;
 import 'package:nyaplayer/l10n/app_localizations.dart';
-
-const _appVersion = '0.1.0';
 
 class SettingsPage extends ConsumerWidget {
   const SettingsPage({super.key, this.standalone = false});
@@ -281,7 +280,7 @@ class SettingsPage extends ConsumerWidget {
                     leading: const Icon(Icons.info_outline),
                     title: Text(l10n.aboutVersion),
                     trailing: Text(
-                      _appVersion,
+                      appVersionLabel(),
                       style: theme.textTheme.bodyMedium?.copyWith(
                         color: theme.colorScheme.onSurfaceVariant,
                       ),
@@ -299,7 +298,7 @@ class SettingsPage extends ConsumerWidget {
                     onTap: () => showLicensePage(
                       context: context,
                       applicationName: l10n.appName,
-                      applicationVersion: _appVersion,
+                      applicationVersion: appVersionLabel(),
                     ),
                   ),
                   ListTile(

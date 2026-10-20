@@ -25,6 +25,7 @@ import 'package:nyaplayer/services/player/queue_controller.dart';
 ///   NYA_QUEUE=1          open the queue sheet of the phone player
 ///   NYA_DRAWER=1         open the phone navigation drawer
 ///   NYA_LYRICS=center,large,notrans   lyrics display options
+///   NYA_ROUTE=/albums    open this page after launch
 void applyPreviewEnv(ProviderContainer container) {
   final env = Platform.environment;
   // Forced preview settings must not overwrite the developer's saved ones.
@@ -57,6 +58,13 @@ void applyPreviewEnv(ProviderContainer container) {
     lyricsSettings.setFontSize(22);
   }
   if (lyrics.contains('notrans')) lyricsSettings.setShowTranslation(false);
+  final route = env['NYA_ROUTE'];
+  if (route != null) {
+    Future<void>.delayed(
+      const Duration(milliseconds: 400),
+      () => container.read(routerProvider).go(route),
+    );
+  }
   final mode = env['NYA_PREVIEW'];
   if (mode != 'player' && mode != 'panel') return;
   final index = int.tryParse(env['NYA_TRACK'] ?? '') ?? 0;

@@ -1,10 +1,13 @@
 # 施工记录（PROGRESS）
 
-> 最后更新：2026-10-18 · 写给接手开发的人（或 AI）。先读本文，再读 `.claude/CLAUDE.md`、`docs/TECH_SPEC.md`、`docs/PLAN.md`、`docs/REQUIREMENTS.md`。
+> 最后更新：2026-10-21 · 写给接手开发的人（或 AI）。先读本文，再读 `.claude/CLAUDE.md`、`docs/TECH_SPEC.md`、`docs/PLAN.md`、`docs/REQUIREMENTS.md`。
 > 本文只记录**当前状态、决定、坑和下一步**；需求和技术规范以另外三份文档为准，冲突时以 TECH_SPEC 为准。
 
 ## 0. 一眼看完
 
+- **2.0.0 收包（2026-10-21）**：版本号统一为 `2.0.0`（`pubspec.yaml` 的 `2.0.0+1`、`rust/Cargo.toml`；`rust/Cargo.lock` 同步）。应用内版本改由 `lib/app/app_version.dart` 提供，显示 `2.0.0-{平台}({架构})`（如 `2.0.0-Android(armv8a)`、`2.0.0-macOS(arm64)`），平台与架构取自 Dart VM 的 `Platform.version` 目标串，不加依赖；`test/app/app_version_test.dart` 校验它与 pubspec、Cargo 版本一致，以后改版本漏改会直接失败。验收：开发者确认 macOS 退出不慢、两端切歌正常、SQ-AI 真机验收完成、macOS 桌面卡片验收通过、Android 用了一段时间没问题。PLAN 里 M0–M6 一批早已完成的复选框已补勾，没做专项验证的几项（来电焦点、macOS 媒体键、500 次切歌压测）保留未勾并写明。README 中英文重写：图标、版本徽章、截图（用内置虚构演示曲库，`docs/screenshots/`）、技术栈徽章、架构图。
+- **macOS 内存体检（2026-10-21）**：常驻约 404 MB（图形内存约 232 MB，堆约 108 MB），空闲不增长；空的 Flutter 应用约 45 MB，空曲库的 NyaPlayer 约 90–135 MB。封面不是主因（缓存里只有 256 px 和 500 px 两档，142 张全解码也就几十 MB），更可能是流光、预模糊封面、播放条模糊、玻璃面板这些整窗大小的离屏图层，**没做 profile，是推测**。开发者认为可以接受（特效本来就多），不再处理。SQ-AI 转换峰值约 2 GB、几秒后释放；`MacSuperResolution.swift` 改为任务队列清空后释放转换器，不让模型常驻。
+- **截图方法（2026-10-21）**：`NYA_SAMPLE=1`（假引擎 + 虚构曲库，不碰真实数据库）配合 `NYA_PREVIEW` / `NYA_THEME` / `NYA_SHAPE` / `NYA_LYRICS`，新增 `NYA_ROUTE=/albums` 直接打开某个页面；运行 debug 包后用 `screencapture -l <窗口号>` 抓图。不要对真实曲库用 `NYA_MUSIC_DIR`（会改写真实数据库，2026-10-18 已吃过亏）。
 - **后续第一计划（2026-10-19，M12，只是计划，没写代码）**：**主线继续不联网，承诺不变**，做①歌曲卡片分享（专辑图 + 歌手 + 歌词，纯本地，导出 PNG 再分享）和②播放历史与本地统计（含不带路径的聚合结构 `ListeningSummary`）。**联网的 AI 听歌分析与推荐做成独立版本**：git 分支 `ai`、独立 App ID、独立发布、不合进主线；网络库用 **Rust**；**只提供 OpenAI 兼容的接口，不内置任何服务商**（用户自己找提供商，填 Base URL、模型名、API Key），**全部是固定的系统提示词、不允许自定义**，界面只显示结果；独立版本里**所有联网服务**第一次使用前都要过**免责声明弹窗**（同意才能继续，Rust 层还要再拦一道）。待你确认的几条在 TECH_SPEC §4.9。
 - **AI 超分设置“仅桌面端可用”（2026-10-19）**：手机和平板上这一项照样显示，但置灰禁用并写明“仅桌面端可用”，其余平台行为不变；有 android / iOS / macOS 三种平台的测试。
 - **Android 版 SQ-AI 试过又移除了（2026-10-19）**：MNN（OpenCL / Vulkan + FP16）、自写 C++ DSP 和 FLAC 编码器、MediaStore 发布都做到了能打进 APK，但手机上 12 秒窗口的会话占 4.8 GB 物理 + 5.5 GB 交换（约 10 GB）被 lmkd 杀掉，开发者决定去掉。已删除相关代码、构建输入和 `python/` 里的 MNN 部分；手机上的残留（解包的 34 MB 模型）由新版启动时清掉。这一路踩过的坑：①先是 `assets.openFd()` 打不开被压缩的资源；②再是 release 的 R8 把只被 JNI 引用的方法删掉，`GetMethodID` 失败后继续调 JNI 直接 abort；③最后是内存。PyPI 的 `MNN` 包还带遥测（见 TECH_SPEC §4.8）。**Android 的均衡器（M10-4）不受影响。**
@@ -16,7 +19,7 @@
 - **字体精简（2026-10-18，SET-06）**：内置字体 9 份 → 4 份，56.3MB → 32.1MB（−43.0%），三款字符覆盖保留。EB Garamond 使用 400–700 可变字体，HarmonyOS Sans 保留 Regular/Bold，Noto Serif SC 保留 Medium，中文衬线粗体使用合成。`output/` 三份 Release 已更新：arm64 Mac 72.2MB、Intel Mac 73.2MB、Android APK 47.9MB。细节见 `assets/fonts/README.md`。
 - **品牌图标与正式名称（2026-10-18，UI-21）**：当前品牌图形为 Flutter 自带 Material `Icons.music_note` 标准音符，按最新要求替换自绘双音符并移除猫耳；几何源、生成命令、平台尺寸与生成记录见 `assets/branding/README.md`。macOS `.icon` 已接入原生资源构建，支持默认/深色/系统着色，Android adaptive icon 含 API 33+ monochrome 图层。正式应用名与 macOS 可执行文件/产品均为 `NyaPlayer`；包标识保留。两个平台 Debug 构建、静态分析、原生图标渲染与资源检查完成，尚未在实际启动器切换主题图标。
 - **项目**：NyaPlayer（文档代号 Lyra）——本地离线、无广告的 Material 3 音乐播放器，Flutter，Android + macOS。曲库只有 **FLAC + MP3**，歌词和封面**全部内嵌**，双语歌词是 P0。
-- **分支与仓库**：当前版本分支 `1.2.0.alpha`，Flutter 版本 `1.2.0-alpha+1`；远程 `git@github.com:Kazuma-Kobayashi01/NyaPlayer.git`。2026-10-18 开发者授权提交并推送本轮缓存清理、macOS 桌面组件、正式名称与 Material 标准音符图标；Release 分发产物统一位于根目录 `output/`，按系统和架构分目录，详见 `BUILD_OUTPUTS.md`。具体提交与构建状态以 Git 和本次构建输出为准。
+- **分支与仓库**：当前版本分支 `2.0.0`，Flutter 版本 `2.0.0+1`（历史：`1.2.0.alpha` / `1.2.0-alpha+1`）；远程 `git@github.com:Kazuma-Kobayashi01/NyaPlayer.git`。2026-10-18 开发者授权提交并推送本轮缓存清理、macOS 桌面组件、正式名称与 Material 标准音符图标；Release 分发产物统一位于根目录 `output/`，按系统和架构分目录，详见 `BUILD_OUTPUTS.md`。具体提交与构建状态以 Git 和本次构建输出为准。
 - **README 与许可证（2026-10-18）**：中英文首页增加技术栈徽章及“正在开发中，无法使用”的醒目警告，平台状态标为开发中；许可证采用远程已有的 MIT，合并时保留远程 LICENSE 与双方历史。作者顺序仍为 Kazuma-Kobayashi01、Claude、Codex。本次已明确授权推送 main，覆盖此前未授权推送的限制。
 - **阶段**：前端 UI 基本完成；Rust 内核正在 M0 验证。2026-10-18 已在 macOS 实听 FLAC 192kHz/24bit 与 MP3，开发者确认声音正常、MP3 跳转后正常；EQ 顺序修正后复测正常，自制连续 FLAC 两轨切换无可听缝隙。Android 真机仍待验证，详见 `SPIKE_REPORT.md`。
 - **本轮新增（开发者指定提前做 M2-6）**：内嵌封面按需获取与两种尺寸磁盘缓存已接入所有封面组件；macOS 三首真实文件正常生成缓存，开发者确认界面封面正常。数据库封面状态与缓存清理待后续接入。

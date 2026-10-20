@@ -17,6 +17,10 @@ final class MacSuperResolution: NSObject, FlutterStreamHandler {
   private let lock = NSLock()
   private var cancelled = Set<Int>()
   private var converter: SRConverter?
+  /// Jobs queued or running. When the last one ends the converter is dropped:
+  /// the model and its GPU buffers (a conversion peaks near 2 GB) have no
+  /// business staying in memory between conversions; loading takes about 1.4 s.
+  private var pending = 0
 
   init(messenger: FlutterBinaryMessenger) {
     method = FlutterMethodChannel(name: "nyaplayer/sr", binaryMessenger: messenger)
@@ -37,7 +41,13 @@ final class MacSuperResolution: NSObject, FlutterStreamHandler {
         let destination = args["destination"] as? String
       else { return result(FlutterError(code: "args", message: "job, source, destination", details: nil)) }
       let seconds = (args["maxSeconds"] as? NSNumber)?.doubleValue
-      queue.async { [weak self] in self?.run(job, source, destination, seconds) }
+      lock.lock()
+      pending += 1
+      lock.unlock()
+      queue.async { [weak self] in
+        self?.run(job, source, destination, seconds)
+        self?.jobEnded()
+      }
       result(nil)
     case "cancel":
       if let job = (args["job"] as? NSNumber)?.intValue {
@@ -55,6 +65,15 @@ final class MacSuperResolution: NSObject, FlutterStreamHandler {
     lock.lock()
     defer { lock.unlock() }
     return cancelled.contains(job)
+  }
+
+  private func jobEnded() {
+    lock.lock()
+    pending -= 1
+    let idle = pending <= 0
+    lock.unlock()
+    // `converter` is only touched on `queue`, which this runs on.
+    if idle { converter = nil }
   }
 
   private func run(_ job: Int, _ source: String, _ destination: String, _ seconds: Double?) {
