@@ -340,11 +340,34 @@ final class SRConverter {
       }
     }
     switch array.dataType {
-    case .float16: copy(Float16.self) { Float($0) }
+    case .float16:
+      #if arch(arm64)
+        copy(Float16.self) { Float($0) }
+      #else
+        // Swift has no Float16 on Intel Macs: widen the raw half-precision bits.
+        copy(UInt16.self) { halfToFloat($0) }
+      #endif
     case .float32: copy(Float.self) { $0 }
     default: copy(Double.self) { Float($0) }
     }
     return out
+  }
+
+  /// IEEE 754 half precision to single, for builds without `Float16`.
+  static func halfToFloat(_ half: UInt16) -> Float {
+    let sign = UInt32(half & 0x8000) << 16
+    let exponent = UInt32(half >> 10) & 0x1F
+    var mantissa = UInt32(half & 0x3FF)
+    if exponent == 0x1F { return Float(bitPattern: sign | 0x7F80_0000 | (mantissa << 13)) }
+    if exponent != 0 { return Float(bitPattern: sign | ((exponent + 112) << 23) | (mantissa << 13)) }
+    if mantissa == 0 { return Float(bitPattern: sign) }
+    // Subnormal half: normalise it.
+    var e: UInt32 = 113
+    while mantissa & 0x400 == 0 {
+      mantissa <<= 1
+      e -= 1
+    }
+    return Float(bitPattern: sign | (e << 23) | ((mantissa & 0x3FF) << 13))
   }
 
   // MARK: Audio files
